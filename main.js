@@ -519,7 +519,7 @@ ipcMain.handle('quick:size', (_e, h) => { if (quick && !quick.isDestroyed()) { c
 function createWindow() {
   Menu.setApplicationMenu(null);
   win = new BrowserWindow({
-    width: 1100, height: 760, minWidth: 640, minHeight: 480,
+    width: 1100, height: 760, minWidth: 340, minHeight: 420,
     title: 'خزنة', icon: appIcon(), backgroundColor: '#f6f5f1', autoHideMenuBar: true, show: !process.argv.includes('--hidden'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: false }
   });

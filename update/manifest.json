@@ -1,5 +1,5 @@
 {
- "version": "2026-10-23 09:09",
+ "version": "2026-10-23 09:30",
  "files": [
   {
    "path": "renderer/app.js",
@@ -35,7 +35,7 @@
   },
   {
    "path": "renderer/style.css",
-   "sha": "383dda17344930a07e1d9e57650a7b3a2f01e9be237889f600a742c63b13061f"
+   "sha": "db6ded0601c73ef5215ffb7b3f15779fd8fb1d0894230ff2650b7684ec4eb7c2"
   },
   {
    "path": "renderer/zakker.css",
@@ -47,7 +47,7 @@
   },
   {
    "path": "main.js",
-   "sha": "5d6178e039a6bc7a524e8a00f053621e52ad666a98db7cca69326136fe3e1774"
+   "sha": "1c19ed37f221a19e3f55b0a10c666bd4ce0842db0cad7bd30d0ed0ead28fc0b0"
   },
   {
    "path": "preload.js",

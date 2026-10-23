@@ -259,3 +259,35 @@ html:root[data-preset="glass"] body{background:linear-gradient(135deg,#1b2a52 0%
 html:root[data-preset="glass"] .tile,html:root[data-preset="glass"] .searchbox,html:root[data-preset="glass"] .room,html:root[data-preset="glass"] .chip,html:root[data-preset="glass"] .hero{backdrop-filter:blur(14px) saturate(1.3);-webkit-backdrop-filter:blur(14px) saturate(1.3)}
 html:root[data-preset="glass"] .top{backdrop-filter:blur(16px)}
 html:root[data-preset="glass"] dialog,html:root[data-preset="glass"] .menu{background:rgba(24,28,48,.92)}
+
+/* ===== v6: نافذة ضيقة (جوار الشاشة / نص الشاشة) ===== */
+@media(max-width:760px){
+  .top{flex-wrap:wrap;gap:8px;padding:10px 12px}
+  .brand{font-size:17px}
+  .nav{order:2}
+  .searchbox{order:5;flex:1 1 100%}
+  .addwrap{order:3}
+  .layout{flex-direction:column;align-items:stretch}
+  #side{width:auto;position:static;max-height:none;padding:0 12px 6px;overflow:visible}
+  .sidehead,#side .hint{display:none}
+  #sideList{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
+  #sideList .sitem{flex:none;white-space:nowrap;padding:5px 10px;background:var(--card);border:1px solid var(--line)}
+  #sideList .sitem.on{background:var(--acc2);border-color:var(--acc)}
+  #sideList .sact{display:none!important}
+  #addSec{display:none}
+  .bar{flex-wrap:wrap;padding:0 12px 8px}
+  .chips{flex:1 1 100%}
+  main{padding:6px 12px 70px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))!important}
+  #out.v-list .grid,#out.v-list{grid-template-columns:1fr!important}
+  .tile .pre{height:96px}
+  #bulk{left:8px;right:8px;transform:none;flex-wrap:wrap;justify-content:center}
+  dialog{width:96vw}
+}
+@media(max-width:430px){
+  .grid{grid-template-columns:1fr 1fr!important;gap:8px!important}
+  .tile .acts .mini button{padding:2px 5px}
+  #custBtn,#grpBtn,#selBtn{font-size:12px;padding:3px 8px}
+  #sortSel{max-width:92px}
+  .menu{inset-inline-end:auto;inset-inline-start:0;min-width:min(230px,86vw)}
+}
