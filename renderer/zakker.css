@@ -32,3 +32,4 @@
 .zk-sbox details{margin-top:14px}
 .zk-sbox summary{cursor:pointer;color:var(--acc)}
 .zk-sql{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:11px;overflow:auto;max-height:180px;text-align:left;white-space:pre}
+*{scrollbar-width:thin}

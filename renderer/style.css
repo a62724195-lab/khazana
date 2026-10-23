@@ -291,3 +291,6 @@ html:root[data-preset="glass"] dialog,html:root[data-preset="glass"] .menu{backg
   #sortSel{max-width:92px}
   .menu{inset-inline-end:auto;inset-inline-start:0;min-width:min(230px,86vw)}
 }
+
+/* ===== شريط تمرير أنيق بدل شريط ويندوز ===== */
+*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--mute) 45%,transparent) transparent}
