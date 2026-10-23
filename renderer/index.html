@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: file: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https://*.supabase.co https://*.supabase.in; media-src 'self' blob:">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>خزنة</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="zakker.css">
+</head>
+<body>
+<div class="top">
+  <div class="brand">🗄️ خزنة</div>
+  <div class="nav"><button id="navVault" class="on">🗄️ الخزنة</button><button id="navZk">🔔 ذكّرني <span id="navBadge"></span></button></div>
+  <div class="searchbox">
+    <input id="q" autofocus placeholder="اكتب أو اشرح شنو تبي: «أبي شي أحوّل فيه PDF» أو «صورة العقد»…">
+    <button id="goBtn" title="بحث ذكي (Enter)">🔎</button>
+  </div>
+  <div class="addwrap">
+    <button id="addBtn" class="pri">+ إضافة</button>
+    <div id="addMenu" class="menu" hidden>
+      <button data-add="files">📄 ملفات / صور / برامج</button>
+      <button data-add="folder">📁 مجلد</button>
+      <button data-add="link">🔗 رابط</button>
+      <button data-add="note">📝 ملاحظة</button>
+    </div>
+  </div>
+  <div class="addwrap">
+    <button id="moreBtn" title="المزيد">⋯</button>
+    <div id="moreMenu" class="menu" hidden>
+      <button data-more="scan">⚙️ استيراد برامجي المثبتة</button>
+      <button data-more="thumbs">🔄 تحديث صور كل العناصر</button>
+      <button data-more="clean">🧹 فحص الملفات الميتة والمكررة</button>
+      <button data-more="update">🔄 تحديث التطبيق (من GitHub)</button>
+      <button data-more="stats">📊 إحصائيات خزنتي</button>
+      <button data-more="smart-recent">🪟 حاوية ذكية: فتحتها مؤخراً</button>
+      <button data-more="smart-used">🪟 حاوية ذكية: الأكثر استخداماً</button>
+      <button data-more="smart-added">🪟 حاوية ذكية: أضفتها حديثاً</button>
+      <button data-more="smart-pinned">🪟 حاوية ذكية: المثبّتة ⭐</button>
+      <button data-more="bk-open">📂 فتح مجلد النسخ التلقائية</button>
+      <button data-more="bk-choose">📁 تغيير مجلد النسخ التلقائية</button>
+      <button data-more="fill">✨ عبّي الأوصاف الناقصة</button>
+      <button data-more="export">💾 نسخة احتياطية</button>
+      <button data-more="import">📥 استعادة نسخة</button>
+      <button data-more="settings">🔑 الذكاء الاصطناعي</button>
+    </div>
+  </div>
+</div>
+
+<div id="zk" hidden></div>
+<div class="layout">
+  <aside id="side">
+    <div class="sidehead">الأقسام</div>
+    <div id="sideList"></div>
+    <button id="addSec" class="sm wide">+ قسم جديد</button>
+    <div class="hint" style="margin-top:8px">اسحب أي عنصر وأفلته على قسم لنقله.</div>
+  </aside>
+  <div class="content">
+    <div class="bar">
+      <div id="chips" class="chips"></div>
+      <div id="viewSeg" class="seg"><button data-v="big" title="بطاقات كبيرة">▦</button><button data-v="small" title="بطاقات صغيرة">▪▪</button><button data-v="list" title="قائمة: سطر لكل عنصر">☰</button></div>
+      <div class="addwrap"><button id="custBtn" class="sm" title="تخصيص الواجهة">🎨 تخصيص</button>
+        <div id="custMenu" class="menu cust" hidden>
+          <div class="crow"><b>اللون</b><div id="swatches" class="swatches"></div></div>
+          <div class="crow"><b>ثيم</b><select id="presetSel"><option value="">الأساسي</option><option value="night">🌙 ليلي</option><option value="glass">🪟 زجاجي</option><option value="paper">📜 ورقي</option><option value="neon">⚡ نيون</option></select></div>
+          <div class="crow"><b>المظهر</b><select id="themeSel"><option value="auto">تلقائي</option><option value="light">فاتح</option><option value="dark">داكن</option></select></div>
+          <label class="crow"><input type="checkbox" id="optDesc"> إظهار الوصف</label>
+          <label class="crow"><input type="checkbox" id="optTags"> إظهار التصنيف والوسوم</label>
+          <button id="viewAll" class="sm">طبّق شكل العرض الحالي على كل الأقسام</button>
+        </div></div>
+      <div class="addwrap"><button id="grpBtn" class="sm" title="مجموعات: افتح عدة عناصر بضغطة">⚡ مجموعات</button>
+        <div id="grpMenu" class="menu cust" hidden></div></div>
+      <button id="selBtn" class="sm" title="تحديد عدة عناصر (أو اسحب بالماوس على مساحة فاضية)">☑️ تحديد</button>
+      <select id="sortSel" title="الترتيب">
+        <option value="recent">الأحدث</option>
+        <option value="used">الأكثر فتحاً</option>
+        <option value="name">الاسم</option>
+      </select>
+    </div>
+    <main id="out"></main>
+  </div>
+</div>
+
+<div id="bulk" hidden>
+  <b><span id="bulkN">0</span> محدد</b>
+  <button id="bAll" class="sm">تحديد الكل</button>
+  <select id="bMove" class="sm"></select>
+  <select id="bColor" class="sm"><option value="__">🎨 لون…</option><option value="">بدون لون</option><option value="#ef4444">🔴 أحمر</option><option value="#f97316">🟠 برتقالي</option><option value="#eab308">🟡 أصفر</option><option value="#22c55e">🟢 أخضر</option><option value="#3b82f6">🔵 أزرق</option><option value="#a855f7">🟣 بنفسجي</option><option value="#ec4899">🩷 وردي</option></select>
+  <button id="bDel" class="sm danger">🗑️ حذف</button>
+  <button id="bCancel" class="sm">إلغاء</button>
+</div>
+
+<div id="drop">⬇️ أفلت هنا (أو على قسم معيّن في القائمة)</div>
+<div id="busy" hidden><div id="busyTxt"></div></div>
+
+<dialog id="dlg">
+  <form id="form">
+    <div class="dhead"><b id="dTitle"></b><span id="dProg" class="hint"></span></div>
+    <div class="pv"><div id="pvIco" class="pvico"></div><div id="pvPath" class="pvpath"></div></div>
+    <div id="rowPath" class="row" hidden><button type="button" id="relinkBtn" class="sm">تغيير المسار…</button></div>
+    <div id="aiNote" class="ainote"></div>
+    <label>الاسم</label><input id="fName" class="f" required>
+    <label id="descLabel">وصف</label><textarea id="fDesc" class="f" rows="3"></textarea>
+    <div id="rowUrl" hidden><label>الرابط</label><input id="fUrl" class="f" dir="ltr" placeholder="https://"></div>
+    <div class="two">
+      <div><label>القسم</label><select id="fSection" class="f"></select></div>
+      <div><label>الحالة</label><select id="fStatus" class="f"><option value="using">أستخدمه</option><option value="later">بعدين</option></select></div>
+    </div>
+    <label>التصنيف</label><input id="fCat" class="f" list="catList"><datalist id="catList"></datalist>
+    <label>كلمات مفتاحية</label><input id="fTags" class="f">
+    <label>لون</label><div id="fColorRow" class="swatches"></div>
+    <div class="drow">
+      <button type="button" id="aiBtn" class="sm">✨ تعرّف عليه بالذكاء الاصطناعي</button>
+      <span class="grp">
+        <button type="button" id="skipBtn" class="sm"></button>
+        <button type="button" id="allBtn" class="sm" hidden>اقبل الباقي تلقائياً</button>
+        <button type="submit" id="saveBtn" class="pri">حفظ</button>
+      </span>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="secDlg">
+  <form id="secForm">
+    <b id="secTitle"></b>
+    <label>اسم القسم</label><input id="secName" class="f" placeholder="مثلاً: الملفات المهمة" required>
+    <label>داخل قسم</label><select id="secParent" class="f"></select>
+    <label>لون</label><div id="secColorRow" class="swatches"></div>
+    <label>🔒 قفل بكلمة سر <span class="hint" id="secLockHint"></span></label>
+    <input id="secPass" class="f" type="password" autocomplete="new-password" placeholder="اتركها فاضية إذا ما تبي قفل">
+    <label id="secUnlockRow" class="crow" hidden><input type="checkbox" id="secRmLock"> إزالة القفل عن هذا القسم</label>
+    <label>رمز</label>
+    <div class="two1"><input id="secEmoji" class="f emoji" maxlength="4"><div id="emojiRow" class="emojis"></div></div>
+    <div class="drow"><button type="button" id="secCancel" class="sm">إلغاء</button><button type="submit" class="pri">حفظ</button></div>
+  </form>
+</dialog>
+
+<dialog id="grpDlg">
+  <form id="grpForm">
+    <b id="grpTitle">مجموعة</b>
+    <div class="two1"><input id="grpEmoji" class="f emoji" maxlength="4" value="⚡"><input id="grpName" class="f" placeholder="اسم المجموعة: مثلاً وضع الدراسة" required></div>
+    <label>اختر العناصر اللي تنفتح معها <span class="hint" id="grpCount"></span></label>
+    <input id="grpFilter" class="f" placeholder="ابحث في العناصر…">
+    <div id="grpList" class="chklist"></div>
+    <div class="drow"><button type="button" id="grpCancel" class="sm">إلغاء</button><button type="submit" class="pri">حفظ</button></div>
+  </form>
+</dialog>
+
+<dialog id="cleanDlg" class="wide">
+  <b>🧹 فحص الخزنة</b>
+  <div id="cleanBody"></div>
+  <div class="drow"><button type="button" id="cleanClose" class="sm">إغلاق</button><span class="grp"><button type="button" id="cleanDel" class="pri danger" hidden>🗑️ احذف المحدد من الخزنة</button></span></div>
+</dialog>
+
+<dialog id="statsDlg" class="wide">
+  <b>📊 إحصائيات خزنتي</b>
+  <div id="statsBody"></div>
+  <div class="drow"><span class="hint">وقت الاستخدام يُحسب لبرامج .exe والاختصارات وهي شغّالة (كل 30 ثانية).</span><button type="button" id="statsClose" class="sm">إغلاق</button></div>
+</dialog>
+
+<dialog id="setDlg">
+  <b>الذكاء الاصطناعي (اختياري)</b>
+  <p class="hint">بدون مفتاح التطبيق يشتغل كامل لكن التعرّف والبحث يكونون بالكلمات فقط. بالمفتاح يقرأ اسم الملف وبداية محتواه (والصور نفسها) ويقترح الاسم والوصف والتصنيف، ويفهم البحث بالوصف. المفتاح يُخزَّن مشفّراً على جهازك. وتُرسل لـ Anthropic فقط بيانات العنصر اللي تحلله أو قائمة أسماء وأوصاف خزنتك وقت البحث.</p>
+  <label>مفتاح Anthropic API</label>
+  <input id="apiKey" class="f" type="password" dir="ltr" placeholder="sk-ant-...">
+  <div id="dataPath" class="hint" style="margin-top:10px"></div>
+  <div class="drow"><button type="button" id="delKey" class="sm">حذف المفتاح</button><span class="grp"><button type="button" id="closeSet" class="sm">إغلاق</button><button type="button" id="saveKey" class="pri">حفظ</button></span></div>
+</dialog>
+
+<div id="toast"></div>
+<script src="zakker.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

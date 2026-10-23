@@ -1,0 +1,16 @@
+{
+  "name": "khazana",
+  "productName": "خزانة",
+  "version": "1.0.0",
+  "description": "خزانة: مكان واحد لكل ملفاتك وبرامجك وصورك وروابطك مع بحث ذكي",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "postinstall": "node scripts/ensure-electron.js"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  },
+  "author": "Khazana"
+}

@@ -1,0 +1,34 @@
+/* ذكّرني: يستخدم متغيرات الألوان من الصفحة (--bg --card --ink --mute --line --acc --onacc --bad) */
+.zk{max-width:680px;margin:0 auto;padding:6px 4px 60px}
+.zk [hidden]{display:none!important}
+.zk-tabs{display:flex;gap:6px;margin-bottom:14px}
+.zk-tabs button{flex:1;padding:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font:inherit;cursor:pointer}
+.zk-tabs button.on{background:var(--acc);color:var(--onacc);border-color:var(--acc)}
+.zk-tabs .zk-sync{flex:0 0 auto;font-size:13px;white-space:nowrap}
+.zk-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+.zk-in{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit;margin-bottom:8px}
+.zk-btn{padding:9px 14px;border:0;border-radius:10px;background:var(--acc);color:var(--onacc);font:inherit;cursor:pointer;text-decoration:none;display:inline-block}
+.zk-btn.zk-g{background:transparent;color:var(--ink);border:1px solid var(--line);padding:6px 10px}
+.zk-btn.zk-red{color:var(--bad)}
+.zk-btn.zk-alt{background:var(--line);color:var(--ink)}
+.zk-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.zk-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.zk-mut{color:var(--mute);font-size:14px}
+.zk-due{color:var(--bad);font-weight:600}
+.zk-done{opacity:.5;text-decoration:line-through}
+.zk-pv{font-weight:600;margin-bottom:8px;color:var(--acc)}
+.zk-chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.zk-chips button{padding:8px 12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:20px;font:inherit;cursor:pointer}
+.zk-chips button.on{background:var(--acc);color:var(--onacc);border-color:var(--acc)}
+.zk-img{max-width:100%;max-height:300px;border-radius:10px;margin-top:8px;display:block}
+.zk-body{white-space:pre-wrap;margin-top:6px;word-break:break-word}
+#zk-ring{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;z-index:999;padding:20px}
+.zk-ringbox{background:var(--card);color:var(--ink);border-radius:18px;padding:24px;text-align:center;width:100%;max-width:360px}
+.zk-ringbox h2{font-size:26px;margin:0 0 12px;word-break:break-word}
+.zk-rbtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+#zk-sync{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:998;padding:14px}
+.zk-sbox{background:var(--card);color:var(--ink);border-radius:16px;padding:18px;width:100%;max-width:520px;max-height:92vh;overflow:auto}
+.zk-sbox label{display:block;font-size:13px;color:var(--mute);margin:8px 0 3px}
+.zk-sbox details{margin-top:14px}
+.zk-sbox summary{cursor:pointer;color:var(--acc)}
+.zk-sql{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:11px;overflow:auto;max-height:180px;text-align:left;white-space:pre}
