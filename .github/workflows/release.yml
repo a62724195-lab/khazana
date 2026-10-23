@@ -1,0 +1,50 @@
+name: Build Windows exe
+on:
+  workflow_dispatch: {}
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  win:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Electron
+        run: |
+          npm install
+          node scripts/ensure-electron.js
+      - name: Package app
+        shell: pwsh
+        run: |
+          $out = 'Khazana-App'
+          Copy-Item node_modules/electron/dist $out -Recurse
+          New-Item -ItemType Directory "$out/resources/app" | Out-Null
+          Copy-Item main.js, preload.js, package.json "$out/resources/app/"
+          Copy-Item renderer "$out/resources/app/renderer" -Recurse
+          Copy-Item assets "$out/resources/app/assets" -Recurse
+          Copy-Item renderer "$out/ui" -Recurse
+          Remove-Item "$out/resources/default_app.asar" -ErrorAction SilentlyContinue
+          Rename-Item "$out/electron.exe" Khazana.exe
+      - name: Set exe icon
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          npm install rcedit@3.0.1 --no-save
+          node -e "require('rcedit')('Khazana-App/Khazana.exe',{icon:'assets/icon.ico','version-string':{ProductName:'Khazana',FileDescription:'Khazana',CompanyName:'Khazana'}}).then(()=>console.log('icon set'))"
+      - name: Zip
+        shell: pwsh
+        run: Compress-Archive -Path Khazana-App -DestinationPath Khazana-Windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Khazana-Windows
+          path: Khazana-Windows.zip
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Khazana-Windows.zip
+          generate_release_notes: true

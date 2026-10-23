@@ -15,6 +15,7 @@ copy /y preload.js "%OUT%\resources\app\" >nul
 copy /y package.json "%OUT%\resources\app\" >nul
 robocopy renderer "%OUT%\resources\app\renderer" /E /NFL /NDL /NJH /NJS /NP >nul
 robocopy renderer "%OUT%\ui" /E /NFL /NDL /NJH /NJS /NP >nul
+robocopy assets "%OUT%\resources\app\assets" /E /NFL /NDL /NJH /NJS /NP >nul
 if exist "%OUT%\resources\default_app.asar" del /q "%OUT%\resources\default_app.asar"
 ren "%OUT%\electron.exe" Khazana.exe
 echo.
