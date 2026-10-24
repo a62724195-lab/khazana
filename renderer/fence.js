@@ -52,7 +52,7 @@ async function load() {
     const meta = list.find(x => x && x.kind === '_meta') || {};
     const ns = JSON.stringify((meta.sections || []).map(x => [x.id, x.name, !!x.lock])) + JSON.stringify(meta.ui || {}) + JSON.stringify(meta.groups || []);
     if (s + ns === sig) return; sig = s + ns;
-    items = list.filter(x => x && x.kind !== '_meta'); sections = meta.sections || []; ui = meta.ui || {}; groups = meta.groups || [];
+    items = list.filter(x => x && x.kind !== '_meta'); sections = meta.sections || []; ui = meta.ui || {}; groups = meta.groups || []; if (window.I18N) window.I18N.set(ui.lang || window.I18N.auto());
     if (!isSmart && !sections.some(x => x.id === cur)) cur = sec;
     render();
   } catch (e) {}

@@ -399,5 +399,5 @@ create policy "zk files delete" on storage.objects for delete to authenticated
     document.addEventListener('visibilitychange', () => { if (!document.hidden) { sync(); tick(); } });
     nativeInit(); setStatus(T.cfg.session ? '☁️' : 'مزامنة'); render(); if (T.cfg.session) sync();
   }
-  window.Zakker = { init, mount, openSync, parse, sync, _T: T };
+  window.Zakker = { init, mount, openSync, parse, sync, addRem: (title, when, extra) => addItem({ type: 'reminder', title, when, rep: 0, done: false, ...(extra || {}) }), _T: T };
 })();

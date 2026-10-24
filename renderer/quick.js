@@ -47,7 +47,7 @@ async function smart() {
   else draw('تعذّر البحث الذكي.');
 }
 async function reload() {
-  try { const r = await window.api.load(); const l = r.items || []; const m = l.find(x => x && x.kind === '_meta') || {}; sections = m.sections || []; groups = m.groups || []; items = l.filter(x => x && x.kind !== '_meta' && !lockedSec(x.section)); hasKey = !!r.hasKey; } catch (e) {}
+  try { const r = await window.api.load(); const l = r.items || []; const m = l.find(x => x && x.kind === '_meta') || {}; sections = m.sections || []; groups = m.groups || []; if (window.I18N) window.I18N.set((m.ui && m.ui.lang) || window.I18N.auto()); items = l.filter(x => x && x.kind !== '_meta' && !lockedSec(x.section)); hasKey = !!r.hasKey; } catch (e) {}
   $('q').value = ''; update(); $('q').focus();
 }
 function go(i) { if (!i) return; if (i.kind === '_group') { window.api.extRun(i.gid); window.api.quickHide(); return; } window.api.extOpen(i.id, i.kind === 'note'); window.api.quickHide(); }

@@ -1,9 +1,9 @@
 {
- "version": "2026-10-23 09:33",
+ "version": "2026-10-24 11:24",
  "files": [
   {
    "path": "renderer/app.js",
-   "sha": "a893964d8c8a7514388f8e415dd906effdf79546715424972b72e1fb1b3b3c86"
+   "sha": "ecec7c88eea02456a8bbb6146a3fbc10924343a3235e382aefbbbdf3c2484c2a"
   },
   {
    "path": "renderer/fence.css",
@@ -11,15 +11,19 @@
   },
   {
    "path": "renderer/fence.html",
-   "sha": "b9aaa779798ac2fe4c217c34995830b3e0553503746041d14b05491c2c286ece"
+   "sha": "1fb94405ce0367bff34324f395cb3b466257f2a0341d92ff529960852c91196f"
   },
   {
    "path": "renderer/fence.js",
-   "sha": "bdee6424a7a39e7425f818cb4049aa6df4f59e34fe37ccce33cb8d4571ae143b"
+   "sha": "fcfec8431f93a47e261e1dc95bcbc6504b08d81798d22abb4ad52c611ead31d5"
+  },
+  {
+   "path": "renderer/i18n.js",
+   "sha": "366d6965034df8ded94d0813f2fb96dfdf0a3b511b0b8702de384d0ae633c3b3"
   },
   {
    "path": "renderer/index.html",
-   "sha": "e9f6adf12c467d8a582eaac7c96e67b5a1417980c6bc4c62adf2f61c166819c3"
+   "sha": "e08e91b64d2c9fa1b9bf1d280b66f17e3395beeb97a6d2973da18e83c06f94e4"
   },
   {
    "path": "renderer/quick.css",
@@ -27,15 +31,15 @@
   },
   {
    "path": "renderer/quick.html",
-   "sha": "8e39ab3b29ea70aaf178b1859d408f87792fc354c0ff403c5a9b14c41030d3a6"
+   "sha": "fca760cc180a0c2066ee9f861c08a1a7117956a04c8b70e9aaba63d3488ecb75"
   },
   {
    "path": "renderer/quick.js",
-   "sha": "de767dff80612b68f0d8bc7c1de9458d30b1fe9092c541c590f55bb7360c01bd"
+   "sha": "df33cde9055e9cb311466986e6f09bacf72194dbf6ad23c393139ac31d5fc90f"
   },
   {
    "path": "renderer/style.css",
-   "sha": "f771bb07eec6df53c0471d7acc80dddb77bd7c2e366f4c2835953125a0e5ff66"
+   "sha": "d677bcebc905017c9ef961d85431763d14e33c97035464f2c907dbae1dce2915"
   },
   {
    "path": "renderer/zakker.css",
@@ -43,15 +47,15 @@
   },
   {
    "path": "renderer/zakker.js",
-   "sha": "57ac276195c03961576c095078dd3a1cc178a4aa679c544cb958eb16db819a67"
+   "sha": "ad568c216727cd92c6de0a7cfc5f97d04f3cb458cd8fcd55aebacdeaccceb8f6"
   },
   {
    "path": "main.js",
-   "sha": "1c19ed37f221a19e3f55b0a10c666bd4ce0842db0cad7bd30d0ed0ead28fc0b0"
+   "sha": "4bba01ff80e194d1506c7c611419602302c635a8df39b8d04f8f269598f9f118"
   },
   {
    "path": "preload.js",
-   "sha": "a5afd70844df1d76442509ace36da346424a86d8ec5ecb0e8b6dea97122b28cd"
+   "sha": "26b9b362f864eff9aaa57626558912c74b2d9ce820fd7cef7d1e398ff79c4465"
   },
   {
    "path": "assets/icon.ico",

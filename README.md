@@ -4,6 +4,16 @@
 
 A free, open-source Windows desktop vault (Electron) for any file, program, image, folder, link or note — with nested sections, AI-assisted search (optional), desktop "fences", launch groups, reminders and stats.
 
+## ✨ المميزات / Features
+- أقسام وغرف متداخلة، ألوان، تثبيت ⭐، قفل بكلمة سر، سلة محذوفات (30 يوم) / Nested sections, colors, pins, password-locked sections, 30-day trash
+- بحث ذكي بالوصف (اختياري) + بحث سريع Ctrl+Alt+F + لوحة أوامر Ctrl+K / AI search (optional), quick search, command palette
+- حاويات سطح المكتب (Fences) عادية وذكية مع سحب وإفلات / Desktop fences (normal + smart) with drag & drop
+- استيراد ألعاب Steam وEpic، مفضلة Chrome/Edge، برامج قائمة ابدأ / Import Steam & Epic games, browser bookmarks, Start-menu apps
+- مجموعات تشغيل (بجدولة ووقت)، إحصائيات ووقت استخدام / Launch groups (scheduled), stats & usage time
+- ملفات شخصية (خزنة لكل غرض)، نسخ احتياطي يومي تلقائي، إضافة من الحافظة (Ctrl+Alt+V)، مراقبة مجلد التنزيلات
+- تذكيرات (ذكّرني) مع مزامنة اختيارية للجوال / Reminders with optional phone sync
+- واجهة عربية وإنجليزية / Arabic & English UI
+
 ## ⬇️ تحميل سريع / Download
 حمّل `Khazana-Windows.zip` من صفحة [Releases](../../releases/latest) ← فك الضغط ← شغّل `Khazana.exe`. ما يحتاج تثبيت ولا Node.js.
 (ويندوز ممكن يعرض تحذير SmartScreen لأن التطبيق غير موقّع: اضغط «More info» ثم «Run anyway».)

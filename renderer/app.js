@@ -5,7 +5,7 @@ const OPEN_LABEL = { app: 'تشغيل', link: 'فتح الرابط', note: 'عر
 const IMG_OK = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg', '.ico']);
 const EMOJIS = ['⭐', '📁', '💼', '🖼️', '🎮', '📚', '🎵', '🔒', '🏠', '🛠️'];
 
-let groups = [], colorF = '', play = {}; const unlocked = new Set();
+let groups = [], colorF = '', play = {}, trash = []; const unlocked = new Set();
 const TAGC = ['', '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899'];
 let items = [], sections = [], hasKey = false, missing = new Set();
 let secF = '', catF = '', laterF = false, result = null, sortBy = 'recent';
@@ -27,7 +27,7 @@ function toast(m, undo) {
   t._t = setTimeout(() => t.classList.remove('show'), undo ? 8000 : 3000);
 }
 // الأقسام تُحفظ كعنصر خاص أول القائمة (نفس ملف البيانات)
-const persist = () => window.api.save([{ id: '__meta__', kind: '_meta', sections, ui, views, collapsed: [...collapsed], groups }, ...items]);
+const persist = () => window.api.save([{ id: '__meta__', kind: '_meta', sections, ui, views, collapsed: [...collapsed], groups, trash }, ...items]);
 function fileURL(p) {
   const parts = String(p).replace(/\\/g, '/').split('/'); const first = parts.shift();
   return 'file:///' + first + '/' + parts.map(encodeURIComponent).join('/');
@@ -102,7 +102,7 @@ function cleanName(base, isDir) {
   n = n.replace(/_+/g, ' ').replace(/\s*-\s*/g, ' - ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\s+/g, ' ').trim();
   return n || base;
 }
-function newItem(o) { return { id: uid(), kind: 'other', name: '', desc: '', category: '', tags: '', status: 'using', section: '', path: '', url: '', size: 0, ext: '', thumb: '', color: '', pinned: false, added: Date.now(), lastOpened: 0, openCount: 0, ...o }; }
+function newItem(o) { return { id: uid(), kind: 'other', name: '', desc: '', category: '', tags: '', status: 'using', section: '', path: '', url: '', size: 0, ext: '', thumb: '', color: '', pinned: false, uri: '', cover: false, added: Date.now(), lastOpened: 0, openCount: 0, ...o }; }
 function draftFromInfo(info) {
   return newItem({ kind: info.kind, name: cleanName(info.base, info.isDir), category: KIND_CAT[info.kind] || 'أخرى', path: info.path, size: info.size, ext: info.ext, thumb: info.thumb || '', _snippet: info.snippet || '' });
 }
@@ -168,7 +168,7 @@ function renderChips() {
 function previewHTML(i) {
   if (i.kind === 'image' && i.path && IMG_OK.has((i.ext || '').toLowerCase()))
     return `<img class="full" src="${esc(fileURL(i.path))}" data-fb="${esc(i.thumb || '')}" loading="lazy" draggable="false" alt="">`;
-  if (i.thumb) return `<img class="${i.kind === 'image' ? 'full' : 'icon'}" src="${esc(i.thumb)}" draggable="false" alt="">`;
+  if (i.thumb) return `<img class="${i.kind === 'image' || i.cover ? 'full' : 'icon'}" src="${esc(i.thumb)}" draggable="false" alt="">`;
   return `<span class="emo">${KIND_ICON[i.kind] || '📄'}</span>`;
 }
 document.addEventListener('load', e => {
@@ -200,6 +200,7 @@ function tileHTML(i, why) {
       <button class="open" data-act="open">${OPEN_LABEL[i.kind] || 'فتح'}</button>
       <div class="mini">
         ${i.path ? '<button data-act="reveal" title="إظهار في المجلد">📂</button>' : ''}
+        <button data-act="rem" title="ذكّرني بهذا">🔔</button>
         <button data-act="pin" class="${i.pinned ? 'pinon' : ''}" title="${i.pinned ? 'إلغاء التثبيت' : 'تثبيت في الأعلى'}">${i.pinned ? '⭐' : '☆'}</button>
         <button data-act="edit" title="تعديل">✏️</button>
         <button data-act="del" title="حذف">🗑️</button>
@@ -266,9 +267,10 @@ async function deleteMany(ids) {
   const set = new Set(ids); const removed = items.filter(i => set.has(i.id));
   items = items.filter(i => !set.has(i.id));
   groups.forEach(g => { g.ids = (g.ids || []).filter(x => !set.has(x)); });
+  trash = [...removed.map(i => ({ ...i, _del: Date.now() })), ...trash].slice(0, 300);
   if (result) result.matches = result.matches.filter(m => !set.has(m.id));
   await persist(); render();
-  toast(`انحذف ${removed.length} عنصر من الخزنة`, async () => { items.push(...removed); await persist(); render(); toast('تم التراجع'); });
+  toast(`انحذف ${removed.length} عنصر (يبقى في السلة 30 يوم)`, async () => { items.push(...removed); trash = trash.filter(x => !set.has(x.id)); await persist(); render(); toast('تم التراجع'); });
 }
 async function moveItems(ids, secId) {
   const set = new Set(ids); items.forEach(i => { if (set.has(i.id)) i.section = secId; });
@@ -468,6 +470,7 @@ async function openItem(it) {
   if (it.kind === 'note') return editItem(it);
   let r;
   if (it.kind === 'link') r = { ok: await window.api.openUrl(it.url) };
+  else if (it.uri) r = { ok: await window.api.openUri(it.uri) };
   else if (!it.path && it.kind === 'app') r = { ok: await window.api.openUrl('https://www.google.com/search?q=' + encodeURIComponent(it.name + ' download')) };
   else r = await window.api.open(it.path);
   if (!r.ok) {
@@ -505,6 +508,7 @@ $('out').addEventListener('click', async e => {
   const tile = b.closest('.tile'); const it = items.find(i => i.id === tile.dataset.id); if (!it) return;
   if (b.dataset.act === 'open') openItem(it);
   else if (b.dataset.act === 'reveal') window.api.reveal(it.path);
+  else if (b.dataset.act === 'rem') openRem(it);
   else if (b.dataset.act === 'pin') { it.pinned = !it.pinned; await persist(); render(); toast(it.pinned ? 'تثبّت في الأعلى ⭐' : 'انلغى التثبيت'); }
   else if (b.dataset.act === 'edit') editItem(it);
   else if (b.dataset.act === 'del') deleteMany([it.id]);
@@ -573,6 +577,12 @@ $('moreMenu').addEventListener('click', async e => {
     toast(u.ok ? '✅ تم! يعيد التشغيل…' : 'فشل التحديث: ' + u.error);
   }
   else if (a === 'stats') openStats();
+  else if (a === 'games') importGames();
+  else if (a === 'bookmarks') importBookmarks();
+  else if (a === 'trash') openTrash();
+  else if (a === 'profiles') openProfiles();
+  else if (a === 'watch') { if (!window.api.watchChoose) return toast('حدّث resources أيضاً'); const d = await window.api.watchChoose(); if (d) toast('أراقب الآن: ' + d + ' (إشعار لكل ملف جديد)'); }
+  else if (a === 'palette') openPalette();
   else if (a.startsWith('smart-')) { if (!window.api.fenceToggle) return toast('حدّث resources أيضاً'); const on = await window.api.fenceToggle('smart:' + a.slice(6)); toast(on ? 'انفتحت الحاوية الذكية 🪟 (تتحدث لحالها)' : 'انقفلت الحاوية'); }
   else if (a === 'bk-open') { if (!window.api.backupOpen) return toast('حدّث resources أيضاً'); await window.api.backupOpen(); }
   else if (a === 'bk-choose') { const d = await window.api.backupChoose(); if (d) toast('النسخ التلقائية صارت في: ' + d); }
@@ -692,7 +702,7 @@ window.addEventListener('focus', () => { if (Date.now() - lastCheck > 15000) che
 $('viewSeg').addEventListener('click', async e => { const b = e.target.closest('button[data-v]'); if (!b) return; views[scopeKey()] = b.dataset.v; await persist(); applyView(); });
 $('swatches').innerHTML = SWATCHES.map(c => `<button type="button" class="sw ${c ? '' : 'def'}" data-c="${c}" style="${c ? 'background:' + c : ''}" title="${c || 'الأخضر الافتراضي'}"></button>`).join('');
 function syncCust() {
-  $('presetSel').value = ui.preset || ''; $('themeSel').value = ui.theme; $('optDesc').checked = ui.showDesc; $('optTags').checked = ui.showTags;
+  $('presetSel').value = ui.preset || ''; $('langSel').value = ui.lang || window.I18N.get(); $('themeSel').value = ui.theme; $('optDesc').checked = ui.showDesc; $('optTags').checked = ui.showTags;
   document.querySelectorAll('#swatches .sw').forEach(b => b.classList.toggle('on', b.dataset.c === (ui.accent || '')));
 }
 $('custBtn').onclick = e => { e.stopPropagation(); const h = $('custMenu').hidden; closeMenus(); syncCust(); $('custMenu').hidden = !h; };
@@ -720,14 +730,20 @@ window.Zakker.mount($('zk'));
   const s = await window.api.load(); hasKey = s.hasKey;
   const { meta, rest } = splitLoaded(s.items || []);
   sections = meta && Array.isArray(meta.sections) ? meta.sections : [];
-  if (meta) { ui = { ...ui, ...(meta.ui || {}) }; views = meta.views || {}; collapsed = new Set(meta.collapsed || []); groups = Array.isArray(meta.groups) ? meta.groups : []; }
-  applyAppearance();
+  if (meta) { ui = { ...ui, ...(meta.ui || {}) }; views = meta.views || {}; collapsed = new Set(meta.collapsed || []); groups = Array.isArray(meta.groups) ? meta.groups : []; trash = (Array.isArray(meta.trash) ? meta.trash : []).filter(x => x && Date.now() - (x._del || 0) < 30 * 864e5); }
+  applyAppearance(); window.I18N.set(ui.lang || window.I18N.auto());
   items = rest.map(x => newItem(x)); normalizeSections();
   render(); playEnter(); checkMissing(); loadPlay().then(render);
 })();
 
 /* ---------- أوامر من الحاويات والبحث السريع ---------- */
 if (window.api.onExt) window.api.onExt(async d => {
+  if (d.type === 'addLink') {
+    if (items.some(i => i.url === d.url)) return window.api.notify('هذا الرابط مضاف من قبل');
+    let host = ''; try { host = new URL(d.url).hostname.replace(/^www\./, ''); } catch (e) {}
+    const dr = newItem({ kind: 'link', name: host || 'رابط', category: KIND_CAT.link, url: d.url, section: '' }); try { await autoFill(dr); } catch (e) {}
+    commit(dr); await persist(); render(); window.api.notify('انضاف الرابط: ' + dr.name + ' ✓'); return;
+  }
   if (d.type === 'open') { const it = items.find(i => i.id === d.id); if (it) openItem(it); return; }
   if (d.type === 'add') {
     const paths = [...new Set(d.paths)].filter(p => !items.some(i => i.path === p));
@@ -738,7 +754,7 @@ if (window.api.onExt) window.api.onExt(async d => {
       const dr = draftFromInfo(info); dr.section = d.sec || ''; try { await autoFill(dr); } catch (e) {}
       commit(dr); n++;
     }
-    await persist(); render(); checkMissing(); if (n) toast(`انضاف ${n} عنصر من الحاوية`);
+    await persist(); render(); checkMissing(); if (n) { toast(`انضاف ${n} عنصر`); if (d.notify) window.api.notify(`انضاف ${n} عنصر للخزنة ✓`); }
   }
 });
 
@@ -751,7 +767,7 @@ async function runGroup(g) {
   for (const it of list) { await openItem(it); await sleep(450); }
 }
 function renderGrpMenu() {
-  $('grpMenu').innerHTML = (groups.length ? groups.map(g => `<div class="grow" data-g="${g.id}"><button class="grun" data-grun="${g.id}" title="تشغيل">▶ ${esc(g.emoji || '⚡')} ${esc(g.name)} <span class="hint">(${(g.ids || []).length})</span></button><button data-gedit="${g.id}" title="تعديل">✏️</button><button data-gdel="${g.id}" title="حذف">🗑️</button></div>`).join('') : '<div class="hint" style="padding:6px 4px">ما عندك مجموعات. مثلاً «وضع الدراسة» تفتح متصفح + ملفاتك + ملاحظاتك بضغطة.</div>')
+  $('grpMenu').innerHTML = (groups.length ? groups.map(g => `<div class="grow" data-g="${g.id}"><button class="grun" data-grun="${g.id}" title="تشغيل">▶ ${esc(g.emoji || '⚡')} ${esc(g.name)} <span class="hint">(${(g.ids || []).length})</span>${g.sched && g.sched.on ? ` <span class="hint">⏰ ${esc(g.sched.time)}</span>` : ''}</button><button data-gedit="${g.id}" title="تعديل">✏️</button><button data-gdel="${g.id}" title="حذف">🗑️</button></div>`).join('') : '<div class="hint" style="padding:6px 4px">ما عندك مجموعات. مثلاً «وضع الدراسة» تفتح متصفح + ملفاتك + ملاحظاتك بضغطة.</div>')
     + '<button class="sm" id="grpNew" style="margin-top:6px">+ مجموعة جديدة</button>';
 }
 $('grpBtn').onclick = e => { e.stopPropagation(); const h = $('grpMenu').hidden; closeMenus(); renderGrpMenu(); $('grpMenu').hidden = !h; };
@@ -773,6 +789,8 @@ function editGroup(g) {
     $('grpList').innerHTML = all.filter(i => !f || norm(i.name).includes(f)).map(i => `<label class="chk-row"><input type="checkbox" data-id="${i.id}" ${chosen.has(i.id) ? 'checked' : ''}> <span class="ci">${i.thumb ? `<img src="${esc(i.thumb)}" alt="">` : (KIND_ICON[i.kind] || '📄')}</span> ${esc(i.name)}</label>`).join('') || '<div class="hint" style="padding:8px">ما في عناصر</div>';
     $('grpCount').textContent = `(${chosen.size} محدد)`;
   };
+  const sc = (g && g.sched) || {}; $('grpSched').checked = !!sc.on; $('grpTime').value = sc.time || '16:00'; $('grpBoot').checked = !!sc.boot;
+  document.querySelectorAll('#grpDays input').forEach(c => { c.checked = !sc.days || !sc.days.length || sc.days.includes(+c.value); });
   $('grpFilter').oninput = draw;
   $('grpList').onchange = e => { const c = e.target.closest('input[data-id]'); if (!c) return; c.checked ? chosen.add(c.dataset.id) : chosen.delete(c.dataset.id); $('grpCount').textContent = `(${chosen.size} محدد)`; };
   $('grpCancel').onclick = () => dlg.close();
@@ -781,7 +799,8 @@ function editGroup(g) {
     const ids = all.filter(i => chosen.has(i.id)).map(i => i.id);
     // نحافظ على ترتيب الاختيار الأصلي إن وُجد
     if (g) { g.ids.forEach(() => {}); const old = g.ids.filter(x => chosen.has(x)); ids.sort((x, y) => { const a = old.indexOf(x), b = old.indexOf(y); return (a < 0 ? 1e9 : a) - (b < 0 ? 1e9 : b); }); }
-    if (g) Object.assign(g, { name, emoji: $('grpEmoji').value.trim() || '⚡', ids }); else groups.push({ id: uid(), name, emoji: $('grpEmoji').value.trim() || '⚡', ids });
+    const sched = { on: $('grpSched').checked, time: $('grpTime').value || '16:00', boot: $('grpBoot').checked, days: [...document.querySelectorAll('#grpDays input:checked')].map(c => +c.value) };
+    if (g) Object.assign(g, { name, emoji: $('grpEmoji').value.trim() || '⚡', ids, sched }); else groups.push({ id: uid(), name, emoji: $('grpEmoji').value.trim() || '⚡', ids, sched });
     await persist(); dlg.close(); toast('انحفظت المجموعة ⚡');
   };
   draw(); dlg.showModal();
@@ -846,6 +865,8 @@ async function tryUnlock() {
 
 $('presetSel').onchange = async e => { ui.preset = e.target.value; applyAppearance(); await persist(); };
 $('presetSel').onclick = e => e.stopPropagation();
+$('langSel').onclick = e => e.stopPropagation();
+$('langSel').onchange = async e => { ui.lang = e.target.value; window.I18N.set(ui.lang); render(); await persist(); };
 function playEnter() {
   const o = $('out'); o.classList.add('enter');
   o.querySelectorAll('.tile,.room').forEach((t, k) => t.style.setProperty('--i', Math.min(k, 18)));
@@ -883,3 +904,138 @@ setTimeout(async () => {
     const r = await window.api.updateCheck(); if (r.ok && r.count) toast('🔄 فيه تحديث جديد لخزنة — من ⋯ اختر «تحديث التطبيق»');
   } catch (e) {}
 }, 12000);
+
+/* ---------- ⏰ تشغيل المجموعات تلقائياً ---------- */
+const schedRan = {};
+setInterval(() => {
+  const n = new Date(), hm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0');
+  groups.forEach(g => {
+    const s = g.sched; if (!s || !s.on || s.time !== hm) return;
+    if (s.days && s.days.length && !s.days.includes(n.getDay())) return;
+    const key = g.id + n.toDateString() + hm; if (schedRan[key]) return; schedRan[key] = 1; runGroup(g);
+  });
+}, 15000);
+setTimeout(() => groups.forEach(g => { if (g.sched && g.sched.boot) runGroup(g); }), 12000);
+
+/* ---------- 🎮 استيراد ألعاب ---------- */
+function ensureSection(name, emoji, parent) {
+  let s = sections.find(x => (x.parent || '') === (parent || '') && x.name === name);
+  if (!s) { s = { id: uid(), name, emoji, parent: parent || '', color: '' }; sections.push(s); }
+  return s;
+}
+async function importGames() {
+  if (!window.api.scanGames) return toast('حدّث resources أيضاً');
+  setBusy('أدوّر على ألعابك في Steam و Epic…'); const r = await window.api.scanGames(); setBusy('');
+  const have = new Set(items.map(i => i.uri || i.path).filter(Boolean));
+  const fresh = [...r.steam.map(x => ({ ...x, src: 'steam' })), ...r.epic.map(x => ({ ...x, src: 'epic' }))].filter(x => !have.has(x.uri || x.path));
+  if (!fresh.length) return toast(r.steam.length + r.epic.length ? '✅ كل ألعابك مضافة من قبل' : 'ما لقيت ألعاب Steam أو Epic على جهازك');
+  if (!confirm(`لقيت ${fresh.length} لعبة جديدة (Steam: ${fresh.filter(x => x.src === 'steam').length}، Epic: ${fresh.filter(x => x.src === 'epic').length}).\nأضيفها لقسم «ألعاب»؟`)) return;
+  const sec = ensureSection('ألعاب', '🎮', '');
+  fresh.forEach(x => items.push(newItem({ kind: 'app', name: x.name, category: 'ألعاب', uri: x.uri || '', path: x.path || '', ext: x.path ? '.exe' : '', thumb: x.thumb || '', cover: x.src === 'steam' && !!x.thumb, section: sec.id })));
+  normalizeSections(); await persist(); navTo(sec.id); toast(`انضافت ${fresh.length} لعبة 🎮`);
+}
+async function importBookmarks() {
+  if (!window.api.scanBookmarks) return toast('حدّث resources أيضاً');
+  const list = await window.api.scanBookmarks(); const have = new Set(items.map(i => i.url).filter(Boolean));
+  const fresh = []; const seen = new Set(); list.forEach(b => { if (have.has(b.url) || seen.has(b.url)) return; seen.add(b.url); fresh.push(b); });
+  if (!fresh.length) return toast(list.length ? '✅ كل مفضلتك مضافة من قبل' : 'ما لقيت مفضلة Chrome أو Edge');
+  if (!confirm(`لقيت ${fresh.length} رابط جديد في مفضلة المتصفح.\nأضيفها في قسم «مفضلة المتصفح» مع غرفة لكل مجلد؟`)) return;
+  const root = ensureSection('مفضلة المتصفح', '🔖', ''); const rooms = {};
+  fresh.forEach(b => {
+    let sid = root.id; if (b.folder) { const k = b.folder; if (!rooms[k]) rooms[k] = ensureSection(k, '📂', root.id).id; sid = rooms[k]; }
+    items.push(newItem({ kind: 'link', name: (b.name || b.url).slice(0, 120), category: KIND_CAT.link, url: b.url, section: sid }));
+  });
+  normalizeSections(); await persist(); navTo(root.id); toast(`انضاف ${fresh.length} رابط 🔖`);
+}
+
+/* ---------- 🗑️ سلة المحذوفات ---------- */
+function openTrash() {
+  const dlg = $('trashDlg'), body = $('trashBody');
+  const draw = () => {
+    body.innerHTML = trash.length ? trash.map(x => `<div class="chk-row"><span class="ci">${x.thumb ? `<img src="${esc(x.thumb)}" alt="">` : (KIND_ICON[x.kind] || '📄')}</span><span class="cn"><b>${esc(x.name)}</b><span class="hint">حُذف ${new Date(x._del).toLocaleDateString('ar')}</span></span><button type="button" class="sm" data-tr="${x.id}">↩️ استرجاع</button></div>`).join('') : '<div class="hint" style="padding:14px">السلة فاضية.</div>';
+    $('trashEmpty').disabled = !trash.length;
+  };
+  body.onclick = async e => {
+    const b = e.target.closest('[data-tr]'); if (!b) return; const x = trash.find(t => t.id === b.dataset.tr); if (!x) return;
+    const { _del, ...it } = x; if (it.section && !sections.some(s => s.id === it.section)) it.section = '';
+    items.push(newItem(it)); trash = trash.filter(t => t !== x); await persist(); render(); draw(); toast('انسترجع «' + it.name + '»');
+  };
+  $('trashEmpty').onclick = async () => { if (!confirm('إفراغ السلة نهائياً؟ ما يمديك ترجّعها بعدها.')) return; trash = []; await persist(); draw(); };
+  $('trashClose').onclick = () => dlg.close(); draw(); dlg.showModal();
+}
+
+/* ---------- 👤 الملفات الشخصية ---------- */
+async function openProfiles() {
+  if (!window.api.profileList) return toast('حدّث resources أيضاً');
+  const dlg = $('profDlg'); const r = await window.api.profileList();
+  $('profList').innerHTML = r.list.map(n => `<div class="grow"><button class="grun" data-pf="${esc(n)}">${n === r.current ? '✅' : '▶'} ${esc(n === 'default' ? 'الأساسي' : n.replace(/_/g, ' '))}</button></div>`).join('');
+  $('profList').onclick = async e => { const b = e.target.closest('[data-pf]'); if (!b || b.dataset.pf === r.current) return; dlg.close(); await window.api.profileSwitch(b.dataset.pf); };
+  $('profAdd').onclick = async () => { const n = $('profNew').value.trim(); if (!n) return; dlg.close(); await window.api.profileSwitch(n); };
+  $('profClose').onclick = () => dlg.close(); $('profNew').value = ''; dlg.showModal();
+}
+(async () => { try { if (!window.api.profileList) return; const r = await window.api.profileList(); if (r.current !== 'default') $('brandName').textContent = ' · ' + r.current.replace(/_/g, ' '); } catch (e) {} })();
+
+/* ---------- 🔔 ذكّرني بعنصر ---------- */
+let remItem = null;
+function openRem(it) {
+  remItem = it; $('remName').textContent = it.name;
+  const d = new Date(Date.now() + 3600e3); d.setMinutes(0, 0, 0); const p = n => String(n).padStart(2, '0');
+  $('remWhen').value = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; $('remDlg').showModal();
+}
+$('remDlg').addEventListener('click', e => {
+  const q = e.target.closest('[data-rq]'); if (!q) return; const d = new Date(), p = n => String(n).padStart(2, '0');
+  if (q.dataset.rq === '1h') d.setTime(Date.now() + 3600e3); else if (q.dataset.rq === 'eve') { d.setHours(21, 0, 0, 0); if (d < new Date()) d.setDate(d.getDate() + 1); } else { d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); }
+  $('remWhen').value = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+});
+$('remCancel').onclick = () => $('remDlg').close();
+$('remSave').onclick = async () => {
+  const ts = +new Date($('remWhen').value); if (!ts || !remItem) return toast('اختر الوقت');
+  if (!window.Zakker || !window.Zakker.addRem) return toast('حدّث ملفات ذكّرني (zakker.js)');
+  await window.Zakker.addRem('افتح: ' + remItem.name, ts, { ref: remItem.id }); $('remDlg').close(); toast('🔔 تم! يذكّرك في تبويب ذكّرني');
+};
+
+/* ---------- ⌨️ لوحة الأوامر Ctrl+K ---------- */
+let cmdList = [], cmdSel = 0;
+function cmdAll() {
+  const mc = k => () => { const b = document.querySelector('[data-more="' + k + '"]'); if (b) b.click(); };
+  const ad = k => () => { const b = document.querySelector('[data-add="' + k + '"]'); if (b) b.click(); };
+  const c = [
+    ['➕ إضافة ملفات', 'add file ملف اضافة', ad('files')], ['🔗 إضافة رابط', 'link رابط', ad('link')], ['📝 ملاحظة جديدة', 'note ملاحظة', ad('note')], ['📁 إضافة مجلد', 'folder مجلد', ad('folder')],
+    ['📁 قسم جديد', 'section new قسم', () => newSection('')],
+    ['📊 الإحصائيات', 'stats احصائيات', mc('stats')], ['🧹 فحص الملفات الميتة والمكررة', 'clean dead duplicate مكرر ميت', mc('clean')],
+    ['🎮 استيراد ألعاب Steam و Epic', 'games steam epic العاب', mc('games')], ['🔖 استيراد مفضلة المتصفح', 'bookmarks مفضلة', mc('bookmarks')],
+    ['🗑️ سلة المحذوفات', 'trash سلة', mc('trash')], ['👤 الملفات الشخصية', 'profile ملف شخصي', mc('profiles')],
+    ['🔄 تحديث التطبيق', 'update تحديث', mc('update')], ['💾 نسخة احتياطية', 'backup نسخة', mc('export')], ['🔑 الذكاء الاصطناعي', 'ai مفتاح', mc('settings')],
+    ['🗄️ الخزنة', 'vault خزنة', () => showView('vault')], ['🔔 ذكّرني', 'reminders تذكير', () => showView('zk')],
+    ['🎨 التخصيص', 'customize تخصيص', () => $('custBtn').click()], ['☑️ تحديد عدة عناصر', 'select تحديد', () => $('selBtn').click()],
+    ['▦ عرض: بطاقات كبيرة', 'view big', () => document.querySelector('[data-v="big"]').click()], ['▪▪ عرض: بطاقات صغيرة', 'view small', () => document.querySelector('[data-v="small"]').click()], ['☰ عرض: قائمة', 'view list', () => document.querySelector('[data-v="list"]').click()],
+    ['⚡ مجموعة جديدة', 'group مجموعة', () => editGroup(null)]
+  ];
+  [['', 'الأساسي'], ['night', 'ليلي'], ['glass', 'زجاجي'], ['paper', 'ورقي'], ['neon', 'نيون']].forEach(([k, n]) => c.push(['🎨 ثيم: ' + n, 'theme ثيم', async () => { ui.preset = k; applyAppearance(); await persist(); }]));
+  sections.forEach(s => c.push(['📂 اذهب إلى: ' + pathOf(s.id).map(x => x.name).join(' › '), 'go section قسم', () => { showView('vault'); navTo(s.id); }]));
+  groups.forEach(g => c.push(['▶ شغّل: ' + g.name, 'run group مجموعة', () => runGroup(g)]));
+  return c;
+}
+function cmdFilter() {
+  const q = $('cmdkQ').value.trim(), nq = norm(q), out = [];
+  if (!q) { cmdList = cmdAll().slice(0, 9).map(([t, , f]) => ({ t, f })); }
+  else {
+    const qt = nq.split(/\s+/).filter(Boolean);
+    cmdList = cmdAll().filter(([t, k]) => { const h = norm(t + ' ' + k); return qt.every(w => h.includes(w)); }).slice(0, 7).map(([t, , f]) => ({ t, f }));
+    localSearch(q).slice(0, 6).forEach(m => { const it = items.find(i => i.id === m.id); if (it && vis(it)) cmdList.push({ t: '📄 افتح: ' + it.name, f: () => openItem(it) }); });
+  }
+  cmdSel = 0; drawCmd();
+}
+function drawCmd() { $('cmdkList').innerHTML = cmdList.map((c, k) => `<div class="ci2 ${k === cmdSel ? 'on' : ''}" data-k="${k}">${esc(c.t)}</div>`).join('') || '<div class="hint" style="padding:12px">ما لقيت شي</div>'; }
+function openPalette() { $('cmdk').hidden = false; $('cmdkQ').value = ''; cmdFilter(); setTimeout(() => $('cmdkQ').focus(), 30); }
+function closePalette() { $('cmdk').hidden = true; }
+$('cmdkQ').addEventListener('input', cmdFilter);
+$('cmdkQ').addEventListener('keydown', e => {
+  if (e.key === 'Escape') closePalette();
+  else if (e.key === 'ArrowDown') { e.preventDefault(); cmdSel = Math.min(cmdList.length - 1, cmdSel + 1); drawCmd(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); cmdSel = Math.max(0, cmdSel - 1); drawCmd(); }
+  else if (e.key === 'Enter') { e.preventDefault(); const c = cmdList[cmdSel]; closePalette(); if (c) setTimeout(c.f, 30); }
+});
+$('cmdkList').addEventListener('click', e => { const r = e.target.closest('[data-k]'); if (!r) return; const c = cmdList[+r.dataset.k]; closePalette(); if (c) setTimeout(c.f, 30); });
+$('cmdk').addEventListener('mousedown', e => { if (e.target.id === 'cmdk') closePalette(); });
+document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k') { e.preventDefault(); $('cmdk').hidden ? openPalette() : closePalette(); } });

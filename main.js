@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage, globalShortcut, nativeImage, Menu, Tray, net } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage, globalShortcut, nativeImage, Menu, Tray, net, clipboard, Notification } = require('electron');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
@@ -13,7 +13,9 @@ app.on('second-instance', () => showWin());
 
 /* ---------- تخزين ---------- */
 const dataDir = () => app.getPath('userData');
-const vaultFile = () => path.join(dataDir(), 'vault.json');
+const profName = () => { try { return JSON.parse(fs.readFileSync(path.join(app.getPath('userData'), 'settings.json'), 'utf8')).profile || 'default'; } catch (e) { return 'default'; } };
+const safeProf = n => String(n || '').trim().replace(/[^\p{L}\p{N}_ -]/gu, '').slice(0, 24).trim().replace(/ +/g, '_');
+const vaultFile = () => path.join(dataDir(), profName() === 'default' ? 'vault.json' : 'vault-' + profName() + '.json');
 const settingsFile = () => path.join(dataDir(), 'settings.json');
 function readJSON(f, def) { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return def; } }
 function writeJSON(f, d) {
@@ -301,6 +303,8 @@ async function buildTray() {
     tray.setContextMenu(Menu.buildFromTemplate([
       { label: 'فتح خزنة', click: () => showWin() },
       { label: 'نسخ احتياطي تلقائي يومي', type: 'checkbox', checked: getSet().autoBackup !== false, click: i => setSet('autoBackup', i.checked) },
+      { label: 'إضافة من الحافظة  (Ctrl+Alt+V)', click: () => clipAdd() },
+      { label: 'مراقبة مجلد التنزيلات (إشعار بالملفات الجديدة)', type: 'checkbox', checked: !!getSet().watchOn, click: i => { setSet('watchOn', i.checked); startWatch(); } },
       { label: 'بحث سريع  (Ctrl+Alt+F)', click: () => openQuick() },
       { label: 'إظهار / إخفاء الحاويات  (Ctrl+Alt+D)', click: () => toggleFences() },
       { label: 'خلّ التطبيق شغّال بعد الإغلاق (عشان التذكيرات)', type: 'checkbox', checked: bgOn(), click: i => setSet('bg', i.checked) },
@@ -404,14 +408,19 @@ ipcMain.handle('play:get', () => { if (!play) play = readJSON(playFile(), {}); r
 const backupDir = () => getSet().backupDir || path.join(dataDir(), 'backups');
 function autoBackup() {
   try {
-    if (getSet().autoBackup === false || !fs.existsSync(vaultFile())) return null;
+    if (getSet().autoBackup === false) return null;
     const dir = backupDir(); fs.mkdirSync(dir, { recursive: true });
     const d = new Date(); const day = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    const f = path.join(dir, 'khazana-backup-' + day + '.json');
-    fs.copyFileSync(vaultFile(), f);
-    const all = fs.readdirSync(dir).filter(n => /^khazana-backup-\d{4}-\d\d-\d\d\.json$/.test(n)).sort();
-    all.slice(0, Math.max(0, all.length - 14)).forEach(n => { try { fs.unlinkSync(path.join(dir, n)); } catch (e) {} });
-    return f;
+    let last = null;
+    fs.readdirSync(dataDir()).filter(n => /^vault(-.+)?\.json$/.test(n) && !/\.bak\./.test(n)).forEach(n => {
+      const tag = n === 'vault.json' ? '' : n.slice(6, -5) + '-';
+      const f = path.join(dir, 'khazana-backup-' + tag + day + '.json');
+      fs.copyFileSync(path.join(dataDir(), n), f); last = f;
+      const re = new RegExp('^khazana-backup-' + tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\d{4}-\\d\\d-\\d\\d\\.json$');
+      const all = fs.readdirSync(dir).filter(x => re.test(x)).sort();
+      all.slice(0, Math.max(0, all.length - 14)).forEach(x => { try { fs.unlinkSync(path.join(dir, x)); } catch (e) {} });
+    });
+    return last;
   } catch (e) { return null; }
 }
 ipcMain.handle('backup:now', () => { const s = getSet(); const was = s.autoBackup; const f = autoBackup(); return f || (was === false ? 'off' : null); });
@@ -422,11 +431,151 @@ ipcMain.handle('backup:choose', async () => {
   setSet('backupDir', r.filePaths[0]); autoBackup(); return r.filePaths[0];
 });
 
+/* ---------- الملفات الشخصية (خزنة منفصلة لكل غرض) ---------- */
+ipcMain.handle('profile:list', () => {
+  const list = ['default'];
+  try { fs.readdirSync(dataDir()).forEach(n => { const m = /^vault-(.+)\.json$/.exec(n); if (m && !/\.bak$/.test(m[1])) list.push(m[1]); }); } catch (e) {}
+  return { current: profName(), list: [...new Set(list)] };
+});
+ipcMain.handle('profile:switch', (_e, name) => {
+  const n = name === 'default' ? 'default' : safeProf(name); if (!n) return false;
+  if (n !== 'default' && !fs.existsSync(path.join(dataDir(), 'vault-' + n + '.json'))) writeJSON(path.join(dataDir(), 'vault-' + n + '.json'), { items: [] });
+  [...fences.keys()].forEach(s => closeFence(s, false));
+  setSet('profile', n);
+  if (win && !win.isDestroyed()) win.webContents.reloadIgnoringCache();
+  setTimeout(() => restoreFences(false), 800);
+  return true;
+});
+
+/* ---------- الإشعارات ---------- */
+ipcMain.handle('notify', (_e, msg) => { try { new Notification({ title: 'خزنة', body: String(msg || ''), icon: appIcon() }).show(); } catch (e) {} return true; });
+
+/* ---------- 🎮 استيراد ألعاب Steam و Epic ---------- */
+function steamRoots() {
+  const out = new Set();
+  [process.env['ProgramFiles(x86)'], process.env.ProgramFiles, 'C:\\', 'D:\\'].filter(Boolean).forEach(b => { const p = path.join(b, 'Steam'); if (fs.existsSync(path.join(p, 'steamapps'))) out.add(p); });
+  try {
+    const o = require('child_process').execFileSync('reg', ['query', 'HKCU\\Software\\Valve\\Steam', '/v', 'SteamPath'], { windowsHide: true, encoding: 'utf8' });
+    const mm = /SteamPath\s+REG_SZ\s+(.+)/.exec(o); if (mm) { const p = path.normalize(mm[1].trim()); if (fs.existsSync(path.join(p, 'steamapps'))) out.add(p); }
+  } catch (e) {}
+  return [...out];
+}
+function imgData(f, w = 220) {
+  try { const i = nativeImage.createFromPath(f); if (i.isEmpty()) return ''; const s = i.getSize(); const r = i.resize({ width: Math.min(w, s.width) }); return 'data:image/jpeg;base64,' + r.toJPEG(82).toString('base64'); } catch (e) { return ''; }
+}
+function steamImg(root, id) {
+  const lc = path.join(root, 'appcache', 'librarycache'); const names = ['library_600x900.jpg', 'header.jpg', 'library_header.jpg'];
+  for (const n of [id + '_library_600x900.jpg', id + '_header.jpg']) { const f = path.join(lc, n); if (fs.existsSync(f)) return imgData(f); }
+  const dir = path.join(lc, String(id));
+  const find = (d, depth) => {
+    let ents; try { ents = fs.readdirSync(d, { withFileTypes: true }); } catch (e) { return ''; }
+    for (const n of names) { const hit = ents.find(e => e.isFile() && e.name === n); if (hit) return path.join(d, hit.name); }
+    if (depth < 2) for (const e of ents) if (e.isDirectory()) { const r = find(path.join(d, e.name), depth + 1); if (r) return r; }
+    return '';
+  };
+  const f = find(dir, 0); return f ? imgData(f) : '';
+}
+ipcMain.handle('games:scan', async () => {
+  if (process.platform !== 'win32') return { steam: [], epic: [] };
+  const steam = [], epic = [], seen = new Set();
+  for (const root of steamRoots()) {
+    const libs = new Set([root]);
+    try { const t = fs.readFileSync(path.join(root, 'steamapps', 'libraryfolders.vdf'), 'utf8'); for (const mm of t.matchAll(/"path"\s+"([^"]+)"/g)) libs.add(mm[1].replace(/\\\\/g, '\\')); } catch (e) {}
+    for (const lib of libs) {
+      let files = []; try { files = fs.readdirSync(path.join(lib, 'steamapps')).filter(n => /^appmanifest_\d+\.acf$/.test(n)); } catch (e) { continue; }
+      for (const n of files) {
+        try {
+          const t = fs.readFileSync(path.join(lib, 'steamapps', n), 'utf8');
+          const id = (/"appid"\s+"(\d+)"/.exec(t) || [])[1], name = (/"name"\s+"([^"]+)"/.exec(t) || [])[1];
+          if (!id || !name || seen.has(id) || /Steamworks|Redistributable|Proton|Steam Linux Runtime/i.test(name)) continue;
+          seen.add(id); steam.push({ name, uri: 'steam://rungameid/' + id, thumb: steamImg(root, id) });
+        } catch (e) {}
+      }
+    }
+  }
+  try {
+    const md = path.join(process.env.ProgramData || 'C:\\ProgramData', 'Epic', 'EpicGamesLauncher', 'Data', 'Manifests');
+    for (const n of fs.readdirSync(md).filter(x => x.endsWith('.item'))) {
+      try {
+        const j = JSON.parse(fs.readFileSync(path.join(md, n), 'utf8'));
+        if (!j.DisplayName || !j.LaunchExecutable || !j.InstallLocation) continue;
+        const p = path.join(j.InstallLocation, j.LaunchExecutable); if (!fs.existsSync(p)) continue;
+        epic.push({ name: j.DisplayName, path: p, thumb: await makeThumb(p, 'app') });
+      } catch (e) {}
+    }
+  } catch (e) {}
+  return { steam, epic };
+});
+ipcMain.handle('item:openUri', async (_e, u) => {
+  if (typeof u === 'string' && /^(steam|com\.epicgames\.launcher):\/\//i.test(u)) { await shell.openExternal(u); return true; }
+  return false;
+});
+
+/* ---------- 🔖 مفضلة المتصفحات ---------- */
+ipcMain.handle('bookmarks:scan', () => {
+  const L = process.env.LOCALAPPDATA; if (!L) return [];
+  const roots = [['Chrome', path.join(L, 'Google', 'Chrome', 'User Data')], ['Edge', path.join(L, 'Microsoft', 'Edge', 'User Data')], ['Brave', path.join(L, 'BraveSoftware', 'Brave-Browser', 'User Data')]];
+  const out = [];
+  for (const [br, base] of roots) {
+    let profs = []; try { profs = fs.readdirSync(base).filter(n => n === 'Default' || /^Profile \d+$/.test(n)); } catch (e) { continue; }
+    for (const pr of profs) {
+      const f = path.join(base, pr, 'Bookmarks'); if (!fs.existsSync(f)) continue;
+      try {
+        const j = JSON.parse(fs.readFileSync(f, 'utf8'));
+        const walkB = (node, folder) => { if (!node) return; if (node.type === 'url' && /^https?:/i.test(node.url || '')) out.push({ browser: br, folder, name: node.name || node.url, url: node.url }); (node.children || []).forEach(c => walkB(c, node.type === 'folder' && node.name ? node.name : folder)); };
+        Object.values(j.roots || {}).forEach(r => { if (r && r.children) r.children.forEach(c => walkB(c, r.name || '')); });
+      } catch (e) {}
+    }
+  }
+  return out.slice(0, 3000);
+});
+
+/* ---------- 📋 إضافة من الحافظة ---------- */
+function clipAdd() {
+  let paths = [];
+  try { const b = clipboard.readBuffer('FileNameW'); if (b && b.length) { const p = b.toString('ucs2').split('\0')[0]; if (p && fs.existsSync(p)) paths.push(p); } } catch (e) {}
+  const t = (clipboard.readText() || '').trim().replace(/^"|"$/g, '');
+  if (!win || win.isDestroyed()) return;
+  if (!paths.length && /^https?:\/\/\S+$/i.test(t)) { win.webContents.send('ext', { type: 'addLink', url: t }); return; }
+  if (!paths.length && t && t.length < 500) { try { if (fs.existsSync(t)) paths.push(t); } catch (e) {} }
+  if (paths.length) win.webContents.send('ext', { type: 'add', paths, sec: '', notify: true });
+  else { try { new Notification({ title: 'خزنة', body: 'الحافظة ما فيها رابط أو ملف', icon: appIcon() }).show(); } catch (e) {} }
+}
+
+/* ---------- 👀 مراقبة مجلد (مثل التنزيلات) ---------- */
+let watcher = null; const wPending = new Map();
+function stopWatch() { try { if (watcher) watcher.close(); } catch (e) {} watcher = null; }
+function startWatch() {
+  stopWatch();
+  const s = getSet(); if (!s.watchOn) return;
+  const dir = s.watchDir || app.getPath('downloads'); if (!fs.existsSync(dir)) return;
+  try {
+    watcher = fs.watch(dir, (ev, name) => {
+      if (!name || /\.(tmp|crdownload|part|download|partial)$/i.test(name) || name.startsWith('~$')) return;
+      clearTimeout(wPending.get(name));
+      wPending.set(name, setTimeout(() => {
+        wPending.delete(name); const f = path.join(dir, name);
+        try {
+          const st = fs.statSync(f); if (Date.now() - st.birthtimeMs > 90000) return;
+          const n = new Notification({ title: 'ملف جديد في ' + path.basename(dir), body: name + '\nاضغط لإضافته للخزنة', icon: appIcon() });
+          n.on('click', () => { if (win && !win.isDestroyed()) win.webContents.send('ext', { type: 'add', paths: [f], sec: '', notify: true }); });
+          n.show();
+        } catch (e) {}
+      }, 3000));
+    });
+  } catch (e) {}
+}
+ipcMain.handle('watch:choose', async () => {
+  const r = await dialog.showOpenDialog(win, { properties: ['openDirectory'] }); if (r.canceled || !r.filePaths[0]) return null;
+  setSet('watchDir', r.filePaths[0]); setSet('watchOn', true); startWatch(); return r.filePaths[0];
+});
+
 /* ---------- حاويات سطح المكتب ---------- */
 const fences = new Map(); // secId -> BrowserWindow
 let raised = false;
-const getFenceCfg = () => getSet().fences || {};
-function saveFenceCfg(sec, patch) { const f = getFenceCfg(); f[sec] = { ...(f[sec] || {}), ...patch }; setSet('fences', f); }
+const fk = () => profName() === 'default' ? 'fences' : 'fences:' + profName();
+const getFenceCfg = () => getSet()[fk()] || {};
+function saveFenceCfg(sec, patch) { const f = getFenceCfg(); f[sec] = { ...(f[sec] || {}), ...patch }; setSet(fk(), f); }
 function openFence(sec) {
   if (fences.has(sec)) { fences.get(sec).showInactive(); return; }
   const wa = require('electron').screen.getPrimaryDisplay().workArea;
@@ -547,6 +696,8 @@ app.whenReady().then(async () => {
   setTimeout(playTick, 8000); setInterval(playTick, 30000);
   try { globalShortcut.register('Control+Alt+D', () => toggleFences()); } catch (e) {}
   try { globalShortcut.register('Control+Alt+F', () => openQuick()); } catch (e) {}
+  try { globalShortcut.register('Control+Alt+V', () => clipAdd()); } catch (e) {}
+  startWatch();
   app.on('activate', () => { if (!win) createWindow(); });
 });
 app.on('will-quit', () => globalShortcut.unregisterAll());

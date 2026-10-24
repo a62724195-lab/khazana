@@ -10,7 +10,7 @@
 </head>
 <body>
 <div class="top">
-  <div class="brand">🗄️ خزنة</div>
+  <div class="brand">🗄️ خزنة<span id="brandName"></span></div>
   <div class="nav"><button id="navVault" class="on">🗄️ الخزنة</button><button id="navZk">🔔 ذكّرني <span id="navBadge"></span></button></div>
   <div class="searchbox">
     <input id="q" autofocus placeholder="اكتب أو اشرح شنو تبي: «أبي شي أحوّل فيه PDF» أو «صورة العقد»…">
@@ -31,6 +31,12 @@
       <button data-more="scan">⚙️ استيراد برامجي المثبتة</button>
       <button data-more="thumbs">🔄 تحديث صور كل العناصر</button>
       <button data-more="clean">🧹 فحص الملفات الميتة والمكررة</button>
+      <button data-more="games">🎮 استيراد ألعاب Steam و Epic</button>
+      <button data-more="bookmarks">🔖 استيراد مفضلة Chrome / Edge</button>
+      <button data-more="trash">🗑️ سلة المحذوفات</button>
+      <button data-more="profiles">👤 الملفات الشخصية (خزنة لكل غرض)</button>
+      <button data-more="watch">👀 اختيار مجلد مراقَب</button>
+      <button data-more="palette">⌨️ لوحة الأوامر (Ctrl+K)</button>
       <button data-more="update">🔄 تحديث التطبيق (من GitHub)</button>
       <button data-more="stats">📊 إحصائيات خزنتي</button>
       <button data-more="smart-recent">🪟 حاوية ذكية: فتحتها مؤخراً</button>
@@ -62,6 +68,7 @@
       <div class="addwrap"><button id="custBtn" class="sm" title="تخصيص الواجهة">🎨 تخصيص</button>
         <div id="custMenu" class="menu cust" hidden>
           <div class="crow"><b>اللون</b><div id="swatches" class="swatches"></div></div>
+          <div class="crow"><b>اللغة / Language</b><select id="langSel"><option value="ar">العربية</option><option value="en">English</option></select></div>
           <div class="crow"><b>ثيم</b><select id="presetSel"><option value="">الأساسي</option><option value="night">🌙 ليلي</option><option value="glass">🪟 زجاجي</option><option value="paper">📜 ورقي</option><option value="neon">⚡ نيون</option></select></div>
           <div class="crow"><b>المظهر</b><select id="themeSel"><option value="auto">تلقائي</option><option value="light">فاتح</option><option value="dark">داكن</option></select></div>
           <label class="crow"><input type="checkbox" id="optDesc"> إظهار الوصف</label>
@@ -142,6 +149,9 @@
     <label>اختر العناصر اللي تنفتح معها <span class="hint" id="grpCount"></span></label>
     <input id="grpFilter" class="f" placeholder="ابحث في العناصر…">
     <div id="grpList" class="chklist"></div>
+    <label class="crow"><input type="checkbox" id="grpSched"> شغّلها تلقائياً كل يوم الساعة <input type="time" id="grpTime" value="16:00"></label>
+    <div id="grpDays" class="days"><label><input type="checkbox" value="0">الأحد</label><label><input type="checkbox" value="1">الاثنين</label><label><input type="checkbox" value="2">الثلاثاء</label><label><input type="checkbox" value="3">الأربعاء</label><label><input type="checkbox" value="4">الخميس</label><label><input type="checkbox" value="5">الجمعة</label><label><input type="checkbox" value="6">السبت</label></div>
+    <label class="crow"><input type="checkbox" id="grpBoot"> وشغّلها أيضاً كل ما فتحت التطبيق</label>
     <div class="drow"><button type="button" id="grpCancel" class="sm">إلغاء</button><button type="submit" class="pri">حفظ</button></div>
   </form>
 </dialog>
@@ -151,6 +161,30 @@
   <div id="cleanBody"></div>
   <div class="drow"><button type="button" id="cleanClose" class="sm">إغلاق</button><span class="grp"><button type="button" id="cleanDel" class="pri danger" hidden>🗑️ احذف المحدد من الخزنة</button></span></div>
 </dialog>
+
+<dialog id="trashDlg" class="wide">
+  <b>🗑️ سلة المحذوفات</b> <span class="hint">(تبقى 30 يوم ثم تُمسح)</span>
+  <div id="trashBody"></div>
+  <div class="drow"><button type="button" id="trashEmpty" class="sm danger">إفراغ السلة</button><button type="button" id="trashClose" class="sm">إغلاق</button></div>
+</dialog>
+
+<dialog id="profDlg">
+  <b>👤 الملفات الشخصية</b>
+  <p class="hint">كل ملف شخصي له خزنة منفصلة بالكامل (مثلاً: دراسة، عمل، ألعاب). التبديل يعيد تحميل التطبيق.</p>
+  <div id="profList"></div>
+  <div class="two1" style="margin-top:8px"><input id="profNew" class="f" placeholder="اسم ملف جديد"><button type="button" id="profAdd" class="pri">إنشاء وتبديل</button></div>
+  <div class="drow"><span></span><button type="button" id="profClose" class="sm">إغلاق</button></div>
+</dialog>
+
+<dialog id="remDlg">
+  <b>🔔 ذكّرني بهذا العنصر</b>
+  <div id="remName" class="hint" style="margin:6px 0"></div>
+  <input id="remWhen" type="datetime-local" class="f">
+  <div class="rooms" style="margin:8px 0 0"><button type="button" class="sm" data-rq="1h">بعد ساعة</button><button type="button" class="sm" data-rq="eve">الليلة 9 م</button><button type="button" class="sm" data-rq="tom">بكرة 9 ص</button></div>
+  <div class="drow"><button type="button" id="remCancel" class="sm">إلغاء</button><button type="button" id="remSave" class="pri">حفظ التذكير</button></div>
+</dialog>
+
+<div id="cmdk" hidden><div class="cbox"><input id="cmdkQ" autocomplete="off" placeholder="اكتب أمر أو اسم عنصر أو قسم…"><div id="cmdkList"></div></div></div>
 
 <dialog id="statsDlg" class="wide">
   <b>📊 إحصائيات خزنتي</b>
@@ -168,6 +202,7 @@
 </dialog>
 
 <div id="toast"></div>
+<script src="i18n.js"></script>
 <script src="zakker.js"></script>
 <script src="app.js"></script>
 </body>
