@@ -576,6 +576,10 @@ $('moreMenu').addEventListener('click', async e => {
     toast('أنزّل التحديث…'); const u = await window.api.updateApply();
     toast(u.ok ? '✅ تم! يعيد التشغيل…' : 'فشل التحديث: ' + u.error);
   }
+  else if (a === 'prefs') openPrefs();
+  else if (a === 'stats2') openStats();
+  else if (a === 'palette2') openPalette();
+  else if (a === 'update2') document.querySelector('[data-more="update"]').click();
   else if (a === 'stats') openStats();
   else if (a === 'games') importGames();
   else if (a === 'bookmarks') importBookmarks();
@@ -1039,3 +1043,92 @@ $('cmdkQ').addEventListener('keydown', e => {
 $('cmdkList').addEventListener('click', e => { const r = e.target.closest('[data-k]'); if (!r) return; const c = cmdList[+r.dataset.k]; closePalette(); if (c) setTimeout(c.f, 30); });
 $('cmdk').addEventListener('mousedown', e => { if (e.target.id === 'cmdk') closePalette(); });
 document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k') { e.preventDefault(); $('cmdk').hidden ? openPalette() : closePalette(); } });
+
+/* ---------- ⚙️ صفحة الإعدادات ---------- */
+const PREFS = [
+  { id: 'look', ico: '🎨', t: 'المظهر', rows: [
+    { t: 'اللغة', d: 'لغة واجهة التطبيق.', c: { sel: 'lang', o: [['ar', 'العربية'], ['en', 'English']] } },
+    { t: 'الثيم', d: 'شكل التطبيق الكامل.', c: { sel: 'preset', o: [['', 'الأساسي'], ['night', '🌙 ليلي'], ['glass', '🪟 زجاجي'], ['paper', '📜 ورقي'], ['neon', '⚡ نيون']] } },
+    { t: 'المظهر', d: 'فاتح أو داكن أو حسب الويندوز (للثيم الأساسي).', c: { sel: 'theme', o: [['auto', 'تلقائي'], ['light', 'فاتح'], ['dark', 'داكن']] } },
+    { t: 'لون التطبيق', d: 'اللون الرئيسي للأزرار والتحديد.', c: { sw: 1 } },
+    { t: 'شكل العرض الافتراضي', d: 'بطاقات كبيرة أو صغيرة أو قائمة (سطر لكل عنصر).', c: { sel: 'view', o: [['big', '▦ بطاقات كبيرة'], ['small', '▪▪ بطاقات صغيرة'], ['list', '☰ قائمة']] } },
+    { t: 'إظهار الوصف', d: 'الوصف تحت اسم العنصر.', c: { tg: 'showDesc' } },
+    { t: 'إظهار التصنيف والوسوم', d: 'الشارات الصغيرة على البطاقة.', c: { tg: 'showTags' } }
+  ] },
+  { id: 'data', ico: '💾', t: 'البيانات والنسخ', rows: [
+    { t: 'نسخة احتياطية الآن', d: 'احفظ نسخة كاملة من خزنتك في ملف.', c: { b: 'more:export', l: 'حفظ نسخة' } },
+    { t: 'استعادة نسخة', d: 'ادمج عناصر من ملف نسخة احتياطية.', c: { b: 'more:import', l: 'اختيار ملف' } },
+    { t: 'النسخ التلقائي اليومي', d: 'تُحفظ نسخة كل يوم وتبقى آخر 14. (تشغيله وإيقافه من أيقونة التراي)', c: { b: 'more:bk-open', l: 'فتح المجلد' } },
+    { t: 'مكان النسخ التلقائية', d: 'غيّره إلى OneDrive أو فلاشة مثلاً.', c: { b: 'more:bk-choose', l: 'تغيير المجلد' } },
+    { t: 'سلة المحذوفات', d: 'المحذوفات تبقى 30 يوم قبل ما تُمسح.', c: { b: 'more:trash', l: 'فتح السلة' } },
+    { t: 'الملفات الشخصية', d: 'خزنة منفصلة لكل غرض (دراسة، عمل، ألعاب).', c: { b: 'more:profiles', l: 'إدارة' } }
+  ] },
+  { id: 'import', ico: '📥', t: 'الاستيراد', rows: [
+    { t: 'برامجي المثبتة', d: 'من قائمة ابدأ مع أيقوناتها.', c: { b: 'more:scan', l: 'استيراد' } },
+    { t: 'ألعاب Steam و Epic', d: 'تُضاف بأغلفتها لقسم «ألعاب».', c: { b: 'more:games', l: 'استيراد' } },
+    { t: 'مفضلة Chrome و Edge', d: 'روابطك في قسم مع غرفة لكل مجلد.', c: { b: 'more:bookmarks', l: 'استيراد' } },
+    { t: 'تحديث صور كل العناصر', d: 'يعيد قراءة أيقونات وصور الملفات.', c: { b: 'more:thumbs', l: 'تحديث' } },
+    { t: 'عبّي الأوصاف الناقصة', d: 'بالذكاء الاصطناعي (يحتاج مفتاح).', c: { b: 'more:fill', l: 'تعبئة' } }
+  ] },
+  { id: 'tools', ico: '🧰', t: 'الأدوات', rows: [
+    { t: 'فحص الملفات الميتة والمكررة', d: 'اعثر على الملفات المفقودة والمكررات ونظّفها.', c: { b: 'more:clean', l: 'فحص' } },
+    { t: 'إحصائيات خزنتي', d: 'الأكثر فتحاً، ووقت الاستخدام، وآخر 7 أيام.', c: { b: 'more:stats', l: 'عرض' } },
+    { t: 'لوحة الأوامر', d: 'اكتب أي أمر أو عنصر وانفّذه (Ctrl+K).', c: { b: 'more:palette', l: 'فتح' } },
+    { t: 'المجموعات', d: 'افتح عدة عناصر بضغطة، مع جدولة بوقت.', c: { fn: 'groups', l: 'إدارة' } },
+    { t: 'مراقبة مجلد', d: 'إشعار لكل ملف جديد في مجلد (مثل التنزيلات).', c: { b: 'more:watch', l: 'اختيار مجلد' } }
+  ] },
+  { id: 'desk', ico: '🪟', t: 'سطح المكتب', rows: [
+    { t: 'حاوية ذكية: فتحتها مؤخراً', d: 'تتعبّى لحالها.', c: { b: 'more:smart-recent', l: 'تشغيل / إيقاف' } },
+    { t: 'حاوية ذكية: الأكثر استخداماً', d: 'أكثر ما تفتحه.', c: { b: 'more:smart-used', l: 'تشغيل / إيقاف' } },
+    { t: 'حاوية ذكية: أضفتها حديثاً', d: 'آخر ما أضفته.', c: { b: 'more:smart-added', l: 'تشغيل / إيقاف' } },
+    { t: 'حاوية ذكية: المثبّتة', d: 'عناصرك المثبّتة ⭐.', c: { b: 'more:smart-pinned', l: 'تشغيل / إيقاف' } },
+    { t: 'حاوية لقسم', d: 'من القائمة الجانبية: حط الماوس على أي قسم واضغط 🪟.', c: { txt: '' } },
+    { t: 'اختصارات لوحة المفاتيح', d: 'Ctrl+Alt+Space فتح خزنة · Ctrl+Alt+F بحث سريع · Ctrl+Alt+D إظهار الحاويات · Ctrl+Alt+V إضافة من الحافظة · Ctrl+K لوحة الأوامر', c: { txt: '' } }
+  ] },
+  { id: 'ai', ico: '✨', t: 'الذكاء الاصطناعي', rows: [
+    { t: 'مفتاح Anthropic API (اختياري)', d: 'بدون مفتاح كل شي يشتغل بالكلمات. بالمفتاح: تعرّف تلقائي على الملفات وبحث بالوصف. المفتاح مشفّر على جهازك.', c: { b: 'more:settings', l: 'إدارة المفتاح' } }
+  ] },
+  { id: 'about', ico: 'ℹ️', t: 'حول والتحديث', rows: [
+    { t: 'تحديث التطبيق', d: 'يجيب أحدث الملفات من GitHub ويعيد التشغيل.', c: { b: 'more:update', l: 'تحقق من التحديث' } },
+    { t: 'مزامنة ذكّرني مع الجوال', d: 'حساب Supabase مجاني (اختياري).', c: { fn: 'sync', l: 'إعداد المزامنة' } },
+    { t: 'خزنة مفتوحة المصدر ومجانية', d: 'الكود والتحميل والتحديثات على GitHub.', c: { fn: 'github', l: 'فتح GitHub' } }
+  ] }
+];
+let prefsTab = 'look';
+function prefsVal(k) { if (k === 'lang') return ui.lang || window.I18N.get(); if (k === 'preset') return ui.preset || ''; if (k === 'theme') return ui.theme || 'auto'; if (k === 'view') return ui.view || 'big'; return ''; }
+function prefsCtl(c) {
+  if (c.sel) return `<select data-ps="${c.sel}">${c.o.map(([v, l]) => `<option value="${v}" ${prefsVal(c.sel) === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
+  if (c.tg) return `<label class="tgl"><input type="checkbox" data-pt="${c.tg}" ${ui[c.tg] ? 'checked' : ''}><i></i></label>`;
+  if (c.sw) return `<div class="swatches">${SWATCHES.map(x => `<button type="button" class="sw ${x ? '' : 'def'} ${(ui.accent || '') === x ? 'on' : ''}" data-pc="${x}" style="${x ? 'background:' + x : ''}"></button>`).join('')}</div>`;
+  if (c.b) return `<button class="sm" data-pa="${c.b}">${esc(c.l)}</button>`;
+  if (c.fn) return `<button class="sm" data-pf="${c.fn}">${esc(c.l)}</button>`;
+  return '';
+}
+function drawPrefs() {
+  $('prefsNav').innerHTML = PREFS.map(p => `<button class="pn ${p.id === prefsTab ? 'on' : ''}" data-ptab="${p.id}"><span>${p.ico}</span> ${esc(p.t)}</button>`).join('');
+  const p = PREFS.find(x => x.id === prefsTab);
+  $('prefsPane').innerHTML = `<h2>${p.ico} ${esc(p.t)}</h2>` + p.rows.map(r => `<div class="prow"><div class="pt"><b>${esc(r.t)}</b><span>${esc(r.d)}</span></div><div class="pc">${prefsCtl(r.c)}</div></div>`).join('');
+}
+function openPrefs() { $('prefs').hidden = false; drawPrefs(); }
+function closePrefs() { $('prefs').hidden = true; }
+$('prefsClose').onclick = closePrefs;
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('prefs').hidden && !document.querySelector('dialog[open]') && $('cmdk').hidden) closePrefs(); });
+$('prefsNav').addEventListener('click', e => { const b = e.target.closest('[data-ptab]'); if (!b) return; prefsTab = b.dataset.ptab; drawPrefs(); });
+$('prefsPane').addEventListener('click', async e => {
+  const sw = e.target.closest('[data-pc]'); if (sw) { ui.accent = sw.dataset.pc; applyAppearance(); await persist(); drawPrefs(); return; }
+  const pa = e.target.closest('[data-pa]'); if (pa) { const k = pa.dataset.pa.split(':')[1]; const b = document.querySelector('[data-more="' + k + '"]'); if (b) b.click(); return; }
+  const pf = e.target.closest('[data-pf]'); if (!pf) return;
+  if (pf.dataset.pf === 'groups') { closePrefs(); $('grpBtn').click(); }
+  else if (pf.dataset.pf === 'sync') window.Zakker.openSync();
+  else if (pf.dataset.pf === 'github') window.api.openUrl('https://github.com/a62724195-lab/khazana');
+});
+$('prefsPane').addEventListener('change', async e => {
+  const s = e.target.closest('[data-ps]'), t = e.target.closest('[data-pt]'); if (!s && !t) return;
+  if (t) { ui[t.dataset.pt] = t.checked; applyView(); await persist(); return; }
+  const k = s.dataset.ps, v = s.value;
+  if (k === 'lang') { ui.lang = v; window.I18N.set(v); render(); }
+  else if (k === 'preset') { ui.preset = v; applyAppearance(); }
+  else if (k === 'theme') { ui.theme = v; applyAppearance(); }
+  else if (k === 'view') { ui.view = v; views = {}; applyView(); render(); }
+  await persist(); drawPrefs();
+});

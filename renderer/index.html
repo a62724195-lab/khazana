@@ -28,31 +28,41 @@
   <div class="addwrap">
     <button id="moreBtn" title="المزيد">⋯</button>
     <div id="moreMenu" class="menu" hidden>
-      <button data-more="scan">⚙️ استيراد برامجي المثبتة</button>
-      <button data-more="thumbs">🔄 تحديث صور كل العناصر</button>
-      <button data-more="clean">🧹 فحص الملفات الميتة والمكررة</button>
-      <button data-more="games">🎮 استيراد ألعاب Steam و Epic</button>
-      <button data-more="bookmarks">🔖 استيراد مفضلة Chrome / Edge</button>
-      <button data-more="trash">🗑️ سلة المحذوفات</button>
-      <button data-more="profiles">👤 الملفات الشخصية (خزنة لكل غرض)</button>
-      <button data-more="watch">👀 اختيار مجلد مراقَب</button>
-      <button data-more="palette">⌨️ لوحة الأوامر (Ctrl+K)</button>
-      <button data-more="update">🔄 تحديث التطبيق (من GitHub)</button>
-      <button data-more="stats">📊 إحصائيات خزنتي</button>
-      <button data-more="smart-recent">🪟 حاوية ذكية: فتحتها مؤخراً</button>
-      <button data-more="smart-used">🪟 حاوية ذكية: الأكثر استخداماً</button>
-      <button data-more="smart-added">🪟 حاوية ذكية: أضفتها حديثاً</button>
-      <button data-more="smart-pinned">🪟 حاوية ذكية: المثبّتة ⭐</button>
-      <button data-more="bk-open">📂 فتح مجلد النسخ التلقائية</button>
-      <button data-more="bk-choose">📁 تغيير مجلد النسخ التلقائية</button>
-      <button data-more="fill">✨ عبّي الأوصاف الناقصة</button>
-      <button data-more="export">💾 نسخة احتياطية</button>
-      <button data-more="import">📥 استعادة نسخة</button>
-      <button data-more="settings">🔑 الذكاء الاصطناعي</button>
+      <button data-more="prefs">⚙️ الإعدادات</button>
+      <button data-more="stats2">📊 إحصائيات خزنتي</button>
+      <button data-more="palette2">⌨️ لوحة الأوامر (Ctrl+K)</button>
+      <button data-more="update2">🔄 تحديث التطبيق</button>
+      <button class="adv" data-more="scan">⚙️ استيراد برامجي المثبتة</button>
+      <button class="adv" data-more="thumbs">🔄 تحديث صور كل العناصر</button>
+      <button class="adv" data-more="clean">🧹 فحص الملفات الميتة والمكررة</button>
+      <button class="adv" data-more="games">🎮 استيراد ألعاب Steam و Epic</button>
+      <button class="adv" data-more="bookmarks">🔖 استيراد مفضلة Chrome / Edge</button>
+      <button class="adv" data-more="trash">🗑️ سلة المحذوفات</button>
+      <button class="adv" data-more="profiles">👤 الملفات الشخصية (خزنة لكل غرض)</button>
+      <button class="adv" data-more="watch">👀 اختيار مجلد مراقَب</button>
+      <button class="adv" data-more="palette">⌨️ لوحة الأوامر (Ctrl+K)</button>
+      <button class="adv" data-more="update">🔄 تحديث التطبيق (من GitHub)</button>
+      <button class="adv" data-more="stats">📊 إحصائيات خزنتي</button>
+      <button class="adv" data-more="smart-recent">🪟 حاوية ذكية: فتحتها مؤخراً</button>
+      <button class="adv" data-more="smart-used">🪟 حاوية ذكية: الأكثر استخداماً</button>
+      <button class="adv" data-more="smart-added">🪟 حاوية ذكية: أضفتها حديثاً</button>
+      <button class="adv" data-more="smart-pinned">🪟 حاوية ذكية: المثبّتة ⭐</button>
+      <button class="adv" data-more="bk-open">📂 فتح مجلد النسخ التلقائية</button>
+      <button class="adv" data-more="bk-choose">📁 تغيير مجلد النسخ التلقائية</button>
+      <button class="adv" data-more="fill">✨ عبّي الأوصاف الناقصة</button>
+      <button class="adv" data-more="export">💾 نسخة احتياطية</button>
+      <button class="adv" data-more="import">📥 استعادة نسخة</button>
+      <button class="adv" data-more="settings">🔑 الذكاء الاصطناعي</button>
     </div>
   </div>
 </div>
 
+<div id="prefs" hidden>
+  <div class="pbox">
+    <div class="phead"><b>⚙️ الإعدادات</b><button id="prefsClose" class="sm" title="إغلاق (Esc)">✕ إغلاق</button></div>
+    <div class="pbody"><nav id="prefsNav"></nav><div id="prefsPane"></div></div>
+  </div>
+</div>
 <div id="zk" hidden></div>
 <div class="layout">
   <aside id="side">
