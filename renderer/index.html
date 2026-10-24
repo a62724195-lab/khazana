@@ -11,7 +11,7 @@
 <body>
 <div class="top">
   <div class="brand">🗄️ خزنة<span id="brandName"></span></div>
-  <div class="nav"><button id="navVault" class="on">🗄️ الخزنة</button><button id="navZk">🔔 ذكّرني <span id="navBadge"></span></button></div>
+  <div class="nav"><button id="navVault" class="on">🗄️ الخزنة</button><button id="navNt">📝 ملاحظاتي</button><button id="navZk">🔔 ذكّرني <span id="navBadge"></span></button></div>
   <div class="searchbox">
     <input id="q" autofocus placeholder="اكتب أو اشرح شنو تبي: «أبي شي أحوّل فيه PDF» أو «صورة العقد»…">
     <button id="goBtn" title="بحث ذكي (Enter)">🔎</button>
@@ -25,7 +25,7 @@
       <button data-add="note">📝 ملاحظة</button>
     </div>
   </div>
-  <div class="addwrap">
+  <div class="addwrap" id="moreWrap">
     <button id="moreBtn" title="المزيد">⋯</button>
     <div id="moreMenu" class="menu" hidden>
       <button data-more="prefs">⚙️ الإعدادات</button>
@@ -64,6 +64,7 @@
   </div>
 </div>
 <div id="zk" hidden></div>
+<div id="nt" hidden></div>
 <div class="layout">
   <aside id="side">
     <div class="sidehead">الأقسام</div>
@@ -214,6 +215,7 @@
 <div id="toast"></div>
 <script src="i18n.js"></script>
 <script src="zakker.js"></script>
+<script src="notes.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

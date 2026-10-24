@@ -78,6 +78,8 @@
     "فتح GitHub": "Open GitHub",
     "إغلاق (Esc)": "Close (Esc)",
     "✕ إغلاق": "Close",
+    'ملاحظاتي': 'My notes', '🔎 ابحث في ملاحظاتك…': '🔎 Search your notes…', '+ جديدة': '+ New', 'فاضية': 'Empty', 'بدون عنوان': 'Untitled', 'قائمة مهام': 'Checklist', '💡 فكرة': '💡 Idea', '📅 ملاحظات اجتماع': '📅 Meeting notes', '📓 يومية': '📓 Daily journal', '📝 فاضية': '📝 Blank', '+ ملاحظة فاضية': '+ Blank note', 'العنوان': 'Title', 'وسوم: عمل، فكرة، دراسة…': 'Tags: work, idea, study…', 'اكتب هنا… (استخدم - [ ] لقائمة مهام، # لعنوان)': 'Write here… (use - [ ] for a checklist, # for a heading)', 'اربط عنصر من الخزنة': 'Link a vault item', 'ابحث…': 'Search…', 'ما لقيت شي': 'Nothing found', '✓ محفوظ': '✓ Saved', 'تحذف هذي الملاحظة؟': 'Delete this note?', 'ملاحظة جديدة': 'New note', 'قائمة مهام جديدة': 'New checklist', 'فكرة جديدة': 'New idea', '‹ القائمة': '‹ List', 'الحين': 'now',
+    'ما لقيت ملاحظة بهالبحث.': 'No notes match this search.', 'اختر ملاحظة من القائمة أو ابدأ وحدة جديدة.': 'Pick a note from the list or start a new one.',
     'خزنة': 'Khazana', 'الخزنة': 'Vault', 'الكل': 'All', 'غير مرتبة': 'Unsorted', 'أضف ملاحظة': 'Add note', 'ذكّرني': 'Remind me', 'إضافة': 'Add', 'ملفات / صور / برامج': 'Files / images / programs', 'مجلد': 'Folder', 'رابط': 'Link', 'ملاحظة': 'Note',
     'استيراد برامجي المثبتة': 'Import my installed programs', 'تحديث صور كل العناصر': 'Refresh all thumbnails', 'فحص الملفات الميتة والمكررة': 'Scan dead & duplicate files',
     'استيراد ألعاب Steam و Epic': 'Import Steam & Epic games', 'استيراد مفضلة Chrome / Edge': 'Import Chrome / Edge bookmarks', 'سلة المحذوفات': 'Trash',
@@ -129,6 +131,7 @@
     'مفضلة المتصفح': 'Browser bookmarks', 'حدّث resources أيضاً': 'Please update the resources folder too', 'اختر الوقت': 'Pick a time', 'ذكّرني': 'Remind me', 'حذف المجموعة': 'Delete group', 'احذف المحدد': 'Delete selected', 'إفراغ السلة نهائياً؟ ما يمديك ترجّعها بعدها.': 'Empty the trash permanently? You won’t be able to restore them.'
   };
   const P = [
+    [/^(\d+) كلمة$/, m => `${m[1]} word(s)`], [/^(\d+) د$/, m => `${m[1]} min`], [/^(\d+) س$/, m => `${m[1]} h`], [/^(\d+) يوم$/, m => `${m[1]} d`], [/^📥 استيراد ملاحظات الخزنة \((\d+)\)$/, m => `📥 Import vault notes (${m[1]})`], [/^📥 انستوردت (\d+) ملاحظة$/, m => `📥 Imported ${m[1]} note(s)`],
     [/^(.+) \((\d+)\)$/, m => { const t = tr(m[1]); return t === m[1] ? null : `${t} (${m[2]})`; }],
     [/^الكل \((\d+)\)$/, m => `All (${m[1]})`], [/^بعدين \((\d+)\)$/, m => `Later (${m[1]})`], [/^نتائج البحث \((\d+)\)$/, m => `Search results (${m[1]})`],
     [/^انضاف (\d+) عنصر(?: من الحاوية)?$/, m => `Added ${m[1]} item(s)`], [/^انضاف (\d+) عنصر للخزنة$/, m => `Added ${m[1]} item(s) to the vault`], [/^انحذف (\d+) عنصر \(يبقى في السلة 30 يوم\)$/, m => `Deleted ${m[1]} item(s) (kept in trash for 30 days)`],

@@ -7,7 +7,7 @@ const EMOJIS = ['⭐', '📁', '💼', '🖼️', '🎮', '📚', '🎵', '🔒'
 
 let groups = [], colorF = '', play = {}, trash = []; const unlocked = new Set();
 const TAGC = ['', '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899'];
-let items = [], sections = [], hasKey = false, missing = new Set();
+let items = [], sections = [], hasKey = false, missing = new Set(), notes = [];
 let secF = '', catF = '', laterF = false, result = null, sortBy = 'recent';
 let ui = { view: 'big', showDesc: true, showTags: true, accent: '', theme: 'auto' }, views = {}, collapsed = new Set(), incSub = false;
 let selMode = false; const sel = new Set();
@@ -27,7 +27,7 @@ function toast(m, undo) {
   t._t = setTimeout(() => t.classList.remove('show'), undo ? 8000 : 3000);
 }
 // الأقسام تُحفظ كعنصر خاص أول القائمة (نفس ملف البيانات)
-const persist = () => window.api.save([{ id: '__meta__', kind: '_meta', sections, ui, views, collapsed: [...collapsed], groups, trash }, ...items]);
+const persist = () => window.api.save([{ id: '__meta__', kind: '_meta', sections, ui, views, collapsed: [...collapsed], groups, trash, notes }, ...items]);
 function fileURL(p) {
   const parts = String(p).replace(/\\/g, '/').split('/'); const first = parts.shift();
   return 'file:///' + first + '/' + parts.map(encodeURIComponent).join('/');
@@ -722,10 +722,17 @@ $('optTags').onchange = async e => { ui.showTags = e.target.checked; applyView()
 /* ---------- تبويب ذكّرني ---------- */
 function showView(v) {
   if (selMode) exitSel();
-  document.body.classList.toggle('zkview', v === 'zk'); $('zk').hidden = v !== 'zk';
-  $('navVault').classList.toggle('on', v !== 'zk'); $('navZk').classList.toggle('on', v === 'zk');
+  document.body.classList.toggle('zkview', v === 'zk'); document.body.classList.toggle('ntview', v === 'nt');
+  $('zk').hidden = v !== 'zk'; $('nt').hidden = v !== 'nt';
+  $('navVault').classList.toggle('on', v !== 'zk' && v !== 'nt'); $('navZk').classList.toggle('on', v === 'zk'); $('navNt').classList.toggle('on', v === 'nt');
+  if (v === 'nt') window.Notes.draw();
 }
-$('navVault').onclick = () => showView('vault'); $('navZk').onclick = () => showView('zk');
+$('navVault').onclick = () => showView('vault'); $('navZk').onclick = () => showView('zk'); $('navNt').onclick = () => showView('nt');
+window.Notes.mount($('nt'), {
+  get: () => notes, save: () => persist(), items: () => visItems(), open: it => { showView('vault'); openItem(it); },
+  url: u => window.api.openUrl(u), toast: m => toast(m), confirm: m => Promise.resolve(window.confirm(m)),
+  importVault: list => { let c = 0; list.forEach(i => { notes.unshift({ id: 'n' + uid(), title: i.name || '', body: i.desc || '', color: i.color || '', pinned: !!i.pinned, tags: i.tags || '', links: [], created: i.added || Date.now(), updated: Date.now() }); i._imp = true; c++; }); persist(); return c; }
+});
 window.Zakker.init({ platform: 'desktop', onRing: () => { try { window.api.alertUser(); } catch (e) {} }, onChange: s => { $('navBadge').textContent = s.overdue || ''; } });
 window.Zakker.mount($('zk'));
 
@@ -734,7 +741,7 @@ window.Zakker.mount($('zk'));
   const s = await window.api.load(); hasKey = s.hasKey;
   const { meta, rest } = splitLoaded(s.items || []);
   sections = meta && Array.isArray(meta.sections) ? meta.sections : [];
-  if (meta) { ui = { ...ui, ...(meta.ui || {}) }; views = meta.views || {}; collapsed = new Set(meta.collapsed || []); groups = Array.isArray(meta.groups) ? meta.groups : []; trash = (Array.isArray(meta.trash) ? meta.trash : []).filter(x => x && Date.now() - (x._del || 0) < 30 * 864e5); }
+  if (meta) { ui = { ...ui, ...(meta.ui || {}) }; views = meta.views || {}; collapsed = new Set(meta.collapsed || []); groups = Array.isArray(meta.groups) ? meta.groups : []; notes = Array.isArray(meta.notes) ? meta.notes : []; trash = (Array.isArray(meta.trash) ? meta.trash : []).filter(x => x && Date.now() - (x._del || 0) < 30 * 864e5); }
   applyAppearance(); window.I18N.set(ui.lang || window.I18N.auto());
   items = rest.map(x => newItem(x)); normalizeSections();
   render(); playEnter(); checkMissing(); loadPlay().then(render);
@@ -1010,7 +1017,7 @@ function cmdAll() {
     ['🎮 استيراد ألعاب Steam و Epic', 'games steam epic العاب', mc('games')], ['🔖 استيراد مفضلة المتصفح', 'bookmarks مفضلة', mc('bookmarks')],
     ['🗑️ سلة المحذوفات', 'trash سلة', mc('trash')], ['👤 الملفات الشخصية', 'profile ملف شخصي', mc('profiles')],
     ['🔄 تحديث التطبيق', 'update تحديث', mc('update')], ['💾 نسخة احتياطية', 'backup نسخة', mc('export')], ['🔑 الذكاء الاصطناعي', 'ai مفتاح', mc('settings')],
-    ['🗄️ الخزنة', 'vault خزنة', () => showView('vault')], ['🔔 ذكّرني', 'reminders تذكير', () => showView('zk')],
+    ['🗄️ الخزنة', 'vault خزنة', () => showView('vault')], ['📝 ملاحظاتي', 'notes ملاحظات افكار', () => showView('nt')], ['📝 ملاحظة جديدة', 'new note ملاحظة جديدة فكرة', () => { showView('nt'); window.Notes.create('blank'); }], ['✅ قائمة مهام جديدة', 'todo checklist مهام', () => { showView('nt'); window.Notes.create('todo'); }], ['💡 فكرة جديدة', 'idea فكرة', () => { showView('nt'); window.Notes.create('idea'); }], ['🔔 ذكّرني', 'reminders تذكير', () => showView('zk')],
     ['🎨 التخصيص', 'customize تخصيص', () => $('custBtn').click()], ['☑️ تحديد عدة عناصر', 'select تحديد', () => $('selBtn').click()],
     ['▦ عرض: بطاقات كبيرة', 'view big', () => document.querySelector('[data-v="big"]').click()], ['▪▪ عرض: بطاقات صغيرة', 'view small', () => document.querySelector('[data-v="small"]').click()], ['☰ عرض: قائمة', 'view list', () => document.querySelector('[data-v="list"]').click()],
     ['⚡ مجموعة جديدة', 'group مجموعة', () => editGroup(null)]

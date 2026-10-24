@@ -1,9 +1,9 @@
 {
- "version": "2026-10-24 11:31",
+ "version": "2026-10-24 18:17",
  "files": [
   {
    "path": "renderer/app.js",
-   "sha": "63caab1377163263d77428a06d1e09fbe68fa0359207c4791ebc04341fad4368"
+   "sha": "66575aa13d2970ba24662ef81684cabbdabd2d02cd0967e29c255ec25f02f1a1"
   },
   {
    "path": "renderer/fence.css",
@@ -19,11 +19,15 @@
   },
   {
    "path": "renderer/i18n.js",
-   "sha": "a5af4e936d7bd1d7297af558dbf14daf90dbdd27f1c3ebb392601d4a9b87ca2b"
+   "sha": "326bdeed576ef5b7bd25b21f55030ac814ceb6b2d4fb800e53aaa5ddb873f7fc"
   },
   {
    "path": "renderer/index.html",
-   "sha": "6db93c218f82fea3f4ca05f84f0a3f88a65d7259a748121bec962eb3ac947eaa"
+   "sha": "b23c0c048fa8e5e38afd8dd4e0212d1b889a17010c0b7daba93796496c942ca6"
+  },
+  {
+   "path": "renderer/notes.js",
+   "sha": "a0857735725760ff92622ee362f393d8d119b536b11a6512ae0b86f5f0694040"
   },
   {
    "path": "renderer/quick.css",
@@ -39,7 +43,7 @@
   },
   {
    "path": "renderer/style.css",
-   "sha": "fd7e8b682c8e74774530440ac5c2a0645f2e416d9644995c0d1b5282e40cf00a"
+   "sha": "314f55dfd5a082b34fd19207bb0bac6af63929f66521d997166ae497d4bf17a1"
   },
   {
    "path": "renderer/zakker.css",
