@@ -5,6 +5,7 @@ const IMG_OK = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'
 const clean = n => String(n || '').replace(/(\.(exe|lnk|url|bat))?\s*[-–]\s*(اختصار|shortcut)\s*$/i, '').replace(/\.(exe|lnk|url)$/i, '').trim() || n;
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fileURL = p => 'file:///' + String(p).replace(/\\/g, '/').split('/').map((x, i) => i === 0 && /^[A-Za-z]:$/.test(x) ? x : encodeURIComponent(x)).join('/').replace(/^\/+/, '');
+let st = { d: 'glass', op: 100, r: 14, sz: 'm', lay: 'grid', nm: true, acc: '' };
 let groups = [], items = [], sections = [], ui = {}, cur = sec, sig = '', collapsed = false;
 
 function pv(i) {
@@ -26,7 +27,7 @@ function render() {
   if (isSmart) {
     const d = SMART[sec.slice(6)] || ['🪄', 'ذكية'];
     $('ttl').textContent = d[0] + ' ' + d[1]; $('back').hidden = true;
-    if (ui.accent) $('box').style.setProperty('--acc', ui.accent);
+    if (!st.acc && ui.accent) $('box').style.setProperty('--acc', ui.accent);
     const l = smartList();
     $('grid').innerHTML = l.length ? l.map(i => `<div class="it" ${i.color ? `style="--tc:${esc(i.color)}"` : ''} data-id="${i.id}" title="${esc((i.name || '') + (i.desc ? ' — ' + i.desc : ''))}"><div class="ic">${pv(i)}</div><div class="nm">${i.pinned ? '⭐ ' : ''}${esc(clean(i.name))}</div></div>`).join('') : '<div class="empty">ما في عناصر بعد.<br>تتعبّى لحالها وأنت تستخدم خزنة.</div>';
     return;
@@ -37,7 +38,7 @@ function render() {
   const root = sections.find(x => x.id === sec);
   $('ttl').textContent = (s.emoji || '📁') + ' ' + s.name;
   $('back').hidden = cur === sec;
-  if (ui.accent) $('box').style.setProperty('--acc', ui.accent);
+  if (!st.acc && ui.accent) $('box').style.setProperty('--acc', ui.accent);
   const rooms = sections.filter(x => (x.parent || '') === cur);
   const mine = items.filter(i => i.section === cur).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.lastOpened || 0) - (a.lastOpened || 0) || (b.added || 0) - (a.added || 0));
   let h = rooms.map(r => `<div class="it room" data-room="${r.id}" title="${esc(r.name)}"><div class="ic">${esc(r.emoji || '📁')}</div><div class="nm">${esc(r.name)}</div></div>`).join('');
@@ -114,3 +115,49 @@ $('grp').onclick = () => {
   p.hidden = false;
 };
 $('gpanel').onclick = e => { const b = e.target.closest('[data-g]'); if (!b) return; closeG(); window.api.extRun(b.dataset.g); };
+
+/* 🎨 تصميم الحاوية */
+const DESIGNS = [
+  ['glass', 'زجاجي', 'linear-gradient(160deg,#2a3148,#10131d)', 14], ['midnight', 'ليلي', '#0d1117', 10], ['paper', 'ورقي', '#f6f1e7', 12], ['neon', 'نيون', 'radial-gradient(#1a0f3a,#07060f)', 16], ['aurora', 'شفق', 'linear-gradient(120deg,#3b2dd1,#b51fd9,#0ea5e9)', 18],
+  ['minimal', 'بسيط', 'repeating-linear-gradient(45deg,#222 0 6px,#2b2b2b 6px 12px)', 14], ['sticky', 'لاصقة', 'linear-gradient(#fff6ae,#ffed7d)', 4], ['retro', 'ريترو', 'linear-gradient(#1b1b2f,#2a1b4f)', 0], ['sunset', 'غروب', 'linear-gradient(160deg,#ff7e5f,#b24592,#2b1055)', 18], ['mica', 'ميكا', 'linear-gradient(#3a3a40,#222226)', 8]
+];
+const ACCS = ['#2f7a5e', '#3b82f6', '#8b5cf6', '#ec4899', '#ef4444', '#f59e0b', '#14b8a6', '#e5e7eb'];
+function applyStyle() {
+  const b = $('box'); b.dataset.d = st.d; b.dataset.sz = st.sz; b.dataset.lay = st.lay; b.dataset.nm = st.nm ? 'on' : 'off';
+  b.style.setProperty('--op', st.op / 100); b.style.setProperty('--r', st.r + 'px');
+  if (st.acc) b.style.setProperty('--acc', st.acc); else if (ui.accent) b.style.setProperty('--acc', ui.accent); else b.style.removeProperty('--acc');
+}
+let saveT = null;
+function saveStyle(all) { applyStyle(); clearTimeout(saveT); saveT = setTimeout(() => window.api.fenceStyleSet && window.api.fenceStyleSet(st, !!all), all ? 0 : 250); }
+function drawStyle() {
+  const p = $('spanel');
+  p.innerHTML = `<div><div class="sl">🎨 التصميم</div><div class="dg">${DESIGNS.map(d => `<button class="dsw ${st.d === d[0] ? 'on' : ''}" data-kd="${d[0]}" style="background:${d[2]}">${d[1]}</button>`).join('')}</div></div>
+  <div><div class="sl">اللون</div><div class="acs">${ACCS.map(c => `<i data-acc="${c}" class="${st.acc === c ? 'on' : ''}" style="background:${c}"></i>`).join('')}<input type="color" id="accC" value="${st.acc || '#2f7a5e'}" title="لون مخصص"><button class="sm" data-acc="" style="width:auto;height:24px;padding:0 8px;margin:0;font-size:11px">تلقائي</button></div></div>
+  <div><div class="sl">الشفافية <b id="opv">${st.op}%</b></div><input type="range" id="opR" min="30" max="100" value="${st.op}"></div>
+  <div><div class="sl">استدارة الزوايا <b id="rv">${st.r}</b></div><input type="range" id="rR" min="0" max="30" value="${st.r}"></div>
+  <div><div class="sl">حجم الأيقونات</div><div class="seg">${[['s', 'صغير'], ['m', 'وسط'], ['l', 'كبير']].map(([k, n]) => `<button data-ksz="${k}" class="${st.sz === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
+  <div><div class="sl">طريقة العرض</div><div class="seg">${[['grid', 'شبكة'], ['list', 'قائمة'], ['dock', 'شريط Dock']].map(([k, n]) => `<button data-klay="${k}" class="${st.lay === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
+  <div><div class="seg"><button data-knm="1" class="${st.nm ? 'on' : ''}">الأسماء ظاهرة</button><button data-knm="0" class="${st.nm ? '' : 'on'}">بدون أسماء</button></div></div>
+  <div class="foot"><button data-all="1">طبّق على كل الحاويات</button><button data-reset="1">إعادة الضبط</button></div>`;
+}
+const closeS = () => { $('spanel').hidden = true; $('sty').classList.remove('on'); };
+$('sty').onclick = () => { if (!$('spanel').hidden) { closeS(); return; } closeG(); $('sty').classList.add('on'); drawStyle(); $('spanel').hidden = false; };
+document.addEventListener('mousedown', e => { if (!$('spanel').hidden && !e.target.closest('#spanel,#sty')) closeS(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeS(); });
+$('spanel').addEventListener('click', e => {
+  const t = e.target;
+  const d = t.closest('[data-kd]'); if (d) { st.d = d.dataset.kd; st.r = (DESIGNS.find(x => x[0] === st.d) || [])[3] ?? st.r; saveStyle(); drawStyle(); return; }
+  const a = t.closest('[data-acc]'); if (a) { st.acc = a.dataset.acc; saveStyle(); drawStyle(); return; }
+  const z = t.closest('[data-ksz]'); if (z) { st.sz = z.dataset.ksz; saveStyle(); drawStyle(); return; }
+  const l = t.closest('[data-klay]'); if (l) { st.lay = l.dataset.klay; saveStyle(); drawStyle(); return; }
+  const n = t.closest('[data-knm]'); if (n) { st.nm = n.dataset.knm === '1'; saveStyle(); drawStyle(); return; }
+  if (t.closest('[data-all]')) { saveStyle(true); const b = t.closest('[data-all]'); b.textContent = '✓ تم'; setTimeout(() => b.textContent = 'طبّق على كل الحاويات', 1200); return; }
+  if (t.closest('[data-reset]')) { st = { d: 'glass', op: 100, r: 14, sz: 'm', lay: 'grid', nm: true, acc: '' }; saveStyle(); drawStyle(); }
+});
+$('spanel').addEventListener('input', e => {
+  if (e.target.id === 'opR') { st.op = +e.target.value; $('opv').textContent = st.op + '%'; saveStyle(); }
+  else if (e.target.id === 'rR') { st.r = +e.target.value; $('rv').textContent = st.r; saveStyle(); }
+  else if (e.target.id === 'accC') { st.acc = e.target.value; saveStyle(); }
+});
+(async () => { try { const s = window.api.fenceStyleGet && await window.api.fenceStyleGet(); if (s) st = { ...st, ...s }; } catch (e) {} applyStyle(); })();
+if (window.api.onFenceStyle) window.api.onFenceStyle(s => { st = { ...st, ...s }; applyStyle(); if (!$('spanel').hidden) drawStyle(); });

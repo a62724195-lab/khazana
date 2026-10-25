@@ -13,6 +13,7 @@ A free, open-source Windows desktop vault (Electron) for any file, program, imag
 - استيراد ألعاب Steam وEpic، مفضلة Chrome/Edge، برامج قائمة ابدأ / Import Steam & Epic games, browser bookmarks, Start-menu apps
 - مجموعات تشغيل (بجدولة ووقت)، إحصائيات ووقت استخدام / Launch groups (scheduled), stats & usage time
 - ملفات شخصية (خزنة لكل غرض)، نسخ احتياطي يومي تلقائي، إضافة من الحافظة (Ctrl+Alt+V)، مراقبة مجلد التنزيلات
+- حاويات سطح المكتب بـ 10 تصاميم (زجاجي، نيون، ورقي، Dock…) وألوان وشفافية وأحجام قابلة للتخصيص / Desktop fences with 10 designs and full customization
 - ملاحظاتي: روابط [[ ]] بين الملاحظات، تذكير لأي سطر، قفل، صور، تصدير Markdown، ذكاء اصطناعي، مزامنة، وملاحظة سريعة Ctrl+Alt+N / Notes with [[links]], per-line reminders, lock, images, export, AI, sync, quick capture
 - تذكيرات (ذكّرني) مع مزامنة اختيارية للجوال / Reminders with optional phone sync
 - واجهة عربية وإنجليزية / Arabic & English UI

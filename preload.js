@@ -46,6 +46,7 @@ contextBridge.exposeInMainWorld('api', {
   extOpen: (id, show) => inv('ext:open', id, show),
   quickHide: () => inv('quick:hide'),
   quickSize: h => inv('quick:size', h),
+  fenceStyleGet: () => inv('fence:style:get'), fenceStyleSet: (s, all) => inv('fence:style:set', s, all), onFenceStyle: cb => ipcRenderer.on('fence:style', (_e, s) => cb(s)),
   capHide: () => inv('cap:hide'), capSave: d => inv('cap:save', d), onCapReset: cb => ipcRenderer.on('cap:reset', () => cb()), onCapBlur: cb => ipcRenderer.on('cap:blur', () => cb()), aiNote: d => inv('ai:note', d),
   onExt: cb => ipcRenderer.on('ext', (_e, d) => cb(d)),
   onQuickReset: cb => ipcRenderer.on('quick:reset', () => cb()),

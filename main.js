@@ -671,6 +671,18 @@ ipcMain.handle('fence:resize', (e, wd, ht, done) => {
   if (done) { const n = w.getBounds(); w._full = n.height; saveFenceCfg(w._sec, { w: n.width, h: n.height }); }
   return true;
 });
+const FSTYLE_OK = new Set(['glass', 'midnight', 'paper', 'neon', 'aurora', 'minimal', 'sticky', 'retro', 'sunset', 'mica']);
+function cleanStyle(s) {
+  s = s || {}; const n = (v, a, b, d) => { v = Number(v); return isFinite(v) ? Math.max(a, Math.min(b, Math.round(v))) : d; };
+  return { d: FSTYLE_OK.has(s.d) ? s.d : 'glass', op: n(s.op, 30, 100, 100), r: n(s.r, 0, 30, 14), sz: ['s', 'm', 'l'].includes(s.sz) ? s.sz : 'm', lay: ['grid', 'list', 'dock'].includes(s.lay) ? s.lay : 'grid', nm: s.nm !== false, acc: /^#[0-9a-fA-F]{6}$/.test(s.acc || '') ? s.acc : '' };
+}
+ipcMain.handle('fence:style:get', e => { const w = BrowserWindow.fromWebContents(e.sender); const st = w && w._sec ? (getFenceCfg()[w._sec] || {}).style : null; return st ? cleanStyle(st) : null; });
+ipcMain.handle('fence:style:set', (e, st, all) => {
+  const w = BrowserWindow.fromWebContents(e.sender); if (!w || !w._sec) return false; const c = cleanStyle(st);
+  saveFenceCfg(w._sec, { style: c });
+  if (all) { fences.forEach((fw, sec) => { if (sec !== w._sec) { saveFenceCfg(sec, { style: c }); try { fw.webContents.send('fence:style', c); } catch (er) {} } }); }
+  return true;
+});
 ipcMain.handle('fence:main', () => { showWin(); return true; });
 // أي إضافة/فتح من الحاويات أو البحث السريع يمرّ عبر نافذة خزنة الرئيسية (هي اللي تملك البيانات بالذاكرة) عشان ما نخرّب الحفظ
 ipcMain.handle('ext:add', (_e, paths, sec) => { if (!win || win.isDestroyed()) return false; win.webContents.send('ext', { type: 'add', paths: (paths || []).filter(p => typeof p === 'string' && p), sec: sec || '' }); return true; });
