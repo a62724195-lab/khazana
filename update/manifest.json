@@ -1,5 +1,5 @@
 {
- "version": "2026-10-25 11:57",
+ "version": "2026-10-25 12:30",
  "files": [
   {
    "path": "renderer/app.js",
@@ -31,7 +31,7 @@
   },
   {
    "path": "renderer/i18n.js",
-   "sha": "273658df7805e2f57ef14074bb5b8fd4e48d545dc978c00c71ecfc76a4f19084"
+   "sha": "eeb7e897b5ce6b786dd521539d5a490118d65704dd124de63fd83a7d5eadd58b"
   },
   {
    "path": "renderer/index.html",

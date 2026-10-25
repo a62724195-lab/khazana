@@ -1,5 +1,7 @@
 # 🗄️ خزنة (Khazana)
 
+🌐 **Website / الموقع:** https://a62724195-lab.github.io/khazana/
+
 تطبيق ويندوز مجاني ومفتوح المصدر: مكان واحد لكل ملفاتك وبرامجك وصورك وروابطك وملاحظاتك، مع أقسام وغرف، بحث بالوصف (بالذكاء الاصطناعي اختياري)، حاويات على سطح المكتب، مجموعات تشغيل، تذكيرات، وإحصائيات.
 
 A free, open-source Windows desktop vault (Electron) for any file, program, image, folder, link or note — with nested sections, AI-assisted search (optional), desktop "fences", launch groups, reminders and stats.
