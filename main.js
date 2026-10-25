@@ -207,6 +207,42 @@ ipcMain.handle('ai:fill', async (_e, d) => {
   return callClaude({ system, content: 'العناصر:\n' + JSON.stringify(d.items), max: 4000 });
 });
 
+
+/* ---------- ملاحظة سريعة (Ctrl+Alt+N) ---------- */
+let capWin = null;
+function openCapture() {
+  const wa = require('electron').screen.getDisplayNearestPoint(require('electron').screen.getCursorScreenPoint()).workArea;
+  if (capWin && !capWin.isDestroyed()) {
+    if (capWin.isVisible()) { capWin.hide(); return; }
+    capWin.setPosition(Math.round(wa.x + (wa.width - 560) / 2), Math.round(wa.y + wa.height * 0.2));
+    capWin.show(); capWin.focus(); capWin.webContents.send('cap:reset'); return;
+  }
+  capWin = new BrowserWindow({
+    width: 560, height: 330, x: Math.round(wa.x + (wa.width - 560) / 2), y: Math.round(wa.y + wa.height * 0.2),
+    frame: false, transparent: true, resizable: false, skipTaskbar: true, alwaysOnTop: true, hasShadow: false, show: false,
+    minimizable: false, maximizable: false, title: 'ملاحظة سريعة',
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: false }
+  });
+  capWin.loadFile(uiFile('capture.html'));
+  capWin.once('ready-to-show', () => { capWin.show(); capWin.focus(); });
+  capWin.on('blur', () => { if (capWin && !capWin.isDestroyed() && capWin.isVisible()) capWin.webContents.send('cap:blur'); });
+  capWin.on('closed', () => { capWin = null; });
+  capWin.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  capWin.webContents.on('will-navigate', e => e.preventDefault());
+}
+ipcMain.handle('cap:hide', () => { if (capWin && !capWin.isDestroyed()) capWin.hide(); return true; });
+ipcMain.handle('cap:save', (_e, d) => { if (!win || win.isDestroyed()) return false; win.webContents.send('ext', { type: 'note', text: String((d && d.text) || '').slice(0, 20000), tags: String((d && d.tags) || '').slice(0, 200) }); if (capWin && !capWin.isDestroyed()) capWin.hide(); return true; });
+const NOTE_AI = {
+  summarize: ['لخّص الملاحظة بنقاط قصيرة بنفس لغة النص. ارجع JSON فقط: {"text":"الملخص بصيغة ماركداون"}', 600],
+  tasks: ['استخرج المهام القابلة للتنفيذ من الملاحظة. ارجع JSON فقط: {"tasks":["مهمة قصيرة","..."]} بنفس لغة النص. إذا ما فيه مهام ارجع قائمة فاضية.', 600],
+  tags: ['اقترح من 2 إلى 5 وسوم قصيرة (كلمة وحدة لكل وسم) تناسب الملاحظة. ارجع JSON فقط: {"tags":"وسم1 وسم2 وسم3"}', 200],
+  improve: ['حسّن صياغة الملاحظة وصحّح الأخطاء الإملائية مع الحفاظ على المعنى والتنسيق (ماركداون وقوائم المهام) وبنفس اللغة، ولا تضف معلومات جديدة. ارجع JSON فقط: {"text":"النص المحسّن"}', 3000]
+};
+ipcMain.handle('ai:note', async (_e, d) => {
+  const a = NOTE_AI[d && d.action]; if (!a) return { ok: false, error: 'bad_action' };
+  return callClaude({ system: a[0], content: 'عنوان: ' + String(d.title || '').slice(0, 200) + '\n\n' + String(d.text || '').slice(0, 12000), max: a[1] });
+});
+
 /* ---------- IPC ---------- */
 ipcMain.handle('vault:load', () => {
   const v = readJSON(vaultFile(), { items: [] });
@@ -306,6 +342,7 @@ async function buildTray() {
       { label: 'إضافة من الحافظة  (Ctrl+Alt+V)', click: () => clipAdd() },
       { label: 'مراقبة مجلد التنزيلات (إشعار بالملفات الجديدة)', type: 'checkbox', checked: !!getSet().watchOn, click: i => { setSet('watchOn', i.checked); startWatch(); } },
       { label: 'بحث سريع  (Ctrl+Alt+F)', click: () => openQuick() },
+      { label: 'ملاحظة سريعة  (Ctrl+Alt+N)', click: () => openCapture() },
       { label: 'إظهار / إخفاء الحاويات  (Ctrl+Alt+D)', click: () => toggleFences() },
       { label: 'خلّ التطبيق شغّال بعد الإغلاق (عشان التذكيرات)', type: 'checkbox', checked: bgOn(), click: i => setSet('bg', i.checked) },
       { label: 'شغّله مع ويندوز', type: 'checkbox', checked: app.getLoginItemSettings().openAtLogin, click: i => app.setLoginItemSettings({ openAtLogin: i.checked, args: ['--hidden'] }) },
@@ -697,6 +734,7 @@ app.whenReady().then(async () => {
   try { globalShortcut.register('Control+Alt+D', () => toggleFences()); } catch (e) {}
   try { globalShortcut.register('Control+Alt+F', () => openQuick()); } catch (e) {}
   try { globalShortcut.register('Control+Alt+V', () => clipAdd()); } catch (e) {}
+  try { globalShortcut.register('Control+Alt+N', () => openCapture()); } catch (e) {}
   startWatch();
   app.on('activate', () => { if (!win) createWindow(); });
 });

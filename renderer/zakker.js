@@ -191,7 +191,7 @@ create policy "zk files delete" on storage.objects for delete to authenticated
       }
       if (rows.length < 1000) break; since = rows[rows.length - 1].updated_at;
     }
-    saveCfg(); if (changed) render();
+    saveCfg(); if (changed) { render(); try { T.opts.onDocs && T.opts.onDocs(); } catch (_) {} }
   }
   async function sync() {
     if (T.syncing || !T.cfg.session) return; T.syncing = true; setStatus('جاري المزامنة…');
@@ -271,7 +271,7 @@ create policy "zk files delete" on storage.objects for delete to authenticated
       const soon = T.opts.platform === 'phone' && !NAT() && !r.done && r.when > Date.now() && r.when - Date.now() < 864e5;
       return `<div class="zk-card zk-row"><div class="${r.done ? 'zk-done' : ''}"><b>${esc(r.title)}</b><div class="zk-mut ${!r.done && r.when < Date.now() ? 'zk-due' : ''}">${fmt(r.when)}${r.rep ? ' · 🔁 ' + (r.rep == 1 ? 'كل يوم' : 'كل أسبوع') : ''}</div></div><div class="zk-acts">${soon ? `<a class="zk-btn zk-g" href="${esc(alarmHref(r))}" title="يحطها في ساعة الجوال">⏰ منبّه</a>` : ''}${!r.done ? `<button class="zk-btn zk-g" data-done="${r.id}">✓ تم</button>` : ''}<button class="zk-btn zk-g zk-red" data-del="${r.id}">حذف</button></div></div>`;
     }).join('') : '<div class="zk-mut">ما فيه تذكيرات.</div>';
-    const fs = vis().filter(i => i.type !== 'reminder').sort((a, b) => b.ts - a.ts);
+    const fs = vis().filter(i => i.type !== 'reminder' && i.type !== 'notedoc').sort((a, b) => b.ts - a.ts);
     q('#zk-fl').innerHTML = fs.length ? fs.map(f => f.type === 'file'
       ? `<div class="zk-card"><div class="zk-row"><div><b>📎 ${esc(f.name)}</b><div class="zk-mut">${fmt(f.ts)}${f.size ? ' · ' + size(f.size) : ''}${!f.uploaded && T.cfg.session ? ' · ⏳ ينرفع' : ''}</div></div><button class="zk-btn zk-g zk-red" data-del="${f.id}">حذف</button></div>${/^image\//.test(f.ctype || '') ? `<img data-img="${f.id}" ${T.urls[f.id] ? `src="${T.urls[f.id]}"` : 'hidden'} class="zk-img" alt="">` : ''}<div style="margin-top:8px"><button class="zk-btn" data-open="${f.id}">فتح / تنزيل</button></div></div>`
       : `<div class="zk-card"><div class="zk-row"><b>📝 ${esc(f.name)}</b><button class="zk-btn zk-g zk-red" data-del="${f.id}">حذف</button></div><div class="zk-body">${esc(f.body)}</div><button class="zk-btn" style="margin-top:8px" data-copy="${f.id}">نسخ</button></div>`).join('') : '<div class="zk-mut">ما فيه ملفات أو نصوص بعد.</div>';
@@ -399,5 +399,12 @@ create policy "zk files delete" on storage.objects for delete to authenticated
     document.addEventListener('visibilitychange', () => { if (!document.hidden) { sync(); tick(); } });
     nativeInit(); setStatus(T.cfg.session ? '☁️' : 'مزامنة'); render(); if (T.cfg.session) sync();
   }
-  window.Zakker = { init, mount, openSync, parse, sync, addRem: (title, when, extra) => addItem({ type: 'reminder', title, when, rep: 0, done: false, ...(extra || {}) }), _T: T };
+  /* مزامنة وثائق (الملاحظات) عبر نفس الجدول */
+  const getDocs = () => T.items.filter(i => i.type === 'notedoc');
+  async function setDoc(id, data, deleted) {
+    const cur = T.items.find(i => i.id === id && i.type === 'notedoc');
+    if (cur) { Object.assign(cur, { data, deleted: !!deleted, updated: Date.now(), dirty: 1 }); await saveItem(cur); scheduleSync(); return cur; }
+    const it = { id, type: 'notedoc', ts: Date.now(), updated: Date.now(), dirty: 1, deleted: !!deleted, data }; T.items.push(it); await saveItem(it); scheduleSync(); return it;
+  }
+  window.Zakker = { getDocs, setDoc, signedIn: () => !!(T.cfg && T.cfg.session), init, mount, openSync, parse, sync, addRem: (title, when, extra) => addItem({ type: 'reminder', title, when, rep: 0, done: false, ...(extra || {}) }), _T: T };
 })();

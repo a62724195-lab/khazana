@@ -7,7 +7,7 @@ const EMOJIS = ['⭐', '📁', '💼', '🖼️', '🎮', '📚', '🎵', '🔒'
 
 let groups = [], colorF = '', play = {}, trash = []; const unlocked = new Set();
 const TAGC = ['', '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899'];
-let items = [], sections = [], hasKey = false, missing = new Set(), notes = [];
+let items = [], sections = [], hasKey = false, missing = new Set(), notes = [], notesMerge = null;
 let secF = '', catF = '', laterF = false, result = null, sortBy = 'recent';
 let ui = { view: 'big', showDesc: true, showTags: true, accent: '', theme: 'auto' }, views = {}, collapsed = new Set(), incSub = false;
 let selMode = false; const sel = new Set();
@@ -730,10 +730,12 @@ function showView(v) {
 $('navVault').onclick = () => showView('vault'); $('navZk').onclick = () => showView('zk'); $('navNt').onclick = () => showView('nt');
 window.Notes.mount($('nt'), {
   get: () => notes, save: () => persist(), items: () => visItems(), open: it => { showView('vault'); openItem(it); },
+  hash: (p, s) => hashPass(p, s), salt: () => uid() + uid(), signedIn: () => window.Zakker.signedIn(), docs: () => window.Zakker.getDocs(), setDoc: (id, d, del) => window.Zakker.setDoc(id, d, del), onDocs: cb => { notesMerge = cb; },
+  remind: (title, when, noteId) => window.Zakker.addRem(title, when, { note: noteId }), ai: d => window.api.aiNote(d),
   url: u => window.api.openUrl(u), toast: m => toast(m), confirm: m => Promise.resolve(window.confirm(m)),
   importVault: list => { let c = 0; list.forEach(i => { notes.unshift({ id: 'n' + uid(), title: i.name || '', body: i.desc || '', color: i.color || '', pinned: !!i.pinned, tags: i.tags || '', links: [], created: i.added || Date.now(), updated: Date.now() }); i._imp = true; c++; }); persist(); return c; }
 });
-window.Zakker.init({ platform: 'desktop', onRing: () => { try { window.api.alertUser(); } catch (e) {} }, onChange: s => { $('navBadge').textContent = s.overdue || ''; } });
+window.Zakker.init({ platform: 'desktop', onDocs: () => { if (notesMerge) notesMerge(); }, onRing: () => { try { window.api.alertUser(); } catch (e) {} }, onChange: s => { $('navBadge').textContent = s.overdue || ''; } });
 window.Zakker.mount($('zk'));
 
 /* ---------- البداية ---------- */
@@ -743,6 +745,7 @@ window.Zakker.mount($('zk'));
   sections = meta && Array.isArray(meta.sections) ? meta.sections : [];
   if (meta) { ui = { ...ui, ...(meta.ui || {}) }; views = meta.views || {}; collapsed = new Set(meta.collapsed || []); groups = Array.isArray(meta.groups) ? meta.groups : []; notes = Array.isArray(meta.notes) ? meta.notes : []; trash = (Array.isArray(meta.trash) ? meta.trash : []).filter(x => x && Date.now() - (x._del || 0) < 30 * 864e5); }
   applyAppearance(); window.I18N.set(ui.lang || window.I18N.auto());
+  if (window.Splash) window.Splash.ready(!ui.welcomed, lg => { ui.lang = lg; ui.welcomed = true; window.I18N.set(lg); render(); persist(); }, ui.lang);
   items = rest.map(x => newItem(x)); normalizeSections();
   render(); playEnter(); checkMissing(); loadPlay().then(render);
 })();
@@ -755,6 +758,7 @@ if (window.api.onExt) window.api.onExt(async d => {
     const dr = newItem({ kind: 'link', name: host || 'رابط', category: KIND_CAT.link, url: d.url, section: '' }); try { await autoFill(dr); } catch (e) {}
     commit(dr); await persist(); render(); window.api.notify('انضاف الرابط: ' + dr.name + ' ✓'); return;
   }
+  if (d.type === 'note') { window.Notes.quick(d.text, d.tags); window.api.notify('📝 انحفظت الملاحظة'); return; }
   if (d.type === 'open') { const it = items.find(i => i.id === d.id); if (it) openItem(it); return; }
   if (d.type === 'add') {
     const paths = [...new Set(d.paths)].filter(p => !items.some(i => i.path === p));
