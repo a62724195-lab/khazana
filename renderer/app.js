@@ -53,13 +53,27 @@ function navTo(id) {
   pathOf(id).forEach(s => collapsed.delete(s.id)); incSub = false; render(); playEnter();
 }
 /* ---------- المظهر وأشكال العرض ---------- */
-const SWATCHES = ['', '#2563eb', '#7c3aed', '#db2777', '#dc2626', '#ea580c', '#0d9488'];
+const SWATCHES = ['', '#2563eb', '#0ea5e9', '#06b6d4', '#0d9488', '#16a34a', '#84cc16', '#eab308', '#f59e0b', '#ea580c', '#dc2626', '#e11d48', '#db2777', '#c026d3', '#7c3aed', '#4f46e5', '#64748b', '#111827'];
+const PRESETS = [['', 'الأساسي', '#f6f5f1', '#ffffff', '#2f6f5e'], ['night', 'ليلي', '#0e1220', '#171c2e', '#7aa2ff'], ['glass', 'زجاجي', '#2a3560', '#4a5a8a', '#8be9fd'], ['paper', 'ورقي', '#f1e8d6', '#fffaf0', '#a0522d'], ['neon', 'نيون', '#08080f', '#11111d', '#00f0ff'],
+  ['ocean', 'محيط', '#0a1a24', '#11293a', '#38bdf8'], ['forest', 'غابة', '#0f1a14', '#17261d', '#4ade80'], ['mocha', 'موكا', '#1b1410', '#281f19', '#d89b6a'], ['midnight', 'منتصف الليل', '#000000', '#0c0c0e', '#a78bfa'], ['retro', 'ريترو تيرمنال', '#020a02', '#061506', '#5dff7a'],
+  ['sunset', 'غروب', '#fff3e8', '#fffaf5', '#ea580c'], ['rose', 'وردي', '#fdeef2', '#fff8fa', '#db2777'], ['lavender', 'لافندر', '#f1edfb', '#faf8ff', '#7c3aed'], ['mint', 'نعناع', '#e9f8f1', '#f7fffb', '#0f9d6e'], ['sky', 'سماء', '#eaf4ff', '#f9fcff', '#2563eb']];
+const WALLS = { g1: 'linear-gradient(135deg,#1b2a52,#4a2c6d 55%,#12485a)', g2: 'linear-gradient(135deg,#ff9a8b,#ff6a88 50%,#ff99ac)', g3: 'linear-gradient(135deg,#0f2027,#203a43,#2c5364)', g4: 'linear-gradient(135deg,#f6d365,#fda085)', g5: 'linear-gradient(135deg,#84fab0,#8fd3f4)', g6: 'linear-gradient(135deg,#a18cd1,#fbc2eb)', g7: 'radial-gradient(circle at 20% 20%,#3a1c71,#d76d77 50%,#ffaf7b)', g8: 'linear-gradient(160deg,#000,#1a1a2e 60%,#16213e)', g9: 'linear-gradient(135deg,#134e5e,#71b280)', g10: 'linear-gradient(135deg,#232526,#414345)' };
+const RADS = { s: '3px', r: '22px', p: '30px' };
+const onAcc = h => { const m = /^#?([0-9a-f]{6})$/i.exec(h || ''); if (!m) return '#fff'; const n = parseInt(m[1], 16); return (0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) > 165 ? '#10151a' : '#fff'; };
 function applyAppearance() {
-  const r = document.documentElement;
+  const r = document.documentElement, st = r.style;
   if (ui.theme === 'light' || ui.theme === 'dark') r.setAttribute('data-theme', ui.theme); else r.removeAttribute('data-theme');
-  if (ui.preset) r.setAttribute('data-preset', ui.preset); else r.removeAttribute('data-preset');
-  if (ui.accent) { r.style.setProperty('--acc', ui.accent); r.style.setProperty('--onacc', '#fff'); r.style.setProperty('--acc2', `color-mix(in srgb, ${ui.accent} 16%, var(--card))`); }
-  else ['--acc', '--onacc', '--acc2'].forEach(p => r.style.removeProperty(p));
+  const at = (k, v) => { if (v) r.setAttribute(k, v); else r.removeAttribute(k); };
+  at('data-preset', ui.preset); at('data-cs', ui.cs); at('data-dn', ui.dn); at('data-ff', ui.ff); at('data-hv', ui.hv); at('data-mo', ui.mo); at('data-rad', RADS[ui.rad] ? ui.rad : '');
+  if (RADS[ui.rad]) st.setProperty('--rad', RADS[ui.rad]); else st.removeProperty('--rad');
+  if (ui.accent) { st.setProperty('--acc', ui.accent); st.setProperty('--onacc', onAcc(ui.accent)); st.setProperty('--acc2', `color-mix(in srgb, ${ui.accent} 16%, var(--card))`); }
+  else ['--acc', '--onacc', '--acc2'].forEach(p => st.removeProperty(p));
+  if (+ui.tw) st.setProperty('--tw', (+ui.tw) + 'px'); else st.removeProperty('--tw');
+  if (+ui.fs && +ui.fs !== 100) st.setProperty('--fs', (+ui.fs / 100)); else st.removeProperty('--fs');
+  const wall = ui.wp === 'img' ? (ui.wimg ? `url("${ui.wimg}")` : '') : (WALLS[ui.wp] || '');
+  const w = document.getElementById('wall');
+  if (wall) { w.style.backgroundImage = wall; r.setAttribute('data-wall', '1'); st.setProperty('--wb', (+ui.wb || 0) + 'px'); st.setProperty('--wd', ((+ui.wd || 0) / 100)); }
+  else { w.style.backgroundImage = ''; r.removeAttribute('data-wall'); st.removeProperty('--wb'); st.removeProperty('--wd'); }
 }
 const scopeKey = () => secF || 'all';
 const curView = () => views[scopeKey()] || ui.view || 'big';
@@ -704,6 +718,7 @@ window.addEventListener('focus', () => { if (Date.now() - lastCheck > 15000) che
 
 /* ---------- أشكال العرض والتخصيص ---------- */
 $('viewSeg').addEventListener('click', async e => { const b = e.target.closest('button[data-v]'); if (!b) return; views[scopeKey()] = b.dataset.v; await persist(); applyView(); });
+$('presetSel').innerHTML = PRESETS.map(p => `<option value="${p[0]}">${p[1]}</option>`).join('');
 $('swatches').innerHTML = SWATCHES.map(c => `<button type="button" class="sw ${c ? '' : 'def'}" data-c="${c}" style="${c ? 'background:' + c : ''}" title="${c || 'الأخضر الافتراضي'}"></button>`).join('');
 function syncCust() {
   $('presetSel').value = ui.preset || ''; $('langSel').value = ui.lang || window.I18N.get(); $('themeSel').value = ui.theme; $('optDesc').checked = ui.showDesc; $('optTags').checked = ui.showTags;
@@ -1026,7 +1041,7 @@ function cmdAll() {
     ['▦ عرض: بطاقات كبيرة', 'view big', () => document.querySelector('[data-v="big"]').click()], ['▪▪ عرض: بطاقات صغيرة', 'view small', () => document.querySelector('[data-v="small"]').click()], ['☰ عرض: قائمة', 'view list', () => document.querySelector('[data-v="list"]').click()],
     ['⚡ مجموعة جديدة', 'group مجموعة', () => editGroup(null)]
   ];
-  [['', 'الأساسي'], ['night', 'ليلي'], ['glass', 'زجاجي'], ['paper', 'ورقي'], ['neon', 'نيون']].forEach(([k, n]) => c.push(['🎨 ثيم: ' + n, 'theme ثيم', async () => { ui.preset = k; applyAppearance(); await persist(); }]));
+  PRESETS.forEach(([k, n]) => c.push(['🎨 ثيم: ' + n, 'theme ثيم', async () => { ui.preset = k; applyAppearance(); await persist(); }]));
   sections.forEach(s => c.push(['📂 اذهب إلى: ' + pathOf(s.id).map(x => x.name).join(' › '), 'go section قسم', () => { showView('vault'); navTo(s.id); }]));
   groups.forEach(g => c.push(['▶ شغّل: ' + g.name, 'run group مجموعة', () => runGroup(g)]));
   return c;
@@ -1059,12 +1074,29 @@ document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && !e.a
 const PREFS = [
   { id: 'look', ico: '🎨', t: 'المظهر', rows: [
     { t: 'اللغة', d: 'لغة واجهة التطبيق.', c: { sel: 'lang', o: [['ar', 'العربية'], ['en', 'English']] } },
-    { t: 'الثيم', d: 'شكل التطبيق الكامل.', c: { sel: 'preset', o: [['', 'الأساسي'], ['night', '🌙 ليلي'], ['glass', '🪟 زجاجي'], ['paper', '📜 ورقي'], ['neon', '⚡ نيون']] } },
+    { t: 'الثيم', d: 'شكل التطبيق الكامل.', c: { sel: 'preset', o: PRESETS.map(p => [p[0], p[1]]) } },
     { t: 'المظهر', d: 'فاتح أو داكن أو حسب الويندوز (للثيم الأساسي).', c: { sel: 'theme', o: [['auto', 'تلقائي'], ['light', 'فاتح'], ['dark', 'داكن']] } },
     { t: 'لون التطبيق', d: 'اللون الرئيسي للأزرار والتحديد.', c: { sw: 1 } },
     { t: 'شكل العرض الافتراضي', d: 'بطاقات كبيرة أو صغيرة أو قائمة (سطر لكل عنصر).', c: { sel: 'view', o: [['big', '▦ بطاقات كبيرة'], ['small', '▪▪ بطاقات صغيرة'], ['list', '☰ قائمة']] } },
     { t: 'إظهار الوصف', d: 'الوصف تحت اسم العنصر.', c: { tg: 'showDesc' } },
     { t: 'إظهار التصنيف والوسوم', d: 'الشارات الصغيرة على البطاقة.', c: { tg: 'showTags' } }
+  ] },
+  { id: 'design', ico: '🖌️', t: 'التصميم', rows: [
+    { t: 'الثيمات', d: 'اختر شكل التطبيق الكامل.', col: 1, c: { pre: 1 } },
+    { t: 'لون التطبيق', d: 'اختر من الألوان أو اصنع لونك من القوس الملوّن.', col: 1, c: { sw: 1, cu: 1 } },
+    { t: 'زوايا البطاقات', d: 'حادة أو دائرية أو كبسولة.', c: { sg: 'rad', o: [['', 'عادي'], ['s', 'حادة'], ['r', 'دائرية'], ['p', 'كبسولة']] } },
+    { t: 'ستايل البطاقات', d: 'شكل البطاقة نفسها.', c: { sg: 'cs', o: [['', 'عادي'], ['flat', 'مسطّح'], ['outline', 'إطار'], ['shadow', 'ظل'], ['grad', 'تدرّج'], ['glass', 'زجاج'], ['neo', 'بارز'], ['bar', 'شريط']] } },
+    { t: 'الكثافة', d: 'المسافات بين العناصر.', c: { sg: 'dn', o: [['c', 'مضغوط'], ['', 'عادي'], ['r', 'واسع']] } },
+    { t: 'حجم البطاقات الكبيرة', d: 'عرض البطاقة في العرض الكبير.', c: { rg: 'tw', min: 150, max: 340, step: 10, def: 205, u: 'px' } },
+    { t: 'نوع الخط', d: 'خطوط موجودة في ويندوز.', c: { sg: 'ff', o: [['', 'عادي'], ['tahoma', 'تاهوما'], ['soft', 'ناعم'], ['serif', 'كلاسيكي'], ['hand', 'يدوي'], ['mono', 'برمجي']] } },
+    { t: 'حجم الخط', d: 'كبّر أو صغّر كل النصوص.', c: { rg: 'fs', min: 85, max: 130, step: 5, def: 100, u: '%' } },
+    { t: 'الخلفية', d: 'تدرّج أو صورتك. تتغطّى بالبطاقات الشفافة.', col: 1, c: { wp: 1 } },
+    { t: 'تغبيش الخلفية', d: 'يخلي الصورة ناعمة.', c: { rg: 'wb', min: 0, max: 24, step: 2, def: 0, u: 'px' } },
+    { t: 'تعتيم الخلفية', d: 'يحسّن قراءة النص فوق الصورة.', c: { rg: 'wd', min: 0, max: 80, step: 5, def: 0, u: '%' } },
+    { t: 'حركة الماوس على البطاقة', d: 'وش يصير لما تمرّر الماوس.', c: { sg: 'hv', o: [['', 'عادي'], ['lift', 'ارتفاع'], ['glow', 'توهّج'], ['zoom', 'تكبير'], ['tilt', 'ميلان'], ['none', 'بدون']] } },
+    { t: 'الحركات', d: 'سلسة أو نطّاطة أو بدون حركات (للأجهزة الضعيفة).', c: { sg: 'mo', o: [['off', 'بدون'], ['', 'عادي'], ['lively', 'نطّاط']] } },
+    { t: 'مفاجأة', d: 'ثيم ولون وستايل عشوائي. جرّب أكثر من مرة!', c: { fn: 'rand', l: '🎲 عشوائي' } },
+    { t: 'رجّع الافتراضي', d: 'يرجّع كل التصميم لأصله (بياناتك ما تتأثر).', c: { fn: 'dreset', l: 'إعادة ضبط' } }
   ] },
   { id: 'data', ico: '💾', t: 'البيانات والنسخ', rows: [
     { t: 'نسخة احتياطية الآن', d: 'احفظ نسخة كاملة من خزنتك في ملف.', c: { b: 'more:export', l: 'حفظ نسخة' } },
@@ -1107,10 +1139,15 @@ const PREFS = [
 ];
 let prefsTab = 'look';
 function prefsVal(k) { if (k === 'lang') return ui.lang || window.I18N.get(); if (k === 'preset') return ui.preset || ''; if (k === 'theme') return ui.theme || 'auto'; if (k === 'view') return ui.view || 'big'; return ''; }
+const dval = k => ui[k] === undefined || ui[k] === null ? '' : String(ui[k]);
 function prefsCtl(c) {
   if (c.sel) return `<select data-ps="${c.sel}">${c.o.map(([v, l]) => `<option value="${v}" ${prefsVal(c.sel) === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
   if (c.tg) return `<label class="tgl"><input type="checkbox" data-pt="${c.tg}" ${ui[c.tg] ? 'checked' : ''}><i></i></label>`;
-  if (c.sw) return `<div class="swatches">${SWATCHES.map(x => `<button type="button" class="sw ${x ? '' : 'def'} ${(ui.accent || '') === x ? 'on' : ''}" data-pc="${x}" style="${x ? 'background:' + x : ''}"></button>`).join('')}</div>`;
+  if (c.sw) return `<div class="swatches">${SWATCHES.map(x => `<button type="button" class="sw ${x ? '' : 'def'} ${(ui.accent || '') === x ? 'on' : ''}" data-pc="${x}" style="${x ? 'background:' + x : ''}"></button>`).join('')}${c.cu ? `<span class="sw cust ${ui.accent && !SWATCHES.includes(ui.accent) ? 'on' : ''}" title="لون مخصّص"><input type="color" data-pcc value="${/^#[0-9a-f]{6}$/i.test(ui.accent || '') ? ui.accent : '#2f6f5e'}"></span>` : ''}</div>`;
+  if (c.pre) return `<div class="pgal">${PRESETS.map(([k, n, b, cd, a]) => `<button type="button" class="pcard ${(ui.preset || '') === k ? 'on' : ''}" data-pp="${k}"><span class="pv" style="background:${b}"><i style="background:${cd}"></i><i style="background:${cd}"></i><b style="background:${a}"></b></span>${esc(n)}</button>`).join('')}</div>`;
+  if (c.sg) return `<div class="seg2">${c.o.map(([v, l]) => `<button type="button" class="${dval(c.sg) === v ? 'on' : ''}" data-sg="${c.sg}" data-v="${v}">${esc(l)}</button>`).join('')}</div>`;
+  if (c.rg) { const v = +ui[c.rg] || c.def; return `<div class="rg"><input type="range" data-rg="${c.rg}" min="${c.min}" max="${c.max}" step="${c.step}" value="${v}"><output>${v}${c.u}</output></div>`; }
+  if (c.wp) return `<div class="wgal"><button type="button" class="wsw none ${!ui.wp ? 'on' : ''}" data-wp="" title="بدون"></button>${Object.keys(WALLS).map(k => `<button type="button" class="wsw ${ui.wp === k ? 'on' : ''}" data-wp="${k}" style="background-image:${WALLS[k]}"></button>`).join('')}<button type="button" class="sm" data-wpup="1">🖼️ صورتي</button></div>`;
   if (c.b) return `<button class="sm" data-pa="${c.b}">${esc(c.l)}</button>`;
   if (c.fn) return `<button class="sm" data-pf="${c.fn}">${esc(c.l)}</button>`;
   return '';
@@ -1118,7 +1155,7 @@ function prefsCtl(c) {
 function drawPrefs() {
   $('prefsNav').innerHTML = PREFS.map(p => `<button class="pn ${p.id === prefsTab ? 'on' : ''}" data-ptab="${p.id}"><span>${p.ico}</span> ${esc(p.t)}</button>`).join('');
   const p = PREFS.find(x => x.id === prefsTab);
-  $('prefsPane').innerHTML = `<h2>${p.ico} ${esc(p.t)}</h2>` + p.rows.map(r => `<div class="prow"><div class="pt"><b>${esc(r.t)}</b><span>${esc(r.d)}</span></div><div class="pc">${prefsCtl(r.c)}</div></div>`).join('');
+  $('prefsPane').innerHTML = `<h2>${p.ico} ${esc(p.t)}</h2>` + p.rows.map(r => `<div class="prow ${r.col ? 'col' : ''}"><div class="pt"><b>${esc(r.t)}</b><span>${esc(r.d)}</span></div><div class="pc">${prefsCtl(r.c)}</div></div>`).join('');
 }
 function openPrefs() { $('prefs').hidden = false; drawPrefs(); }
 function closePrefs() { $('prefs').hidden = true; }
@@ -1127,13 +1164,44 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('prefs'
 $('prefsNav').addEventListener('click', e => { const b = e.target.closest('[data-ptab]'); if (!b) return; prefsTab = b.dataset.ptab; drawPrefs(); });
 $('prefsPane').addEventListener('click', async e => {
   const sw = e.target.closest('[data-pc]'); if (sw) { ui.accent = sw.dataset.pc; applyAppearance(); await persist(); drawPrefs(); return; }
+  const pp = e.target.closest('[data-pp]'); if (pp) { ui.preset = pp.dataset.pp; applyAppearance(); await persist(); drawPrefs(); return; }
+  const sg = e.target.closest('[data-sg]'); if (sg) { ui[sg.dataset.sg] = sg.dataset.v; applyAppearance(); await persist(); drawPrefs(); return; }
+  const wp = e.target.closest('[data-wp]'); if (wp) { ui.wp = wp.dataset.wp; applyAppearance(); await persist(); drawPrefs(); return; }
+  if (e.target.closest('[data-wpup]')) { pickWall(); return; }
   const pa = e.target.closest('[data-pa]'); if (pa) { const k = pa.dataset.pa.split(':')[1]; const b = document.querySelector('[data-more="' + k + '"]'); if (b) b.click(); return; }
   const pf = e.target.closest('[data-pf]'); if (!pf) return;
-  if (pf.dataset.pf === 'groups') { closePrefs(); $('grpBtn').click(); }
+  if (pf.dataset.pf === 'rand') { randomLook(); await persist(); drawPrefs(); }
+  else if (pf.dataset.pf === 'dreset') { DKEYS.forEach(k => delete ui[k]); applyAppearance(); await persist(); drawPrefs(); toast('🎨 رجع التصميم الافتراضي'); }
+  else if (pf.dataset.pf === 'groups') { closePrefs(); $('grpBtn').click(); }
   else if (pf.dataset.pf === 'sync') window.Zakker.openSync();
   else if (pf.dataset.pf === 'github') window.api.openUrl('https://github.com/a62724195-lab/khazana');
 });
+const DKEYS = ['preset', 'accent', 'rad', 'cs', 'dn', 'tw', 'ff', 'fs', 'wp', 'wimg', 'wb', 'wd', 'hv', 'mo'];
+function randomLook() {
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  ui.preset = pick(PRESETS)[0]; ui.accent = Math.random() < .6 ? pick(SWATCHES.slice(1)) : ''; ui.rad = pick(['', 's', 'r', 'p']); ui.cs = pick(['', 'flat', 'outline', 'shadow', 'grad', 'glass', 'neo', 'bar']);
+  ui.hv = pick(['', 'lift', 'glow', 'zoom', 'tilt']); ui.wp = Math.random() < .4 ? pick(Object.keys(WALLS)) : ''; ui.wb = 0; ui.wd = ui.wp ? 20 : 0; applyAppearance();
+}
+function pickWall() {
+  const f = document.createElement('input'); f.type = 'file'; f.accept = 'image/*';
+  f.onchange = () => {
+    const file = f.files && f.files[0]; if (!file) return;
+    const rd = new FileReader();
+    rd.onload = () => { const im = new Image(); im.onload = async () => {
+      const k = Math.min(1, 1600 / im.width), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); ui.wimg = c.toDataURL('image/jpeg', .72); ui.wp = 'img'; if (!ui.wd) ui.wd = 25;
+      applyAppearance(); await persist(); drawPrefs(); toast('🖼️ انضافت الخلفية');
+    }; im.src = rd.result; };
+    rd.readAsDataURL(file);
+  };
+  f.click();
+}
+$('prefsPane').addEventListener('input', e => {
+  const r = e.target.closest('[data-rg]'); if (r) { ui[r.dataset.rg] = +r.value; applyAppearance(); const o = r.parentNode.querySelector('output'); if (o) o.textContent = r.value + (o.textContent.replace(/[\d.]/g, '')); }
+  const cc = e.target.closest('[data-pcc]'); if (cc) { ui.accent = cc.value; applyAppearance(); }
+});
 $('prefsPane').addEventListener('change', async e => {
+  if (e.target.closest('[data-rg]') || e.target.closest('[data-pcc]')) { await persist(); if (e.target.closest('[data-pcc]')) drawPrefs(); return; }
   const s = e.target.closest('[data-ps]'), t = e.target.closest('[data-pt]'); if (!s && !t) return;
   if (t) { ui[t.dataset.pt] = t.checked; applyView(); await persist(); return; }
   const k = s.dataset.ps, v = s.value;
