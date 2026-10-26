@@ -15,6 +15,7 @@ A free, open-source Windows desktop vault (Electron) for any file, program, imag
 - ملفات شخصية (خزنة لكل غرض)، نسخ احتياطي يومي تلقائي، إضافة من الحافظة (Ctrl+Alt+V)، مراقبة مجلد التنزيلات
 - حاويات سطح المكتب بـ 10 تصاميم (زجاجي، نيون، ورقي، Dock…) وألوان وشفافية وأحجام قابلة للتخصيص / Desktop fences with 10 designs and full customization
 - تخصيص كامل للتطبيق: 15 ثيم، ألوان ولون مخصّص، زوايا، ستايلات بطاقات، خطوط، خلفيات (تدرّج أو صورتك)، حركات وزر عشوائي / Full app personalization: 15 themes, custom accent, corners, card styles, fonts, wallpapers, motion and a random button
+- صفحة "اليوم" تفتح عند التشغيل، بحث شامل Ctrl+K (عناصر + ملاحظات + تذكيرات + لوحات)، ولوحة حرّة (Canvas) للأفكار مع خطوط ربط / Today page, universal search and a free-form canvas board
 - ملاحظاتي: روابط [[ ]] بين الملاحظات، تذكير لأي سطر، قفل، صور، تصدير Markdown، ذكاء اصطناعي، مزامنة، وملاحظة سريعة Ctrl+Alt+N / Notes with [[links]], per-line reminders, lock, images, export, AI, sync, quick capture
 - تذكيرات (ذكّرني) مع مزامنة اختيارية للجوال / Reminders with optional phone sync
 - واجهة عربية وإنجليزية / Arabic & English UI

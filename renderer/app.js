@@ -9,6 +9,7 @@ let groups = [], colorF = '', play = {}, trash = []; const unlocked = new Set();
 const TAGC = ['', '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899'];
 let items = [], sections = [], hasKey = false, missing = new Set(), notes = [], notesMerge = null;
 let secF = '', catF = '', laterF = false, result = null, sortBy = 'recent';
+let boards = [];
 let ui = { view: 'big', showDesc: true, showTags: true, accent: '', theme: 'auto' }, views = {}, collapsed = new Set(), incSub = false;
 let selMode = false; const sel = new Set();
 let suppressClick = false;
@@ -27,7 +28,7 @@ function toast(m, undo) {
   t._t = setTimeout(() => t.classList.remove('show'), undo ? 8000 : 3000);
 }
 // الأقسام تُحفظ كعنصر خاص أول القائمة (نفس ملف البيانات)
-const persist = () => window.api.save([{ id: '__meta__', kind: '_meta', sections, ui, views, collapsed: [...collapsed], groups, trash, notes }, ...items]);
+const persist = () => window.api.save([{ id: '__meta__', kind: '_meta', sections, ui, views, collapsed: [...collapsed], groups, trash, notes, boards }, ...items]);
 function fileURL(p) {
   const parts = String(p).replace(/\\/g, '/').split('/'); const first = parts.shift();
   return 'file:///' + first + '/' + parts.map(encodeURIComponent).join('/');
@@ -737,12 +738,43 @@ $('optTags').onchange = async e => { ui.showTags = e.target.checked; applyView()
 /* ---------- تبويب ذكّرني ---------- */
 function showView(v) {
   if (selMode) exitSel();
-  document.body.classList.toggle('zkview', v === 'zk'); document.body.classList.toggle('ntview', v === 'nt');
-  $('zk').hidden = v !== 'zk'; $('nt').hidden = v !== 'nt';
-  $('navVault').classList.toggle('on', v !== 'zk' && v !== 'nt'); $('navZk').classList.toggle('on', v === 'zk'); $('navNt').classList.toggle('on', v === 'nt');
+  const B = document.body.classList;
+  [['zk', 'zkview'], ['nt', 'ntview'], ['td', 'tdview'], ['cv', 'cvview']].forEach(([k, c]) => { B.toggle(c, v === k); $(k).hidden = v !== k; });
+  [['navVault', 'vault'], ['navZk', 'zk'], ['navNt', 'nt'], ['navTd', 'td'], ['navCv', 'cv']].forEach(([id, k]) => $(id).classList.toggle('on', k === v || (k === 'vault' && !['zk', 'nt', 'td', 'cv'].includes(v))));
   if (v === 'nt') window.Notes.draw();
+  if (v === 'td') drawToday();
+  if (v === 'cv') window.Canvas.draw();
 }
-$('navVault').onclick = () => showView('vault'); $('navZk').onclick = () => showView('zk'); $('navNt').onclick = () => showView('nt');
+$('navVault').onclick = () => showView('vault'); $('navZk').onclick = () => showView('zk'); $('navNt').onclick = () => showView('nt'); $('navTd').onclick = () => showView('td'); $('navCv').onclick = () => showView('cv');
+window.Canvas.mount($('cv'), { get: () => boards, save: () => persist(), items: () => visItems(), notes: () => window.Notes.list(), open: id => { const it = items.find(i => i.id === id); if (it) { showView('vault'); openItem(it); } }, openNote: id => { showView('nt'); window.Notes.select(id); }, confirm: m => Promise.resolve(window.confirm(m)) });
+/* ---------- صفحة اليوم ---------- */
+function drawToday() {
+  const ar = (ui.lang || window.I18N.get()) !== 'en', now = new Date(), h = now.getHours();
+  const hi = h < 5 ? '🌙 سهران؟' : h < 12 ? '☀️ صباح الخير' : h < 17 ? '🌤️ طاب يومك' : h < 21 ? '🌆 مساء الخير' : '🌙 تصبح على خير';
+  const dt = now.toLocaleDateString(ar ? 'ar-SA-u-nu-latn' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' });
+  const endDay = new Date(now); endDay.setHours(23, 59, 59, 999);
+  const rems = (window.Zakker.list ? window.Zakker.list() : []).filter(r => !r.done && r.when && r.when <= endDay.getTime()).sort((a, b) => a.when - b.when).slice(0, 6);
+  const nts = window.Notes.list().slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.updated || 0) - (a.updated || 0)).slice(0, 5);
+  const top = visItems().filter(i => i.openCount > 0).sort((a, b) => b.openCount - a.openCount).slice(0, 6);
+  const rec = visItems().filter(i => i.lastOpened).sort((a, b) => b.lastOpened - a.lastOpened).slice(0, 6);
+  const itm = i => `<div class="tdi" data-it="${i.id}">${i.thumb ? `<img src="${i.thumb}">` : '<span>📄</span>'}<b>${esc(i.name)}</b></div>`;
+  const tm = r => new Date(r.when).toLocaleTimeString(ar ? 'ar-SA-u-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+  $('td').innerHTML = `<div class="tdw"><div class="tdh"><h1>${hi}</h1><span>${esc(dt)}</span></div>
+    <div class="tdq"><button data-tq="note">📝 ملاحظة سريعة</button><button data-tq="add">➕ إضافة عنصر</button><button data-tq="rem">🔔 تذكير</button><button data-tq="cv">🎨 لوحتي</button><button data-tq="srch">🔎 بحث شامل (Ctrl+K)</button></div>
+    <div class="tdg">
+      <section><h3>🔔 تذكيرات اليوم</h3>${rems.map(r => `<div class="tdr ${r.when < Date.now() ? 'late' : ''}" data-tq="rem"><b>${esc(r.title)}</b><small>${tm(r)}</small></div>`).join('') || '<div class="hint">ما عندك تذكيرات اليوم 🎉</div>'}</section>
+      <section><h3>📝 ملاحظاتك</h3>${nts.map(n => `<div class="tdr" data-nt="${n.id}"><b>${n.pinned ? '📌 ' : ''}${n.lock ? '🔒 ' : ''}${esc(n.title || 'بدون عنوان')}</b></div>`).join('') || '<div class="hint">لسا ما كتبت ملاحظات.</div>'}</section>
+      <section><h3>⭐ الأكثر استخداماً</h3><div class="tdit">${top.map(itm).join('') || '<div class="hint">افتح عناصرك وبتظهر هنا.</div>'}</div></section>
+      <section><h3>🕘 فتحتها مؤخراً</h3><div class="tdit">${rec.map(itm).join('') || '<div class="hint">ما فتحت شي لسا.</div>'}</div></section>
+    </div>
+    <div class="tdf">🗄️ ${visItems().length} عنصر · 📝 ${nts.length ? window.Notes.count() : 0} ملاحظة · 🎨 ${window.Canvas.count()} بطاقة في اللوحة</div></div>`;
+}
+$('td').addEventListener('click', e => {
+  const it = e.target.closest('[data-it]'); if (it) { const x = items.find(i => i.id === it.dataset.it); if (x) openItem(x); return; }
+  const nt = e.target.closest('[data-nt]'); if (nt) { showView('nt'); window.Notes.select(nt.dataset.nt); return; }
+  const q = e.target.closest('[data-tq]'); if (!q) return; const k = q.dataset.tq;
+  if (k === 'note') { showView('nt'); window.Notes.create('blank'); } else if (k === 'add') { showView('vault'); $('addBtn').click(); } else if (k === 'rem') showView('zk') ; else if (k === 'cv') showView('cv'); else if (k === 'srch') openPalette();
+});
 window.Notes.mount($('nt'), {
   get: () => notes, save: () => persist(), items: () => visItems(), open: it => { showView('vault'); openItem(it); },
   hash: (p, s) => hashPass(p, s), salt: () => uid() + uid(), signedIn: () => window.Zakker.signedIn(), docs: () => window.Zakker.getDocs(), setDoc: (id, d, del) => window.Zakker.setDoc(id, d, del), onDocs: cb => { notesMerge = cb; },
@@ -758,11 +790,12 @@ window.Zakker.mount($('zk'));
   const s = await window.api.load(); hasKey = s.hasKey;
   const { meta, rest } = splitLoaded(s.items || []);
   sections = meta && Array.isArray(meta.sections) ? meta.sections : [];
-  if (meta) { ui = { ...ui, ...(meta.ui || {}) }; views = meta.views || {}; collapsed = new Set(meta.collapsed || []); groups = Array.isArray(meta.groups) ? meta.groups : []; notes = Array.isArray(meta.notes) ? meta.notes : []; trash = (Array.isArray(meta.trash) ? meta.trash : []).filter(x => x && Date.now() - (x._del || 0) < 30 * 864e5); }
+  if (meta) { ui = { ...ui, ...(meta.ui || {}) }; views = meta.views || {}; collapsed = new Set(meta.collapsed || []); groups = Array.isArray(meta.groups) ? meta.groups : []; notes = Array.isArray(meta.notes) ? meta.notes : []; boards = Array.isArray(meta.boards) ? meta.boards : []; trash = (Array.isArray(meta.trash) ? meta.trash : []).filter(x => x && Date.now() - (x._del || 0) < 30 * 864e5); }
   applyAppearance(); window.I18N.set(ui.lang || window.I18N.auto());
   if (window.Splash) window.Splash.ready(!ui.welcomed, lg => { ui.lang = lg; ui.welcomed = true; window.I18N.set(lg); render(); persist(); }, ui.lang);
   items = rest.map(x => newItem(x)); normalizeSections();
   render(); playEnter(); checkMissing(); loadPlay().then(render);
+  if (ui.startToday !== false) showView('td');
 })();
 
 /* ---------- أوامر من الحاويات والبحث السريع ---------- */
@@ -1036,7 +1069,7 @@ function cmdAll() {
     ['🎮 استيراد ألعاب Steam و Epic', 'games steam epic العاب', mc('games')], ['🔖 استيراد مفضلة المتصفح', 'bookmarks مفضلة', mc('bookmarks')],
     ['🗑️ سلة المحذوفات', 'trash سلة', mc('trash')], ['👤 الملفات الشخصية', 'profile ملف شخصي', mc('profiles')],
     ['🔄 تحديث التطبيق', 'update تحديث', mc('update')], ['💾 نسخة احتياطية', 'backup نسخة', mc('export')], ['🔑 الذكاء الاصطناعي', 'ai مفتاح', mc('settings')],
-    ['🗄️ الخزنة', 'vault خزنة', () => showView('vault')], ['📝 ملاحظاتي', 'notes ملاحظات افكار', () => showView('nt')], ['📝 ملاحظة جديدة', 'new note ملاحظة جديدة فكرة', () => { showView('nt'); window.Notes.create('blank'); }], ['✅ قائمة مهام جديدة', 'todo checklist مهام', () => { showView('nt'); window.Notes.create('todo'); }], ['💡 فكرة جديدة', 'idea فكرة', () => { showView('nt'); window.Notes.create('idea'); }], ['🔔 ذكّرني', 'reminders تذكير', () => showView('zk')],
+    ['🗄️ الخزنة', 'vault خزنة', () => showView('vault')], ['📝 ملاحظاتي', 'notes ملاحظات افكار', () => showView('nt')], ['📝 ملاحظة جديدة', 'new note ملاحظة جديدة فكرة', () => { showView('nt'); window.Notes.create('blank'); }], ['✅ قائمة مهام جديدة', 'todo checklist مهام', () => { showView('nt'); window.Notes.create('todo'); }], ['💡 فكرة جديدة', 'idea فكرة', () => { showView('nt'); window.Notes.create('idea'); }], ['🔔 ذكّرني', 'reminders تذكير', () => showView('zk')], ['🏠 صفحة اليوم', 'today اليوم home', () => showView('td')], ['🎨 لوحتي', 'canvas board لوحة', () => showView('cv')],
     ['🎨 التخصيص', 'customize تخصيص', () => $('custBtn').click()], ['☑️ تحديد عدة عناصر', 'select تحديد', () => $('selBtn').click()],
     ['▦ عرض: بطاقات كبيرة', 'view big', () => document.querySelector('[data-v="big"]').click()], ['▪▪ عرض: بطاقات صغيرة', 'view small', () => document.querySelector('[data-v="small"]').click()], ['☰ عرض: قائمة', 'view list', () => document.querySelector('[data-v="list"]').click()],
     ['⚡ مجموعة جديدة', 'group مجموعة', () => editGroup(null)]
@@ -1051,8 +1084,11 @@ function cmdFilter() {
   if (!q) { cmdList = cmdAll().slice(0, 9).map(([t, , f]) => ({ t, f })); }
   else {
     const qt = nq.split(/\s+/).filter(Boolean);
-    cmdList = cmdAll().filter(([t, k]) => { const h = norm(t + ' ' + k); return qt.every(w => h.includes(w)); }).slice(0, 7).map(([t, , f]) => ({ t, f }));
+    cmdList = cmdAll().filter(([t, k]) => { const h = norm(t + ' ' + k); return qt.every(w => h.includes(w)); }).slice(0, 5).map(([t, , f]) => ({ t, f }));
     localSearch(q).slice(0, 6).forEach(m => { const it = items.find(i => i.id === m.id); if (it && vis(it)) cmdList.push({ t: '📄 افتح: ' + it.name, f: () => openItem(it) }); });
+    window.Notes.list().filter(n => qt.every(w => norm((n.title || '') + ' ' + [].concat(n.tags || []).join(' ') + ' ' + (n.lock ? '' : n.body || '')).includes(w))).slice(0, 5).forEach(n => cmdList.push({ t: '📝 ملاحظة: ' + (n.title || 'بدون عنوان'), f: () => { showView('nt'); window.Notes.select(n.id); } }));
+    (window.Zakker.list ? window.Zakker.list() : []).filter(r => qt.every(w => norm(r.title || '').includes(w))).slice(0, 4).forEach(r => cmdList.push({ t: '🔔 تذكير: ' + r.title, f: () => showView('zk') }));
+    boards.forEach(b => { if (qt.every(w => norm(b.name + ' ' + b.nodes.map(n => n.txt || '').join(' ')).includes(w))) cmdList.push({ t: '🎨 لوحة: ' + b.name, f: () => { showView('cv'); window.Canvas.open && window.Canvas.open(b.id); } }); });
   }
   cmdSel = 0; drawCmd();
 }
@@ -1078,6 +1114,7 @@ const PREFS = [
     { t: 'المظهر', d: 'فاتح أو داكن أو حسب الويندوز (للثيم الأساسي).', c: { sel: 'theme', o: [['auto', 'تلقائي'], ['light', 'فاتح'], ['dark', 'داكن']] } },
     { t: 'لون التطبيق', d: 'اللون الرئيسي للأزرار والتحديد.', c: { sw: 1 } },
     { t: 'شكل العرض الافتراضي', d: 'بطاقات كبيرة أو صغيرة أو قائمة (سطر لكل عنصر).', c: { sel: 'view', o: [['big', '▦ بطاقات كبيرة'], ['small', '▪▪ بطاقات صغيرة'], ['list', '☰ قائمة']] } },
+    { t: 'يفتح على صفحة اليوم', d: 'أول ما تفتح البرنامج تشوف ملخص يومك.', c: { tg: 'startToday', def: 1 } },
     { t: 'إظهار الوصف', d: 'الوصف تحت اسم العنصر.', c: { tg: 'showDesc' } },
     { t: 'إظهار التصنيف والوسوم', d: 'الشارات الصغيرة على البطاقة.', c: { tg: 'showTags' } }
   ] },
@@ -1142,7 +1179,7 @@ function prefsVal(k) { if (k === 'lang') return ui.lang || window.I18N.get(); if
 const dval = k => ui[k] === undefined || ui[k] === null ? '' : String(ui[k]);
 function prefsCtl(c) {
   if (c.sel) return `<select data-ps="${c.sel}">${c.o.map(([v, l]) => `<option value="${v}" ${prefsVal(c.sel) === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
-  if (c.tg) return `<label class="tgl"><input type="checkbox" data-pt="${c.tg}" ${ui[c.tg] ? 'checked' : ''}><i></i></label>`;
+  if (c.tg) return `<label class="tgl"><input type="checkbox" data-pt="${c.tg}" ${(c.def ? ui[c.tg] !== false : ui[c.tg]) ? 'checked' : ''}><i></i></label>`;
   if (c.sw) return `<div class="swatches">${SWATCHES.map(x => `<button type="button" class="sw ${x ? '' : 'def'} ${(ui.accent || '') === x ? 'on' : ''}" data-pc="${x}" style="${x ? 'background:' + x : ''}"></button>`).join('')}${c.cu ? `<span class="sw cust ${ui.accent && !SWATCHES.includes(ui.accent) ? 'on' : ''}" title="لون مخصّص"><input type="color" data-pcc value="${/^#[0-9a-f]{6}$/i.test(ui.accent || '') ? ui.accent : '#2f6f5e'}"></span>` : ''}</div>`;
   if (c.pre) return `<div class="pgal">${PRESETS.map(([k, n, b, cd, a]) => `<button type="button" class="pcard ${(ui.preset || '') === k ? 'on' : ''}" data-pp="${k}"><span class="pv" style="background:${b}"><i style="background:${cd}"></i><i style="background:${cd}"></i><b style="background:${a}"></b></span>${esc(n)}</button>`).join('')}</div>`;
   if (c.sg) return `<div class="seg2">${c.o.map(([v, l]) => `<button type="button" class="${dval(c.sg) === v ? 'on' : ''}" data-sg="${c.sg}" data-v="${v}">${esc(l)}</button>`).join('')}</div>`;

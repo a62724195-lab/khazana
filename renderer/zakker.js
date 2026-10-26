@@ -406,5 +406,5 @@ create policy "zk files delete" on storage.objects for delete to authenticated
     if (cur) { Object.assign(cur, { data, deleted: !!deleted, updated: Date.now(), dirty: 1 }); await saveItem(cur); scheduleSync(); return cur; }
     const it = { id, type: 'notedoc', ts: Date.now(), updated: Date.now(), dirty: 1, deleted: !!deleted, data }; T.items.push(it); await saveItem(it); scheduleSync(); return it;
   }
-  window.Zakker = { getDocs, setDoc, signedIn: () => !!(T.cfg && T.cfg.session), init, mount, openSync, parse, sync, addRem: (title, when, extra) => addItem({ type: 'reminder', title, when, rep: 0, done: false, ...(extra || {}) }), _T: T };
+  window.Zakker = { list: () => vis().filter(i => i.type === 'reminder'), getDocs, setDoc, signedIn: () => !!(T.cfg && T.cfg.session), init, mount, openSync, parse, sync, addRem: (title, when, extra) => addItem({ type: 'reminder', title, when, rep: 0, done: false, ...(extra || {}) }), _T: T };
 })();
