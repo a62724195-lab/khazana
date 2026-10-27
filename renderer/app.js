@@ -711,11 +711,38 @@ document.addEventListener('keydown', e => {
 let lastCheck = 0;
 async function checkMissing() {
   lastCheck = Date.now();
-  const withPath = items.filter(i => i.path); if (!withPath.length) { missing = new Set(); return render(); }
+  const withPath = items.filter(i => i.path); if (!withPath.length) { missing = new Set(); render(); return updateMissBar(); }
   const res = await window.api.exists(withPath.map(i => i.path));
-  missing = new Set(withPath.filter((_, k) => !res[k]).map(i => i.id)); render();
+  missing = new Set(withPath.filter((_, k) => !res[k]).map(i => i.id)); render(); updateMissBar(); if (!$('td').hidden) drawToday();
 }
 window.addEventListener('focus', () => { if (Date.now() - lastCheck > 15000) checkMissing(); loadPlay(); });
+/* ---------- 🔧 إصلاح المسارات بعد النقل ---------- */
+let missDismissed = false;
+function updateMissBar() {
+  const n = missing.size, bar = $('missBar'); if (!bar) return;
+  bar.hidden = !n || missDismissed || document.body.classList.contains('zkview') || document.body.classList.contains('ntview') || document.body.classList.contains('tdview') || document.body.classList.contains('cvview');
+  if (n) $('missTxt').textContent = `⚠️ ${n} عنصر مسارهم مفقود (غالباً انتقلوا لمكان ثاني)`;
+}
+async function relocate(ids, roots, silent) {
+  const L = items.filter(i => ids.includes(i.id) && i.path).map(i => ({ id: i.id, path: i.path, size: i.size, isDir: i.kind === 'folder' }));
+  if (!L.length) return 0;
+  if (!silent) setBusy('🔍 أدوّر على الملفات اللي انتقلت…');
+  let r = null; try { r = await window.api.relocate({ items: L, roots }); } catch (e) { r = null; }
+  if (!silent) setBusy('');
+  if (!r) { if (!silent) toast('تعذّر البحث'); return 0; }
+  const old = {}; let n = 0;
+  items.forEach(i => { const np = r.fixed && r.fixed[i.id]; if (np) { old[i.id] = i.path; i.path = np; n++; } });
+  if (n) {
+    await persist(); await checkMissing();
+    const left = L.length - n;
+    toast(`🔧 صلّحت مسار ${n} عنصر${left ? ` · باقي ${left} ما لقيتهم` : ''}`, () => { items.forEach(i => { if (old[i.id]) i.path = old[i.id]; }); persist(); checkMissing(); });
+  } else if (!silent) toast('ما لقيتهم. جرّب «اختر المجلد» ودلّني وين نقلتهم');
+  return n;
+}
+$('missAuto').onclick = () => relocate([...missing]);
+$('missPick').onclick = async () => { const ps = await window.api.pick({ dirs: true }); if (ps && ps[0]) relocate([...missing], [ps[0]]); };
+$('missOpen').onclick = () => openClean();
+$('missX').onclick = () => { missDismissed = true; updateMissBar(); };
 
 /* ---------- أشكال العرض والتخصيص ---------- */
 $('viewSeg').addEventListener('click', async e => { const b = e.target.closest('button[data-v]'); if (!b) return; views[scopeKey()] = b.dataset.v; await persist(); applyView(); });
@@ -744,6 +771,7 @@ function showView(v) {
   if (v === 'nt') window.Notes.draw();
   if (v === 'td') drawToday();
   if (v === 'cv') window.Canvas.draw();
+  updateMissBar();
 }
 $('navVault').onclick = () => showView('vault'); $('navZk').onclick = () => showView('zk'); $('navNt').onclick = () => showView('nt'); $('navTd').onclick = () => showView('td'); $('navCv').onclick = () => showView('cv');
 window.Canvas.mount($('cv'), { get: () => boards, save: () => persist(), items: () => visItems(), notes: () => window.Notes.list(), open: id => { const it = items.find(i => i.id === id); if (it) { showView('vault'); openItem(it); } }, openNote: id => { showView('nt'); window.Notes.select(id); }, confirm: m => Promise.resolve(window.confirm(m)) });
@@ -760,6 +788,7 @@ function drawToday() {
   const itm = i => `<div class="tdi" data-it="${i.id}">${i.thumb ? `<img src="${i.thumb}">` : '<span>📄</span>'}<b>${esc(i.name)}</b></div>`;
   const tm = r => new Date(r.when).toLocaleTimeString(ar ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit' });
   $('td').innerHTML = `<div class="tdw"><div class="tdh"><h1>${hi}</h1><span>${esc(dt)}</span></div>
+    ${missing.size ? `<div class="tdmiss"><b>⚠️ ${missing.size} عنصر مسارهم مفقود (غالباً انتقلوا لمكان ثاني)</b><button class="sm pri" data-tq="mauto">🔧 إصلاح تلقائي</button><button class="sm" data-tq="mpick">📂 اختر المجلد اللي نقلتهم له</button></div>` : ''}
     <div class="tdq"><button data-tq="note">📝 ملاحظة سريعة</button><button data-tq="add">➕ إضافة عنصر</button><button data-tq="rem">🔔 تذكير</button><button data-tq="cv">🎨 لوحتي</button><button data-tq="srch">🔎 بحث شامل (Ctrl+K)</button></div>
     <div class="tdg">
       <section><h3>🔔 تذكيرات اليوم</h3>${rems.map(r => `<div class="tdr ${r.when < Date.now() ? 'late' : ''}" data-tq="rem"><b>${esc(r.title)}</b><small>${tm(r)}</small></div>`).join('') || '<div class="hint">ما عندك تذكيرات اليوم 🎉</div>'}</section>
@@ -773,7 +802,7 @@ $('td').addEventListener('click', e => {
   const it = e.target.closest('[data-it]'); if (it) { const x = items.find(i => i.id === it.dataset.it); if (x) openItem(x); return; }
   const nt = e.target.closest('[data-nt]'); if (nt) { showView('nt'); window.Notes.select(nt.dataset.nt); return; }
   const q = e.target.closest('[data-tq]'); if (!q) return; const k = q.dataset.tq;
-  if (k === 'note') { showView('nt'); window.Notes.create('blank'); } else if (k === 'add') { showView('vault'); $('addBtn').click(); } else if (k === 'rem') showView('zk') ; else if (k === 'cv') showView('cv'); else if (k === 'srch') openPalette();
+  if (k === 'note') { showView('nt'); window.Notes.create('blank'); } else if (k === 'add') { showView('vault'); $('addBtn').click(); } else if (k === 'rem') showView('zk') ; else if (k === 'cv') showView('cv'); else if (k === 'srch') openPalette(); else if (k === 'mauto') relocate([...missing]).then(drawToday); else if (k === 'mpick') window.api.pick({ dirs: true }).then(ps => ps && ps[0] && relocate([...missing], [ps[0]]).then(drawToday));
 });
 window.Notes.mount($('nt'), {
   get: () => notes, save: () => persist(), items: () => visItems(), open: it => { showView('vault'); openItem(it); },
@@ -794,7 +823,7 @@ window.Zakker.mount($('zk'));
   applyAppearance(); window.I18N.set(ui.lang || window.I18N.auto());
   if (window.Splash) window.Splash.ready(!ui.welcomed, lg => { ui.lang = lg; ui.welcomed = true; window.I18N.set(lg); render(); persist(); }, ui.lang);
   items = rest.map(x => newItem(x)); normalizeSections();
-  render(); playEnter(); checkMissing(); loadPlay().then(render);
+  render(); playEnter(); checkMissing().then(() => { if (missing.size && missing.size <= 300) relocate([...missing], null, true); }); loadPlay().then(render);
   if (ui.startToday !== false) showView('td');
 })();
 
@@ -896,13 +925,17 @@ async function openClean() {
   const row = (i, chk, extra) => `<label class="chk-row"><input type="checkbox" data-cid="${i.id}" ${chk ? 'checked' : ''}> <span class="ci">${i.thumb ? `<img src="${esc(i.thumb)}" alt="">` : (KIND_ICON[i.kind] || '📄')}</span><span class="cn"><b>${esc(i.name)}</b><span class="hint" dir="ltr">${esc(i.path || i.url || '')}</span></span>${extra || ''}</label>`;
   let h = '';
   h += `<div class="sec"><span>⚠️ ملفات مفقودة (${dead.length})</span></div>`;
+  if (dead.length) h += '<div class="drow" style="justify-content:flex-start;gap:8px;padding:2px 0 8px"><button type="button" class="sm pri" id="cleanAuto">🔧 إصلاح تلقائي</button><button type="button" class="sm" id="cleanPick">📂 دوّر في مجلد…</button><span class="hint">يطبّق على اللي تحدده، وإذا ما حددت شي يطبّق على الكل</span></div>';
   h += dead.length ? dead.map(i => row(i, false, `<button type="button" class="sm" data-relink="${i.id}">📍 غيّر المسار</button>`)).join('') : '<div class="hint" style="padding:6px 4px">✅ كل ملفاتك موجودة في أماكنها.</div>';
   h += `<div class="sec"><span>👯 مكررات (${dups.length} مجموعة)</span></div>`;
   h += dups.length ? dups.map(g => `<div class="dgrp"><div class="hint">${g.why} — العلامة على اللي يتحذف، واحد منهم يبقى</div>${g.list.map((i, k) => row(i, k > 0, k === 0 ? '<span class="tag">يبقى</span>' : '')).join('')}</div>`).join('') : '<div class="hint" style="padding:6px 4px">✅ ما في مكررات.</div>';
   body.innerHTML = h;
   const upd = () => { $('cleanDel').hidden = !body.querySelector('input:checked'); $('cleanDel').textContent = `🗑️ احذف المحدد (${body.querySelectorAll('input:checked').length}) من الخزنة`; };
   body.onchange = upd; upd();
+  const targets = () => { const c = [...body.querySelectorAll('input:checked')].map(x => x.dataset.cid).filter(id => dead.some(d => d.id === id)); return c.length ? c : dead.map(d => d.id); };
   body.onclick = async e => {
+    if (e.target.id === 'cleanAuto') { dlg.close(); await relocate(targets()); return openClean(); }
+    if (e.target.id === 'cleanPick') { const ps = await window.api.pick({ dirs: true }); if (!ps || !ps[0]) return; dlg.close(); await relocate(targets(), [ps[0]]); return openClean(); }
     const b = e.target.closest('[data-relink]'); if (!b) return; e.preventDefault();
     const it = items.find(i => i.id === b.dataset.relink); if (!it) return;
     const ps = await window.api.pick({ dirs: it.kind === 'folder' }); if (!ps[0]) return;

@@ -539,3 +539,7 @@ body.tdview .layout,body.tdview .searchbox,body.tdview .addwrap:not(#moreWrap),b
 #cv{position:relative}
 .cvn.item .cvref,.cvn.note .cvref{height:auto;padding-bottom:12px}
 @media(max-width:760px){.tdg{grid-template-columns:1fr}}
+
+#missBar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--warn2);color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:12px;padding:8px 12px;margin:0 0 10px}
+#missBar[hidden]{display:none}#missBar #missTxt{flex:1;min-width:200px;font-weight:600}
+.tdmiss{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--warn2);color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-radius:12px;padding:10px 14px}.tdmiss b{flex:1;min-width:220px}

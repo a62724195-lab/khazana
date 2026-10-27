@@ -269,6 +269,64 @@ ipcMain.handle('item:openUrl', async (_e, u) => {
   return false;
 });
 ipcMain.handle('items:exists', (_e, paths) => (paths || []).map(p => { try { return fs.existsSync(p); } catch (e) { return false; } }));
+
+/* ---------- 🔧 إصلاح المسارات بعد نقل الملفات ---------- */
+const RELOC_SKIP = new Set(['node_modules', '.git', '$recycle.bin', 'system volume information', 'windows', 'program files', 'program files (x86)', 'programdata', 'appdata', '.cache', 'cache']);
+async function relocScan(roots, wanted, deadline) {
+  const found = new Map(); let visited = 0;
+  const stack = roots.map(r => [r, 0]);
+  while (stack.length && Date.now() < deadline && visited < 150000) {
+    const [dir, depth] = stack.pop();
+    let ents; try { ents = await fs.promises.readdir(dir, { withFileTypes: true }); } catch (e) { continue; }
+    for (const en of ents) {
+      visited++;
+      const low = en.name.toLowerCase(), full = path.join(dir, en.name), isDir = en.isDirectory();
+      if (wanted.has(low)) { const a = found.get(low) || []; a.push({ p: full, d: isDir }); found.set(low, a); }
+      if (isDir && depth < 7 && !RELOC_SKIP.has(low) && !(en.name[0] === '.' && en.name.length > 1)) stack.push([full, depth + 1]);
+    }
+  }
+  return found;
+}
+const segs = p => String(p).replace(/\\/g, '/').split('/').filter(Boolean).map(s => s.toLowerCase());
+function commonTail(a, b) { let n = 0; const x = segs(a), y = segs(b); while (n < x.length && n < y.length && x[x.length - 1 - n] === y[y.length - 1 - n]) n++; return n; }
+ipcMain.handle('items:relocate', async (_e, o = {}) => {
+  const list = (Array.isArray(o.items) ? o.items : []).filter(i => i && typeof i.path === 'string' && i.path);
+  const out = { fixed: {}, ambiguous: [], notFound: [] };
+  if (!list.length) return out;
+  const deadline = Date.now() + (o.budget || 12000);
+  let roots = Array.isArray(o.roots) && o.roots.length ? o.roots.filter(r => typeof r === 'string') : [];
+  if (!roots.length) {
+    const home = app.getPath('home'); const set = new Set();
+    for (const n of ['Desktop', 'Documents', 'Downloads', 'Pictures', 'Videos', 'Music', 'OneDrive']) set.add(path.join(home, n));
+    for (const it of list) { let d = path.dirname(it.path); for (let k = 0; k < 8 && d && d !== path.dirname(d); k++) { if (fs.existsSync(d)) { set.add(d); break; } d = path.dirname(d); } }
+    roots = [...set].filter(r => { try { return fs.statSync(r).isDirectory(); } catch (e) { return false; } });
+  }
+  roots = roots.filter(r => !roots.some(q => q !== r && r.toLowerCase().startsWith(q.toLowerCase() + path.sep)));
+  const wanted = new Set(list.map(i => path.basename(i.path).toLowerCase()));
+  const found = await relocScan(roots, wanted, deadline);
+  const unresolved = [];
+  for (const it of list) {
+    const c = (found.get(path.basename(it.path).toLowerCase()) || []).filter(x => !!x.d === !!it.isDir);
+    if (!c.length) { unresolved.push(it); continue; }
+    let pick = null;
+    if (c.length === 1) pick = c[0];
+    else {
+      const sc = c.map(x => ({ x, n: commonTail(x.p, it.path) })).sort((a, b) => b.n - a.n);
+      if (sc[0].n > sc[1].n) pick = sc[0].x;
+      else if (it.size && !it.isDir) { const same = c.filter(x => { try { return fs.statSync(x.p).size === it.size; } catch (e) { return false; } }); if (same.length === 1) pick = same[0]; }
+    }
+    if (pick) out.fixed[it.id] = pick.p; else out.ambiguous.push(it.id);
+  }
+  // لو نُقل مجلد كامل: نطبّق نفس النقلة على باقي العناصر اللي تحت المجلد القديم
+  const maps = [];
+  for (const it of list) { const np = out.fixed[it.id]; if (!np) continue; const x = String(it.path).replace(/\\/g, '/').split('/'), y = String(np).replace(/\\/g, '/').split('/'); let n = 0; while (n < x.length - 1 && n < y.length - 1 && x[x.length - 1 - n].toLowerCase() === y[y.length - 1 - n].toLowerCase()) n++; if (n < x.length - 1) maps.push([x.slice(0, x.length - n).join('/').toLowerCase(), y.slice(0, y.length - n).join('/')]); }
+  for (const it of unresolved) {
+    const low = String(it.path).replace(/\\/g, '/'); let done = false;
+    for (const [from, to] of maps) { if (low.toLowerCase().startsWith(from + '/') || low.toLowerCase() === from) { const cand = path.normalize(to + low.slice(from.length)); if (fs.existsSync(cand)) { out.fixed[it.id] = cand; done = true; break; } } }
+    if (!done) out.notFound.push(it.id);
+  }
+  return out;
+});
 ipcMain.handle('key:has', () => !!getKey());
 ipcMain.handle('key:set', (_e, k) => { setKey(String(k || '').trim()); return !!getKey(); });
 ipcMain.handle('data:path', () => dataDir());
