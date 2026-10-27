@@ -39,6 +39,8 @@ contextBridge.exposeInMainWorld('api', {
   profileSwitch: n => inv('profile:switch', n),
   updateCheck: () => inv('update:check'),
   updateApply: () => inv('update:apply'),
+  updatePending: () => inv('update:pending'),
+  onUpdateAvail: cb => ipcRenderer.on('upd:avail', (_e, d) => cb(d)),
   playGet: () => inv('play:get'),
   backupNow: () => inv('backup:now'),
   backupOpen: () => inv('backup:open'),

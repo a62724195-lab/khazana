@@ -707,6 +707,12 @@ document.addEventListener('keydown', e => {
   else if (selMode && e.ctrlKey && e.key.toLowerCase() === 'a' && document.activeElement.tagName !== 'INPUT') { e.preventDefault(); selectAllVisible(); }
 });
 
+/* ---------- 🔔 تنبيه التحديث ---------- */
+function showUpdBar(d) { if (!d) return; $('updTxt').textContent = `🔄 فيه تحديث جديد للتطبيق (${d.count} ملف)`; $('updBar').hidden = false; $('moreBtn').classList.add('hasupd'); }
+if (window.api.onUpdateAvail) { window.api.onUpdateAvail(showUpdBar); setTimeout(() => window.api.updatePending && window.api.updatePending().then(showUpdBar), 2500); }
+$('updLater').onclick = () => { $('updBar').hidden = true; };
+$('updGo').onclick = async () => { $('updGo').disabled = true; $('updTxt').textContent = '⏳ أنزّل التحديث…'; const u = await window.api.updateApply(); if (u.ok) $('updTxt').textContent = '✅ تم! يعيد التشغيل…'; else { $('updTxt').textContent = 'فشل التحديث: ' + u.error; $('updGo').disabled = false; } };
+
 /* ---------- الملفات المفقودة ---------- */
 let lastCheck = 0;
 async function checkMissing() {

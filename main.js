@@ -464,6 +464,26 @@ ipcMain.handle('update:apply', async () => {
   } catch (e) { return { ok: false, error: String(e.message || e) }; }
 });
 
+
+/* ---------- 🔔 تنبيه تلقائي لما ينزل تحديث ---------- */
+let updAvail = null, updNotified = '';
+async function bgUpdateCheck() {
+  try {
+    const { man, changed } = await updCheck();
+    if (!changed.length) { updAvail = null; return; }
+    const key = changed.map(f => f.sha).join('');
+    updAvail = { count: changed.length, version: man.version };
+    if (win && !win.isDestroyed()) win.webContents.send('upd:avail', updAvail);
+    if (key !== updNotified) {
+      updNotified = key;
+      if (!win || !win.isVisible() || !win.isFocused()) {
+        try { const n = new Notification({ title: 'خزنة', body: '🔄 فيه تحديث جديد! اضغط هنا وحدّث بضغطة.', icon: appIcon() }); n.on('click', () => showWin()); n.show(); } catch (e) {}
+      }
+    }
+  } catch (e) {}
+}
+ipcMain.handle('update:pending', () => updAvail);
+
 /* ---------- وقت الاستخدام (يراقب البرامج المشغّلة كل 30 ثانية) ---------- */
 const playFile = () => path.join(dataDir(), 'play.json');
 let play = null, playDirty = false; const exeCache = new Map();
@@ -805,6 +825,7 @@ app.whenReady().then(async () => {
   try { globalShortcut.register('Control+Alt+F', () => openQuick()); } catch (e) {}
   try { globalShortcut.register('Control+Alt+V', () => clipAdd()); } catch (e) {}
   try { globalShortcut.register('Control+Alt+N', () => openCapture()); } catch (e) {}
+  setTimeout(bgUpdateCheck, 12000); setInterval(bgUpdateCheck, 30 * 60 * 1000);
   startWatch();
   app.on('activate', () => { if (!win) createWindow(); });
 });
