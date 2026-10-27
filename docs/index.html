@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Khazana — خزنة</title>
-<meta name="description" content="Khazana: a free, open-source vault for your files, programs, links and notes — with reminders, desktop fences and optional AI search. For Windows. | خزنة: خزنتك الشخصية المجانية للملفات والبرامج والروابط والملاحظات.">
+<meta name="description" content="Khazana: a free, open-source vault for your files, programs, links and notes — with a Today page, a free-form board, reminders, desktop fences and optional AI search. For Windows. | خزنة: خزنتك الشخصية المجانية للملفات والبرامج والروابط والملاحظات.">
 <meta property="og:title" content="Khazana — خزنة"><meta property="og:description" content="Everything you have… in one place. Free & open source for Windows.">
 <meta property="og:image" content="img/og.jpg"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="img/favicon.png">
@@ -41,7 +41,7 @@ h1{font-size:clamp(40px,7vw,78px);line-height:1.15;font-weight:900;margin-bottom
 section{padding:70px 0}
 h2{font-size:clamp(28px,4vw,44px);font-weight:900;text-align:center;margin-bottom:10px}
 .lead{color:var(--mut);text-align:center;max-width:680px;margin:0 auto 40px;font-size:18px}
-.three{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.three{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}
 .card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid var(--line);border-radius:20px;padding:26px;transition:transform .2s,border-color .2s}
 .card:hover{transform:translateY(-4px);border-color:rgba(122,168,255,.5)}.card .e{font-size:40px}.card h3{font-size:22px;margin:6px 0}.card p{color:var(--mut)}
 .vid{max-width:960px;margin:0 auto}.vid video{width:100%;display:block;border-radius:16px;background:#000}
@@ -61,7 +61,7 @@ html[dir=rtl] .row.rev{direction:ltr}
 .faq{max-width:820px;margin:0 auto}details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin-bottom:10px}summary{cursor:pointer;font-weight:700;font-size:18px}details p{color:var(--mut);margin-top:8px}
 footer{border-top:1px solid var(--line);padding:34px 0;text-align:center;color:var(--mut)}footer a{color:var(--acc)}
 .rv{opacity:0;transform:translateY(26px);transition:opacity .7s,transform .7s}.rv.in{opacity:1;transform:none}
-@media(max-width:860px){.three,.steps{grid-template-columns:1fr}.row{grid-template-columns:1fr;gap:20px}nav .links{display:none}.hero .shot{transform:none}}
+@media(max-width:860px){.steps{grid-template-columns:1fr}.row{grid-template-columns:1fr;gap:20px}nav .links{display:none}.hero .shot{transform:none}}
 </style>
 </head>
 <body><div class="bgfx"></div>
@@ -77,17 +77,22 @@ footer{border-top:1px solid var(--line);padding:34px 0;text-align:center;color:v
 </div></header>
 
 <section><div class="wrap"><h2 data-i="t3"></h2><p class="lead" data-i="l3"></p>
-<div class="three"><div class="card rv"><div class="e">🗄️</div><h3 data-i="p1t"></h3><p data-i="p1"></p></div><div class="card rv"><div class="e">📝</div><h3 data-i="p2t"></h3><p data-i="p2"></p></div><div class="card rv"><div class="e">🔔</div><h3 data-i="p3t"></h3><p data-i="p3"></p></div></div></div></section>
+<div class="three"><div class="card rv"><div class="e">🗄️</div><h3 data-i="p1t"></h3><p data-i="p1"></p></div><div class="card rv"><div class="e">📝</div><h3 data-i="p2t"></h3><p data-i="p2"></p></div><div class="card rv"><div class="e">🎨</div><h3 data-i="p4t"></h3><p data-i="p4"></p></div><div class="card rv"><div class="e">🔔</div><h3 data-i="p3t"></h3><p data-i="p3"></p></div></div></div>
+</section>
 
 <section id="video"><div class="wrap"><h2 data-i="vt"></h2><p class="lead" data-i="vl"></p><div class="vid rv"><video id="vv" controls preload="metadata" playsinline></video></div></div></section>
 
 <section id="features"><div class="wrap"><h2 data-i="ft"></h2><p class="lead" data-i="fl"></p>
-<div class="row rv"><div class="tx"><h3 data-i="f1t"></h3><p data-i="f1"></p></div><div class="shot"><img data-img="search" alt=""></div></div>
+<div class="row rv"><div class="tx"><h3 data-i="f9t"></h3><p data-i="f9"></p></div><div class="shot"><img data-img="today" alt=""></div></div>
+<div class="row rev rv"><div class="tx"><h3 data-i="f1t"></h3><p data-i="f1"></p></div><div class="shot"><img data-img="search" alt=""></div></div>
+<div class="row rv"><div class="tx"><h3 data-i="f10t"></h3><p data-i="f10"></p></div><div class="shot"><img data-img="usearch" alt=""></div></div>
 <div class="row rev rv"><div class="tx"><h3 data-i="f2t"></h3><p data-i="f2"></p></div><div class="shot"><img data-img="rooms" alt=""></div></div>
-<div class="row rv"><div class="tx"><h3 data-i="f3t"></h3><p data-i="f3"></p></div><div class="themes"><div class="shot"><img data-img="glass" alt=""></div><div class="shot"><img data-img="neon" alt=""></div><div class="shot"><img data-img="paper" alt=""></div></div></div>
-<div class="row rev rv"><div class="tx"><h3 data-i="f4t"></h3><p data-i="f4"></p></div><div class="desk"><img data-img="fence" data-ext="png" alt=""></div></div>
-<div class="row rv"><div class="tx"><h3 data-i="f5t"></h3><p data-i="f5"></p></div><div class="desk"><img data-img="quick" data-ext="png" alt=""></div></div>
-<div class="row rev rv"><div class="tx"><h3 data-i="f6t"></h3><p data-i="f6"></p></div><div class="shot"><img data-img="notes" alt=""></div></div>
+<div class="row rv"><div class="tx"><h3 data-i="f6t"></h3><p data-i="f6"></p></div><div class="shot"><img data-img="notes" alt=""></div></div>
+<div class="row rev rv"><div class="tx"><h3 data-i="f11t"></h3><p data-i="f11"></p></div><div class="shot"><img data-img="canvas" alt=""></div></div>
+<div class="row rv"><div class="tx"><h3 data-i="f3t"></h3><p data-i="f3"></p></div><div class="themes"><div class="shot"><img data-img="look1" alt=""></div><div class="shot"><img data-img="look2" alt=""></div><div class="shot"><img data-img="look3" alt=""></div></div></div>
+<div class="row rev rv"><div class="tx"><h3 data-i="f12t"></h3><p data-i="f12"></p></div><div class="shot"><img data-img="design" alt=""></div></div>
+<div class="row rv"><div class="tx"><h3 data-i="f4t"></h3><p data-i="f4"></p></div><div class="desk"><img data-img="fence" data-ext="png" alt=""></div></div>
+<div class="row rev rv"><div class="tx"><h3 data-i="f5t"></h3><p data-i="f5"></p></div><div class="desk"><img data-img="quick" data-ext="png" alt=""></div></div>
 <div class="row rv"><div class="tx"><h3 data-i="f7t"></h3><p data-i="f7"></p></div><div class="shot"><img data-img="groups" alt=""></div></div>
 <div class="row rev rv"><div class="tx"><h3 data-i="f8t"></h3><p data-i="f8"></p></div><div class="shot"><img data-img="settings" alt=""></div></div>
 </div></section>
@@ -104,38 +109,38 @@ footer{border-top:1px solid var(--line);padding:34px 0;text-align:center;color:v
 <footer><div class="wrap"><p data-i="foot"></p><p style="margin-top:6px"><a href="https://github.com/a62724195-lab/khazana" target="_blank" rel="noopener">github.com/a62724195-lab/khazana</a></p></div></footer>
 
 <script>
-const T={ar:{n_feat:'المميزات',n_vid:'الفيديو',n_inst:'التثبيت',n_faq:'أسئلة',h1:'خزنة',sub:'كل شي عندك… في مكان واحد. ملفاتك وبرامجك وألعابك وروابطك وملاحظاتك وتذكيراتك — منظّمة ومحميّة وتلقاها بوصفها.',dl:'حمّل لويندوز مجانًا',watch:'شاهد الإعلان',c1:'🆓 مجاني للأبد',c2:'💻 مفتوح المصدر',c3:'🔒 بياناتك عندك',c4:'🌍 عربي وإنجليزي',
-t3:'ثلاثة أشياء في تطبيق واحد',l3:'ما تحتاج تنقّل بين تطبيقات كثيرة.',p1t:'الخزنة',p1:'احفظ الملفات والبرامج والصور والمجلدات والروابط، ونظّمها بأقسام وغرف وألوان.',p2t:'ملاحظاتي',p2:'اكتب أفكارك ومهامك، اربطها ببعض بـ [[ ]]، وحط تذكير لأي سطر.',p3t:'ذكّرني',p3:'تذكيرات بالوقت مع مزامنة اختيارية للجوال، تنبّهك حتى لو التطبيق مصغّر.',
-vt:'شاهد خزنة بالعمل',vl:'٧٨ ثانية بس.',
+const T={ar:{n_feat:'المميزات',n_vid:'الفيديو',n_inst:'التثبيت',n_faq:'أسئلة',h1:'خزنة',sub:'كل شي عندك… في مكان واحد. ملفاتك وبرامجك وألعابك وروابطك وملاحظاتك وأفكارك وتذكيراتك — منظّمة ومحميّة وتلقاها بوصفها.',dl:'حمّل لويندوز مجانًا',watch:'شاهد الإعلان',c1:'🆓 مجاني للأبد',c2:'💻 مفتوح المصدر',c3:'🔒 بياناتك عندك',c4:'🌍 عربي وإنجليزي',
+t3:'أربعة أشياء في تطبيق واحد',l3:'ما تحتاج تنقّل بين تطبيقات كثيرة.',p1t:'الخزنة',p1:'احفظ الملفات والبرامج والصور والمجلدات والروابط، ونظّمها بأقسام وغرف وألوان.',p2t:'ملاحظاتي',p2:'اكتب أفكارك ومهامك، اربطها ببعض بـ [[ ]]، وحط تذكير لأي سطر.',p4t:'لوحتي',p4:'لوحة حرّة تحط عليها أفكارك وصورك وملفاتك وملاحظاتك وتربطها بخطوط وأسهم.',p3t:'ذكّرني',p3:'تذكيرات بالوقت مع مزامنة اختيارية للجوال، تنبّهك حتى لو التطبيق مصغّر.',
+vt:'شاهد خزنة بالعمل',vl:'أقل من دقيقتين.',
 ft:'مميزات تخليك ما تستغني عنه',fl:'والأحلى: فيه أشياء كثير تكتشفها بنفسك.',
 f1t:'ابحث بالوصف، مو بالاسم',f1:'ما تذكر اسم الملف؟ اكتب «أبي شي أحوّل فيه PDF» أو «صورة العقد» ويلقاه لك. البحث العادي فوري، والبحث الذكي بالذكاء الاصطناعي اختياري ومفتاحك عندك.',
 f2t:'أقسام داخل أقسام',f2:'رتّب خزنتك بغرف داخل غرف مثل المجلدات، مع ألوان وتثبيت وثلاثة أشكال عرض: كبير وصغير وقائمة.',
-f3t:'شكل يعجبك أنت',f3:'ثيمات (ليلي، زجاجي، ورقي، نيون)، ألوان رئيسية، وفاتح/داكن/تلقائي.',
+f3t:'خلّه يشبهك',f3:'١٥ ثيم، ١٨ لون ولون مخصّص، زوايا حادة أو دائرية، ٨ ستايلات للبطاقات، خطوط، وخلفية بصورتك. وزر «عشوائي» لو حبيت تتفاجأ.',
 f4t:'حاويات على سطح المكتب',f4:'حوّل أي قسم لحاوية على سطح مكتبك. اسحب الملفات وأفلتها داخلها، أو خلّها ذكية: «الأكثر استخدامًا» و«فتحتها مؤخرًا».',
 f5t:'بحث سريع من أي مكان',f5:'اضغط Ctrl+Alt+F وابحث في كل خزنتك، وافتح اللي تبيه بـ Enter. وبـ Ctrl+Alt+N تكتب ملاحظة سريعة بدون ما تفتح التطبيق.',
 f6t:'ملاحظات بقوة حقيقية',f6:'قوائم مهام، وسوم، قوالب، روابط بين الملاحظات، صور بالـ Ctrl+V، قفل بكلمة سر، تصدير Markdown، وأدوات ذكاء اصطناعي اختيارية.',
 f7t:'مجموعات بمواعيد',f7:'«وضع الدراسة» يفتح كل برامجك بضغطة، وحتى بوقت محدد كل يوم. استورد ألعابك من Steam وEpic بضغطة.',
-f8t:'إعدادات مرتبة',f8:'واجهة إعدادات كاملة بأقسام واضحة: المظهر، البيانات والنسخ الاحتياطي، الاستيراد، الأدوات، سطح المكتب، والذكاء.',
+f9t:'صفحة اليوم',f9:'أول ما تفتح البرنامج تشوف تذكيراتك، ملاحظاتك، وأكثر شي تستخدمه — يومك كله في صفحة وحدة.',f10t:'بحث شامل بـ Ctrl+K',f10:'اكتب كلمة وتلقى ملفاتك وملاحظاتك وتذكيراتك ولوحاتك بنفس الوقت، وكمان أوامر البرنامج.',f11t:'لوحة حرّة لأفكارك',f11:'بطاقات نص ملوّنة، صور (Ctrl+V)، عناصر من خزنتك وملاحظاتك — اسحبها وقرّبها واربطها بخطوط. تسوي أكثر من لوحة.',f12t:'تحكّم كامل بالمظهر',f12:'تبويب «التصميم» في الإعدادات: ثيمات بمعاينة، ألوان، زوايا، ستايلات، كثافة، خطوط، خلفيات وحركات.',f8t:'إعدادات مرتبة',f8:'واجهة إعدادات كاملة بأقسام واضحة: المظهر، البيانات والنسخ الاحتياطي، الاستيراد، الأدوات، سطح المكتب، والذكاء.',
 mt:'وفيه أكثر…',ml:'أشياء صغيرة تفرق:',
-more:['🗑️ سلة محذوفات','👤 ملفات شخصية','💾 نسخ احتياطي تلقائي','🎮 استيراد Steam وEpic','🔖 استيراد مفضلة المتصفح','📋 إضافة من الحافظة','📥 مراقبة مجلد التنزيلات','⏱️ وقت اللعب','📊 إحصائيات','🧹 فحص الملفات الميتة والمكررة','⌨️ لوحة أوامر Ctrl+K','🔄 تحديث من داخل التطبيق'],
+more:['🗑️ سلة محذوفات','👤 ملفات شخصية','💾 نسخ احتياطي تلقائي','🎮 استيراد Steam وEpic','🔖 استيراد مفضلة المتصفح','📋 إضافة من الحافظة','📥 مراقبة مجلد التنزيلات','⏱️ وقت اللعب','📊 إحصائيات','🧹 فحص الملفات الميتة والمكررة','🏠 صفحة اليوم','🎨 لوحة حرّة','🎲 ثيم عشوائي','🖼️ خلفية بصورتك','⌨️ لوحة أوامر Ctrl+K','🔄 تحديث من داخل التطبيق'],
 it:'ثبّته بثلاث خطوات',il:'ما يحتاج تثبيت معقّد.',s1t:'حمّل الملف',s1:'اضغط زر التحميل لتنزل الملف المضغوط Khazana-Windows.zip.',s2t:'فك الضغط',s2:'كليك يمين ← استخراج الكل، وحط المجلد في أي مكان تبي.',s3t:'شغّل Khazana.exe',s3:'وخلاص! وبعدها يتحدّث من داخل التطبيق: ⋯ ← تحديث التطبيق.',
 warn:'⚠️ ممكن ويندوز يعرض تحذير «SmartScreen» لأن البرنامج مجاني وغير موقّع بشهادة مدفوعة. اضغط «مزيد من المعلومات» ثم «تشغيل على أي حال». الكود كله مفتوح وتقدر تراجعه بنفسك.',src:'📂 الكود المصدري',
 qt:'أسئلة شائعة',faq:[['هل هو مجاني فعلاً؟','إي، مجاني بالكامل ومفتوح المصدر، وما فيه إعلانات ولا اشتراكات.'],['وين تنحفظ بياناتي؟','على جهازك أنت (مجلد AppData). ما نرسل شي لأي سيرفر. الشي الوحيد: لو فعّلت الذكاء الاصطناعي بمفتاحك تنرسل بس البيانات المطلوبة لـ Anthropic. ولو فعّلت مزامنة «ذكّرني» تُرسل لحسابك في Supabase.'],['هل قفل الأقسام والملاحظات تشفير؟','لا، هو حماية خفيفة تخفي المحتوى داخل البرنامج، والملف نفسه غير مشفّر. لا تعتمد عليه للأسرار الحساسة جدًا.'],['على أي أنظمة يشتغل؟','ويندوز حاليًا.'],['كيف أحدّثه؟','من داخل التطبيق: ⋯ ← 🔄 تحديث التطبيق.']],
 foot:'صُنع بحب ❤ — مجاني ومفتوح المصدر.'},
-en:{n_feat:'Features',n_vid:'Video',n_inst:'Install',n_faq:'FAQ',h1:'Khazana',sub:'Everything you have… in one place. Your files, programs, games, links, notes and reminders — organized, protected, and findable by description.',dl:'Download for Windows — free',watch:'Watch the trailer',c1:'🆓 Free forever',c2:'💻 Open source',c3:'🔒 Your data stays yours',c4:'🌍 Arabic & English',
-t3:'Three tools in one app',l3:'No more jumping between apps.',p1t:'The Vault',p1:'Keep files, programs, images, folders and links — organized with sections, rooms and colors.',p2t:'My Notes',p2:'Write ideas and tasks, link notes together with [[ ]], and add a reminder to any line.',p3t:'Reminders',p3:'Time-based reminders with optional phone sync that ring even when the app is minimized.',
-vt:'See Khazana in action',vl:'Just 78 seconds.',
+en:{n_feat:'Features',n_vid:'Video',n_inst:'Install',n_faq:'FAQ',h1:'Khazana',sub:'Everything you have… in one place. Your files, programs, games, links, notes, ideas and reminders — organized, protected, and findable by description.',dl:'Download for Windows — free',watch:'Watch the trailer',c1:'🆓 Free forever',c2:'💻 Open source',c3:'🔒 Your data stays yours',c4:'🌍 Arabic & English',
+t3:'Four tools in one app',l3:'No more jumping between apps.',p1t:'The Vault',p1:'Keep files, programs, images, folders and links — organized with sections, rooms and colors.',p2t:'My Notes',p2:'Write ideas and tasks, link notes together with [[ ]], and add a reminder to any line.',p4t:'My Board',p4:'A free-form board for your ideas, images, files and notes — linked with lines and arrows.',p3t:'Reminders',p3:'Time-based reminders with optional phone sync that ring even when the app is minimized.',
+vt:'See Khazana in action',vl:'Under two minutes.',
 ft:'Features you will not want to live without',fl:'And there is plenty more to discover on your own.',
 f1t:'Search by description, not by name',f1:'Forgot the file name? Type “something to convert a PDF” or “the contract photo” and it finds it. Normal search is instant; AI search is optional and uses your own key.',
 f2t:'Sections inside sections',f2:'Organize your vault with rooms inside rooms like folders, with colors, pinning and three view modes: large, small and list.',
-f3t:'A look that is yours',f3:'Themes (Night, Glass, Paper, Neon), accent colors, and light / dark / auto.',
+f3t:'Make it yours',f3:'15 themes, 18 colors plus a custom one, sharp or round corners, 8 card styles, fonts and your own wallpaper. And a “Random” button if you feel adventurous.',
 f4t:'Fences on your desktop',f4:'Turn any section into a fence on your desktop. Drag files in, or make it smart: “Most used” and “Recently opened”.',
 f5t:'Instant search from anywhere',f5:'Press Ctrl+Alt+F to search your whole vault and open with Enter. Press Ctrl+Alt+N to jot a quick note without opening the app.',
 f6t:'Notes with real power',f6:'Checklists, tags, templates, links between notes, images with Ctrl+V, password lock, Markdown export, and optional AI tools.',
 f7t:'Groups with schedules',f7:'“Study mode” opens all your apps in one click — even at a set time every day. Import your Steam and Epic games in one click.',
-f8t:'Tidy settings',f8:'A full settings page with clear sections: appearance, data & backup, import, tools, desktop and AI.',
+f9t:'The Today page',f9:'When the app opens you see your reminders, notes and most-used items — your whole day on one page.',f10t:'Universal search with Ctrl+K',f10:'Type a word and find your files, notes, reminders and boards at once — plus app commands.',f11t:'A free-form board for ideas',f11:'Colored text cards, images (Ctrl+V), items from your vault and your notes — drag, zoom and link them with lines. Make as many boards as you like.',f12t:'Full control of the look',f12:'The “Design” tab in settings: themes with previews, colors, corners, card styles, density, fonts, wallpapers and motion.',f8t:'Tidy settings',f8:'A full settings page with clear sections: appearance, data & backup, import, tools, desktop and AI.',
 mt:'And more…',ml:'Small things that matter:',
-more:['🗑️ Trash','👤 Profiles','💾 Auto backup','🎮 Steam & Epic import','🔖 Browser bookmarks import','📋 Add from clipboard','📥 Downloads watcher','⏱️ Play time','📊 Stats','🧹 Dead & duplicate scan','⌨️ Command palette Ctrl+K','🔄 In-app updates'],
+more:['🗑️ Trash','👤 Profiles','💾 Auto backup','🎮 Steam & Epic import','🔖 Browser bookmarks import','📋 Add from clipboard','📥 Downloads watcher','⏱️ Play time','📊 Stats','🧹 Dead & duplicate scan','🏠 Today page','🎨 Free-form board','🎲 Random theme','🖼️ Your own wallpaper','⌨️ Command palette Ctrl+K','🔄 In-app updates'],
 it:'Install in three steps',il:'No complicated setup.',s1t:'Download',s1:'Click the download button to get Khazana-Windows.zip.',s2t:'Extract',s2:'Right-click → Extract All, and put the folder anywhere you like.',s3t:'Run Khazana.exe',s3:'That is it! Later it updates from inside the app: ⋯ → Update app.',
 warn:'⚠️ Windows may show a “SmartScreen” warning because the app is free and not signed with a paid certificate. Click “More info” then “Run anyway”. The whole source code is open for you to review.',src:'📂 Source code',
 qt:'FAQ',faq:[['Is it really free?','Yes — completely free and open source, with no ads and no subscriptions.'],['Where is my data stored?','On your own computer (the AppData folder). Nothing is sent to any server. The only exceptions: if you enable AI with your own key, only the needed data goes to Anthropic; and if you enable Reminders sync, data goes to your own Supabase account.'],['Is the lock real encryption?','No. It is a light protection that hides content inside the app; the file itself is not encrypted. Do not rely on it for highly sensitive secrets.'],['Which systems does it support?','Windows for now.'],['How do I update it?','From inside the app: ⋯ → 🔄 Update app.']],

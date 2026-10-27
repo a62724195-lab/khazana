@@ -751,14 +751,14 @@ window.Canvas.mount($('cv'), { get: () => boards, save: () => persist(), items: 
 function drawToday() {
   const ar = (ui.lang || window.I18N.get()) !== 'en', now = new Date(), h = now.getHours();
   const hi = h < 5 ? '🌙 سهران؟' : h < 12 ? '☀️ صباح الخير' : h < 17 ? '🌤️ طاب يومك' : h < 21 ? '🌆 مساء الخير' : '🌙 تصبح على خير';
-  const dt = now.toLocaleDateString(ar ? 'ar-SA-u-nu-latn' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' });
+  const dt = now.toLocaleDateString(ar ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' });
   const endDay = new Date(now); endDay.setHours(23, 59, 59, 999);
   const rems = (window.Zakker.list ? window.Zakker.list() : []).filter(r => !r.done && r.when && r.when <= endDay.getTime()).sort((a, b) => a.when - b.when).slice(0, 6);
   const nts = window.Notes.list().slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.updated || 0) - (a.updated || 0)).slice(0, 5);
   const top = visItems().filter(i => i.openCount > 0).sort((a, b) => b.openCount - a.openCount).slice(0, 6);
   const rec = visItems().filter(i => i.lastOpened).sort((a, b) => b.lastOpened - a.lastOpened).slice(0, 6);
   const itm = i => `<div class="tdi" data-it="${i.id}">${i.thumb ? `<img src="${i.thumb}">` : '<span>📄</span>'}<b>${esc(i.name)}</b></div>`;
-  const tm = r => new Date(r.when).toLocaleTimeString(ar ? 'ar-SA-u-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+  const tm = r => new Date(r.when).toLocaleTimeString(ar ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit' });
   $('td').innerHTML = `<div class="tdw"><div class="tdh"><h1>${hi}</h1><span>${esc(dt)}</span></div>
     <div class="tdq"><button data-tq="note">📝 ملاحظة سريعة</button><button data-tq="add">➕ إضافة عنصر</button><button data-tq="rem">🔔 تذكير</button><button data-tq="cv">🎨 لوحتي</button><button data-tq="srch">🔎 بحث شامل (Ctrl+K)</button></div>
     <div class="tdg">
