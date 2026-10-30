@@ -369,6 +369,13 @@ function askDraft(d, o = {}) {
     $('aiNote').textContent = '';
     ['fName', 'fDesc', 'fCat', 'fTags'].forEach(id => { $(id).oninput = () => { dirty[id] = true; }; });
     $('fUrl').oninput = setPv;
+    $('diagBtn').hidden = !d.path;
+    $('diagBtn').onclick = async () => {
+      if (!window.api.thumbDiag) return toast('حدّث التطبيق أول');
+      setBusy('أفحص الصورة…'); let t = ''; try { t = await window.api.thumbDiag(cur.path || d.path); } catch (e) { t = 'ERR ' + e.message; } setBusy('');
+      try { await navigator.clipboard.writeText(t); } catch (e) {}
+      alert(t + '\n\n(نُسخ التقرير للحافظة — الصقه وارسله لي)');
+    };
     $('imgBtn').onclick = () => {
       const f = document.createElement('input'); f.type = 'file'; f.accept = 'image/*';
       f.onchange = () => { const file = f.files && f.files[0]; if (!file) return; const rd = new FileReader(); rd.onload = () => { const im = new Image(); im.onload = () => { const k = Math.min(1, 256 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); cur.thumb = c.toDataURL('image/png'); setPv(); }; im.src = rd.result; }; rd.readAsDataURL(file); };

@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('api', {
   exists: paths => inv('items:exists', paths),
   relocate: o => inv('items:relocate', o),
   gameThumb: uri => inv('thumb:game', uri),
+  thumbDiag: p => inv('thumb:diag', p),
   filesDir: () => inv('files:dir'),
   filesChooseDir: () => inv('files:chooseDir'),
   filesMove: o => inv('files:move', o),

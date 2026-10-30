@@ -1,9 +1,9 @@
 {
- "version": "2026-10-30 08:20",
+ "version": "2026-10-30 08:30",
  "files": [
   {
    "path": "renderer/app.js",
-   "sha": "1169f3134b89c0fad79f168d093347f39cfc58f422fd3b0b8b5bdd9d1f048f9c"
+   "sha": "ad6c346342e7f99fd706b905d5a312ee35c543ebebfc52d9023ad4242e71fca4"
   },
   {
    "path": "renderer/canvas.js",
@@ -35,11 +35,11 @@
   },
   {
    "path": "renderer/i18n.js",
-   "sha": "f37c41e0635f91627b2e90ad08b465444253b08d44ca6a31676a71b9e71932ab"
+   "sha": "93d7a750042424034d4ec3c06fe7994584fd6f5e31e8f1ecb320b8f9a93b435f"
   },
   {
    "path": "renderer/index.html",
-   "sha": "b8a64de4661c57a76e01645098b5554dd7e5202e6c85e3352618fe74bf8b49af"
+   "sha": "19a02f5480f0f1fa012b6555889b41a630d6f67b08374dca1908991a30694147"
   },
   {
    "path": "renderer/notes.js",
@@ -75,11 +75,11 @@
   },
   {
    "path": "main.js",
-   "sha": "f1efe234762083d2fd6438b09f18e57cf3f39be01148c317a4b4e29e84580da2"
+   "sha": "59fc18c06fb8068fa62cc3b4fef56c8bc924d89888cd41a20539fcee3b13c29d"
   },
   {
    "path": "preload.js",
-   "sha": "bdceb210537918f8793295b6329a7f7801e52dc5e8f6e5816fc33720754de517"
+   "sha": "ba5954afff16b44701cf0ec55e0fb643ed27c56822b5eccaf21afa2697ff22ef"
   },
   {
    "path": "assets/icon.ico",

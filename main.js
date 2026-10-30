@@ -62,6 +62,22 @@ function kindOf(ext, isDir) {
   return 'other';
 }
 
+
+/* يتأكد إن الصورة مو فاضية/شفافة/لون واحد (ويندوز أحياناً يرجّع صورة موجودة بس شكلها فاضي) */
+function isBlank(n) {
+  try {
+    if (!n || n.isEmpty()) return true;
+    const sz = n.getSize(); if (sz.width < 2 || sz.height < 2) return true;
+    const b = n.toBitmap(); let vis = 0, tot = 0, r0 = -1, g0 = 0, b0 = 0, diff = 0;
+    for (let i = 0; i + 3 < b.length; i += 16) {
+      tot++; const bb = b[i], gg = b[i + 1], rr = b[i + 2], aa = b[i + 3];
+      if (aa < 24) continue; vis++;
+      if (r0 < 0) { r0 = rr; g0 = gg; b0 = bb; } else if (Math.abs(rr - r0) + Math.abs(gg - g0) + Math.abs(bb - b0) > 40) diff++;
+    }
+    return vis < tot * 0.004 || diff < Math.max(3, vis * 0.002);
+  } catch (e) { return false; }
+}
+
 /* أيقونة حقيقية من داخل الاختصارات (.lnk / .url) بدل الأيقونة العامة */
 const expandEnv = v => String(v || '').replace(/"/g, '').replace(/%([^%]+)%/g, (m, k) => process.env[k] || m);
 async function iconFromFile(f) {
@@ -71,10 +87,10 @@ async function iconFromFile(f) {
     const e = path.extname(f).toLowerCase();
     if (['.ico', '.png', '.jpg', '.jpeg', '.bmp'].includes(e)) {
       const n = nativeImage.createFromPath(f);
-      if (!n.isEmpty()) return n.toDataURL();
+      if (!n.isEmpty() && !isBlank(n)) return n.toDataURL();
     }
     const ic = await app.getFileIcon(f, { size: 'large' });
-    if (!ic.isEmpty()) return ic.toDataURL();
+    if (!ic.isEmpty() && !isBlank(ic)) return ic.toDataURL();
   } catch (e) {}
   return '';
 }
@@ -155,10 +171,13 @@ async function makeThumb(p, kind) {
   const isIcon = kind === 'app' || kind === 'folder';
   const ext0 = path.extname(p).toLowerCase();
   if (ext0 === '.lnk' || ext0 === '.url') { const sc = await shortcutThumb(p, ext0); if (sc) return sc; }
+  const appLike = isIcon || ext0 === '.exe' || ext0 === '.lnk';
+  const viaIcon = async () => { try { const ic = await app.getFileIcon(p, { size: 'large' }); if (!isBlank(ic)) return ic.toDataURL(); } catch (e) {} return ''; };
+  if (appLike) { const v = await viaIcon(); if (v) return v; }
   try {
     if (process.platform === 'win32' && typeof nativeImage.createThumbnailFromPath === 'function') {
       const t = await nativeImage.createThumbnailFromPath(p, { width: 256, height: 256 });
-      if (t && !t.isEmpty()) return isIcon ? t.toDataURL() : 'data:image/jpeg;base64,' + t.toJPEG(78).toString('base64');
+      if (t && !isBlank(t)) return isIcon ? t.toDataURL() : 'data:image/jpeg;base64,' + t.toJPEG(78).toString('base64');
     }
   } catch (e) {}
   try {
@@ -170,14 +189,31 @@ async function makeThumb(p, kind) {
       }
     }
   } catch (e) {}
-  try {
-    const ic = await app.getFileIcon(p, { size: 'large' });
-    if (!ic.isEmpty()) return ic.toDataURL();
-  } catch (e) {}
-  try { await new Promise(r => setTimeout(r, 150)); const ic = await app.getFileIcon(p, { size: 'normal' }); if (!ic.isEmpty()) return ic.toDataURL(); } catch (e) {}
-  if (isIcon || ext0 === '.exe' || ext0 === '.lnk') { try { const f = await appIconFallback(p); if (f) return f; } catch (e) {} }
+  if (!appLike) { const v = await viaIcon(); if (v) return v; }
+  try { await new Promise(r => setTimeout(r, 150)); const ic = await app.getFileIcon(p, { size: 'normal' }); if (!isBlank(ic)) return ic.toDataURL(); } catch (e) {}
+  if (appLike) { try { const f = await appIconFallback(p); if (f) return f; } catch (e) {} }
   return '';
 }
+
+/* 🩺 تشخيص: يجرّب كل طريقة ويقول وش صار (عشان نعرف ليش صورة ما تطلع) */
+ipcMain.handle('thumb:diag', async (_e, p) => {
+  const L = []; const add = s => L.push(s);
+  try {
+    add('path: ' + p); add('exists: ' + fs.existsSync(p)); const ext = path.extname(p).toLowerCase(); add('ext: ' + ext + ' · platform: ' + process.platform);
+    let target = p;
+    if (ext === '.lnk') {
+      try { const r = shell.readShortcutLink(p); add('lnk target: ' + r.target + ' (exists: ' + fs.existsSync(r.target || '') + ')'); add('lnk icon: ' + r.icon + ' idx ' + r.iconIndex + ' (exists: ' + fs.existsSync(expandEnv(r.icon || '')) + ')'); add('lnk args: ' + (r.args || '')); if (r.target) target = r.target; } catch (e) { add('readShortcutLink ERR ' + e.message); }
+      try { const s = await shortcutThumb(p, ext); add('shortcutThumb: ' + (s ? s.length + ' chars' : 'EMPTY')); } catch (e) { add('shortcutThumb ERR ' + e.message); }
+    }
+    try { const t = await nativeImage.createThumbnailFromPath(p, { width: 256, height: 256 }); const s = t.getSize(); add(`createThumbnailFromPath: ${s.width}x${s.height} empty=${t.isEmpty()} blank=${isBlank(t)}`); } catch (e) { add('createThumbnailFromPath ERR ' + e.message); }
+    for (const sz of ['large', 'normal']) { try { const ic = await app.getFileIcon(p, { size: sz }); const s = ic.getSize(); add(`getFileIcon(${sz}): ${s.width}x${s.height} empty=${ic.isEmpty()} blank=${isBlank(ic)}`); } catch (e) { add(`getFileIcon(${sz}) ERR ` + e.message); } }
+    if (target !== p) { try { const ic = await app.getFileIcon(target, { size: 'large' }); const s = ic.getSize(); add(`getFileIcon(target): ${s.width}x${s.height} empty=${ic.isEmpty()} blank=${isBlank(ic)}`); } catch (e) { add('getFileIcon(target) ERR ' + e.message); } }
+    const ni = /\.exe$/i.test(target) ? nearbyIconFile(target) : ''; add('nearbyIcon: ' + (ni ? ni.length + ' chars' : 'none'));
+    const ps = await psIcon(target); add('powershell icon: ' + (ps ? ps.length + ' chars' : 'EMPTY'));
+    const fin = await makeThumb(p, ext === '.exe' || ext === '.lnk' ? 'app' : 'other'); add('FINAL makeThumb: ' + (fin ? fin.length + ' chars' : 'EMPTY'));
+  } catch (e) { add('DIAG ERR ' + e.message); }
+  return L.join('\n');
+});
 
 async function inspectPath(p) {
   let st;
