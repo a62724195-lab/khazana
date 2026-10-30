@@ -78,6 +78,52 @@ function isBlank(n) {
   } catch (e) { return false; }
 }
 
+
+/* أيقونات ويندوز «العامة» (النافذة الزرقاء للبرامج / الورقة بسهم للاختصارات): نكتشفها ونرفضها عشان ما تظهر مكان الأيقونة الحقيقية */
+let genericP = null;
+function loadGeneric() {
+  if (genericP) return genericP;
+  genericP = (async () => {
+    const set = new Set();
+    try {
+      const dir = path.join(require('os').tmpdir(), 'kz-generic'); fs.mkdirSync(dir, { recursive: true });
+      for (const ext of ['.exe', '.lnk', '.url', '.dll', '.jar', '.bat', '.cmd', '.msi', '.com', '.txt']) {
+        const f = path.join(dir, 'g' + ext); try { fs.writeFileSync(f, ''); } catch (e) { continue; }
+        for (const sz of ['large', 'normal', 'small']) { try { const ic = await app.getFileIcon(f, { size: sz }); if (!ic.isEmpty()) set.add(crypto.createHash('sha1').update(ic.toPNG()).digest('hex')); } catch (e) {} }
+      }
+    } catch (e) {}
+    return set;
+  })();
+  return genericP;
+}
+async function isGenericIcon(img) { try { const s = await loadGeneric(); return s.has(crypto.createHash('sha1').update(img.toPNG()).digest('hex')); } catch (e) { return false; } }
+async function goodIcon(ic) { return !!ic && !ic.isEmpty() && !isBlank(ic) && !(await isGenericIcon(ic)); }
+
+/* أيقونة تطبيقات متجر ويندوز (MSIX) عن طريق اسم الحزمة */
+function msixKey(p) {
+  try {
+    let target = p, args = '', aumid = '';
+    if (/\.lnk$/i.test(p)) { const r = shell.readShortcutLink(p); target = r.target || ''; args = r.args || ''; aumid = r.appUserModelId || ''; }
+    let m = /([A-Za-z0-9.\-]+_[a-z0-9]{13})!/.exec(aumid || '') || /AppsFolder\\([A-Za-z0-9.\-]+_[a-z0-9]{13})!/i.exec(args + ' ' + target);
+    if (m) return m[1];
+    m = /WindowsApps\\([^\\_]+)_[^_\\]+_[^_\\]*__([a-z0-9]{13})/i.exec(target || '');
+    if (m) return m[1] + '_' + m[2];
+  } catch (e) {}
+  return '';
+}
+function psMsixIcon(key) {
+  return new Promise(res => {
+    if (process.platform !== 'win32' || !key) return res('');
+    const script = "$ErrorActionPreference='SilentlyContinue'; $k=$env:KZ_K; $pkg=Get-AppxPackage | Where-Object { $_.PackageFamilyName -eq $k } | Select-Object -First 1; if(-not $pkg){exit}; $loc=$pkg.InstallLocation; [xml]$m=Get-Content (Join-Path $loc 'AppxManifest.xml'); $app=$m.Package.Applications.Application | Select-Object -First 1; $ve=$app.VisualElements; $logo=$ve.Square44x44Logo; if(-not $logo){$logo=$ve.Square150x150Logo}; if(-not $logo){$logo=$m.Package.Properties.Logo}; $rel=($logo -replace '/','\\\\'); $dir=Join-Path $loc (Split-Path $rel); $stem=[IO.Path]::GetFileNameWithoutExtension($rel); $f=Get-ChildItem $dir -Filter ($stem+'*.png') | Sort-Object Length -Descending | Select-Object -First 1; if($f){[Convert]::ToBase64String([IO.File]::ReadAllBytes($f.FullName))}";
+    try {
+      require('child_process').execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script], { windowsHide: true, timeout: 12000, env: { ...process.env, KZ_K: key }, maxBuffer: 8 * 1024 * 1024 }, (err, out) => {
+        const b = String(out || '').trim(); if (err || !/^[A-Za-z0-9+/=]{100,}$/.test(b)) return res('');
+        try { const img = nativeImage.createFromBuffer(Buffer.from(b, 'base64')); if (img.isEmpty()) return res(''); res(img.resize({ width: Math.min(256, img.getSize().width) }).toDataURL()); } catch (e) { res(''); }
+      });
+    } catch (e) { res(''); }
+  });
+}
+
 /* أيقونة حقيقية من داخل الاختصارات (.lnk / .url) بدل الأيقونة العامة */
 const expandEnv = v => String(v || '').replace(/"/g, '').replace(/%([^%]+)%/g, (m, k) => process.env[k] || m);
 async function iconFromFile(f) {
@@ -90,7 +136,7 @@ async function iconFromFile(f) {
       if (!n.isEmpty() && !isBlank(n)) return n.toDataURL();
     }
     const ic = await app.getFileIcon(f, { size: 'large' });
-    if (!ic.isEmpty() && !isBlank(ic)) return ic.toDataURL();
+    if (await goodIcon(ic)) return ic.toDataURL();
   } catch (e) {}
   return '';
 }
@@ -160,6 +206,7 @@ async function appIconFallback(p) {
   let target = p;
   try { if (/\.lnk$/i.test(p)) { const r = shell.readShortcutLink(p); if (r && r.target) target = r.target; } } catch (e) {}
   let t = '';
+  const key = msixKey(p); if (key) { t = await psMsixIcon(key); if (t) return t; }
   if (/\.exe$/i.test(target)) { t = nearbyIconFile(target); if (t) return t; }
   t = await psIcon(target); if (t) return t;
   if (target !== p) { t = await psIcon(p); if (t) return t; }
@@ -172,8 +219,11 @@ async function makeThumb(p, kind) {
   const ext0 = path.extname(p).toLowerCase();
   if (ext0 === '.lnk' || ext0 === '.url') { const sc = await shortcutThumb(p, ext0); if (sc) return sc; }
   const appLike = isIcon || ext0 === '.exe' || ext0 === '.lnk';
-  const viaIcon = async () => { try { const ic = await app.getFileIcon(p, { size: 'large' }); if (!isBlank(ic)) return ic.toDataURL(); } catch (e) {} return ''; };
-  if (appLike) { const v = await viaIcon(); if (v) return v; }
+  const viaIcon = async sz => { try { const ic = await app.getFileIcon(p, { size: sz || 'large' }); if (kind === 'folder' ? (!ic.isEmpty() && !isBlank(ic)) : await goodIcon(ic)) return ic.toDataURL(); } catch (e) {} return ''; };
+  if (appLike) {
+    let v = await viaIcon(); if (v) return v;
+    if (kind !== 'folder') { try { v = await appIconFallback(p); if (v) return v; } catch (e) {} }
+  }
   try {
     if (process.platform === 'win32' && typeof nativeImage.createThumbnailFromPath === 'function') {
       const t = await nativeImage.createThumbnailFromPath(p, { width: 256, height: 256 });
@@ -190,8 +240,7 @@ async function makeThumb(p, kind) {
     }
   } catch (e) {}
   if (!appLike) { const v = await viaIcon(); if (v) return v; }
-  try { await new Promise(r => setTimeout(r, 150)); const ic = await app.getFileIcon(p, { size: 'normal' }); if (!isBlank(ic)) return ic.toDataURL(); } catch (e) {}
-  if (appLike) { try { const f = await appIconFallback(p); if (f) return f; } catch (e) {} }
+  try { await new Promise(r => setTimeout(r, 150)); const v = await viaIcon('normal'); if (v) return v; } catch (e) {}
   return '';
 }
 
@@ -208,6 +257,8 @@ ipcMain.handle('thumb:diag', async (_e, p) => {
     try { const t = await nativeImage.createThumbnailFromPath(p, { width: 256, height: 256 }); const s = t.getSize(); add(`createThumbnailFromPath: ${s.width}x${s.height} empty=${t.isEmpty()} blank=${isBlank(t)}`); } catch (e) { add('createThumbnailFromPath ERR ' + e.message); }
     for (const sz of ['large', 'normal']) { try { const ic = await app.getFileIcon(p, { size: sz }); const s = ic.getSize(); add(`getFileIcon(${sz}): ${s.width}x${s.height} empty=${ic.isEmpty()} blank=${isBlank(ic)}`); } catch (e) { add(`getFileIcon(${sz}) ERR ` + e.message); } }
     if (target !== p) { try { const ic = await app.getFileIcon(target, { size: 'large' }); const s = ic.getSize(); add(`getFileIcon(target): ${s.width}x${s.height} empty=${ic.isEmpty()} blank=${isBlank(ic)}`); } catch (e) { add('getFileIcon(target) ERR ' + e.message); } }
+    add('msix key: ' + (msixKey(p) || 'none'));
+    try { const g = await loadGeneric(); add('generic icons known: ' + g.size); const ic = await app.getFileIcon(p, { size: 'large' }); add('getFileIcon is generic: ' + (await isGenericIcon(ic))); } catch (e) { add('generic ERR ' + e.message); }
     const ni = /\.exe$/i.test(target) ? nearbyIconFile(target) : ''; add('nearbyIcon: ' + (ni ? ni.length + ' chars' : 'none'));
     const ps = await psIcon(target); add('powershell icon: ' + (ps ? ps.length + ' chars' : 'EMPTY'));
     const fin = await makeThumb(p, ext === '.exe' || ext === '.lnk' ? 'app' : 'other'); add('FINAL makeThumb: ' + (fin ? fin.length + ' chars' : 'EMPTY'));

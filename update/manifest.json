@@ -1,5 +1,5 @@
 {
- "version": "2026-10-30 08:30",
+ "version": "2026-10-30 08:35",
  "files": [
   {
    "path": "renderer/app.js",
@@ -75,7 +75,7 @@
   },
   {
    "path": "main.js",
-   "sha": "59fc18c06fb8068fa62cc3b4fef56c8bc924d89888cd41a20539fcee3b13c29d"
+   "sha": "cbe3b6ac86f85885e226f69e91a2b2421b2432aa65004f3ec1d5a45f67605b23"
   },
   {
    "path": "preload.js",
