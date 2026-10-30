@@ -771,6 +771,7 @@ async function relocate(ids, roots, silent) {
   const old = {}; let n = 0;
   items.forEach(i => { const np = r.fixed && r.fixed[i.id]; if (np) { old[i.id] = i.path; i.path = np; n++; } });
   if (n) {
+    if (window.api.makeThumb) for (const i of items) { if (!old[i.id]) continue; try { const t = await window.api.makeThumb(i.path, i.kind); if (t) i.thumb = t; } catch (e) {} }
     await persist(); await checkMissing();
     const left = L.length - n;
     toast(`🔧 صلّحت مسار ${n} عنصر${left ? ` · باقي ${left} ما لقيتهم` : ''}`, () => { items.forEach(i => { if (old[i.id]) i.path = old[i.id]; }); persist(); checkMissing(); });

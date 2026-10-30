@@ -400,7 +400,16 @@ ipcMain.handle('item:openUrl', async (_e, u) => {
   if (typeof u === 'string' && /^https?:\/\//i.test(u)) { await shell.openExternal(u); return true; }
   return false;
 });
-ipcMain.handle('items:exists', (_e, paths) => (paths || []).map(p => { try { return fs.existsSync(p); } catch (e) { return false; } }));
+/* لو العنصر اختصار (.lnk) نتأكد إن البرنامج اللي يشاور عليه موجود (عشان اختصارات الألعاب اللي انحذف/انتقل ملفها الأصلي) */
+function lnkTargetMissing(p) {
+  try {
+    if (!/\.lnk$/i.test(p) || process.platform !== 'win32') return '';
+    const r = shell.readShortcutLink(p); const t = r && r.target;
+    if (!t || /windowsapps|explorer\.exe$|^shell:|^[a-z][a-z0-9+.-]+:\/\//i.test(t) || !/[\\/]/.test(t)) return '';
+    return fs.existsSync(t) ? '' : t;
+  } catch (e) { return ''; }
+}
+ipcMain.handle('items:exists', (_e, paths) => (paths || []).map(p => { try { return fs.existsSync(p) && !lnkTargetMissing(p); } catch (e) { return false; } }));
 
 
 /* ---------- 📦 نقل الملفات لمجلد خزنة (بدل ما تظل في سطح المكتب) ---------- */
@@ -465,7 +474,7 @@ async function relocScan(roots, wanted, deadline) {
 const segs = p => String(p).replace(/\\/g, '/').split('/').filter(Boolean).map(s => s.toLowerCase());
 function commonTail(a, b) { let n = 0; const x = segs(a), y = segs(b); while (n < x.length && n < y.length && x[x.length - 1 - n] === y[y.length - 1 - n]) n++; return n; }
 ipcMain.handle('items:relocate', async (_e, o = {}) => {
-  const list = (Array.isArray(o.items) ? o.items : []).filter(i => i && typeof i.path === 'string' && i.path);
+  const list = (Array.isArray(o.items) ? o.items : []).filter(i => i && typeof i.path === 'string' && i.path).map(i => { const t = fs.existsSync(i.path) ? lnkTargetMissing(i.path) : ''; return t ? { ...i, path: t, size: 0, isDir: false } : i; });
   const out = { fixed: {}, ambiguous: [], notFound: [] };
   if (!list.length) return out;
   const deadline = Date.now() + (o.budget || 12000);
