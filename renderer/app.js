@@ -629,14 +629,18 @@ $('moreMenu').addEventListener('click', async e => {
     await persist(); render(); toast(`انضاف ${fresh.length} برنامج` + (hasKey ? ' — اضغط ⋯ ← ✨ لكتابة أوصافها' : ''));
   }
   else if (a === 'thumbs') {
-    const todo = items.filter(i => i.path); let n = 0;
+    const isSteam = i => /^steam:\/\/rungameid\/\d+/i.test(i.uri || '');
+    const todo = items.filter(i => i.path || isSteam(i)); let n = 0, bad = 0;
     for (let k = 0; k < todo.length; k++) {
       setBusy(`أحدّث الصور... ${k + 1} من ${todo.length}`);
-      try { const t = await window.api.makeThumb(todo[k].path, todo[k].kind); if (t) { todo[k].thumb = t; n++; } }
-      catch (e) { setBusy(''); return toast('ملف main.js قديم، انسخه من التحديث داخل resources\\app ثم أعد التشغيل'); }
+      try {
+        const it = todo[k];
+        if (!it.path && isSteam(it)) { if (!window.api.gameThumb) throw new Error('old'); const t = await window.api.gameThumb(it.uri); if (t) { it.thumb = t; it.cover = true; n++; } else bad++; }
+        else { const t = await window.api.makeThumb(it.path, it.kind); if (t) { it.thumb = t; n++; } else bad++; }
+      } catch (e) { setBusy(''); return toast('ملف main.js قديم، حدّث التطبيق (⋯ ← 🔄 تحديث التطبيق) ثم أعد التشغيل'); }
       if (k % 10 === 9) render();
     }
-    setBusy(''); await persist(); render(); toast(`تم تحديث ${n} من ${todo.length}`);
+    setBusy(''); await persist(); render(); toast(`تم تحديث ${n} من ${todo.length}` + (bad ? ` · ${bad} ما لقيت لهم صورة` : ''));
   }
   else if (a === 'fill') {
     if (!hasKey) return toast('فعّل الذكاء الاصطناعي أول (⋯ ← 🔑)');

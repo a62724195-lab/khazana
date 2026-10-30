@@ -1,9 +1,9 @@
 {
- "version": "2026-10-27 10:37",
+ "version": "2026-10-30 08:14",
  "files": [
   {
    "path": "renderer/app.js",
-   "sha": "06c716eec60a9f253e370f87306cdfbbba9187af00f6f2a68d71a9712f71fe51"
+   "sha": "8224e478f0207b4c30e20c694ecb271b059ddaaf5d960d6c21badb0739bfb25e"
   },
   {
    "path": "renderer/canvas.js",
@@ -35,7 +35,7 @@
   },
   {
    "path": "renderer/i18n.js",
-   "sha": "98f80ea46ef9076ac17a78a8142151a7fcf09bcf2a5236a41131be4038aeb5a6"
+   "sha": "1edf802941b999fcd1f5188a0b2dfb13b9e0df2caae84e3c22ef27fba8250dec"
   },
   {
    "path": "renderer/index.html",
@@ -75,11 +75,11 @@
   },
   {
    "path": "main.js",
-   "sha": "7263398ccbefcf8dc76e2f4d3ee1385670889d52f25cc08e26a118805d7d9416"
+   "sha": "73f53103fa96d94d9a705b91e3c24637d9a18f5129f128ff39a90a86b25e7d40"
   },
   {
    "path": "preload.js",
-   "sha": "64a7ca8a22172f9efe4bf72c3475d2a37b534328c46010048593ddae41847633"
+   "sha": "c2c156da1730c0b502368605329ec44e1d2522fc7b2e420633156eda2370d87f"
   },
   {
    "path": "assets/icon.ico",

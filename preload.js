@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('api', {
   openUrl: u => inv('item:openUrl', u),
   exists: paths => inv('items:exists', paths),
   relocate: o => inv('items:relocate', o),
+  gameThumb: uri => inv('thumb:game', uri),
   aiSuggest: d => inv('ai:suggest', d),
   aiSearch: d => inv('ai:search', d),
   aiFill: d => inv('ai:fill', d),

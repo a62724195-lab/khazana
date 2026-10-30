@@ -145,6 +145,7 @@
     'مفضلة المتصفح': 'Browser bookmarks', 'حدّث resources أيضاً': 'Please update the resources folder too', 'اختر الوقت': 'Pick a time', 'ذكّرني': 'Remind me', 'حذف المجموعة': 'Delete group', 'احذف المحدد': 'Delete selected', 'إفراغ السلة نهائياً؟ ما يمديك ترجّعها بعدها.': 'Empty the trash permanently? You won’t be able to restore them.'
   };
   const P = [
+    [/^تم تحديث (\d+) من (\d+)(?: · (\d+) ما لقيت لهم صورة)?$/, m => `Updated ${m[1]} of ${m[2]}${m[3] ? ` · ${m[3]} have no image` : ''}`],
     [/^🔄 فيه تحديث جديد للتطبيق \((\d+) ملف\)$/, m => `🔄 A new app update is available (${m[1]} files)`], [/^فشل التحديث: (.*)$/, m => `Update failed: ${m[1]}`],
     [/^⚠️ (\d+) عنصر مسارهم مفقود \(غالباً انتقلوا لمكان ثاني\)$/, m => `⚠️ ${m[1]} items have missing paths (probably moved elsewhere)`],
     [/^🔧 صلّحت مسار (\d+) عنصر(?: · باقي (\d+) ما لقيتهم)?$/, m => `🔧 Fixed ${m[1]} item path(s)${m[2] ? ` · ${m[2]} not found` : ''}`],

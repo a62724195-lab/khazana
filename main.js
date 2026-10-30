@@ -131,6 +131,7 @@ async function makeThumb(p, kind) {
     const ic = await app.getFileIcon(p, { size: 'large' });
     if (!ic.isEmpty()) return ic.toDataURL();
   } catch (e) {}
+  try { await new Promise(r => setTimeout(r, 150)); const ic = await app.getFileIcon(p, { size: 'normal' }); if (!ic.isEmpty()) return ic.toDataURL(); } catch (e) {}
   return '';
 }
 
@@ -375,11 +376,12 @@ ipcMain.handle('apps:scan', async () => {
     } catch (e) {}
     seen.add(key); list.push({ name, path: f });
   }
-  for (let i = 0; i < list.length; i += 20) {
-    await Promise.all(list.slice(i, i + 20).map(async it => {
+  for (let i = 0; i < list.length; i += 6) {
+    await Promise.all(list.slice(i, i + 6).map(async it => {
       try { it.thumb = await makeThumb(it.path, 'app'); } catch (e) {}
     }));
   }
+  for (const it of list) { if (it.thumb) continue; try { await new Promise(r => setTimeout(r, 120)); it.thumb = await makeThumb(it.path, 'app'); } catch (e) {} }
   return list;
 });
 
@@ -590,6 +592,11 @@ function steamImg(root, id) {
   };
   const f = find(dir, 0); return f ? imgData(f) : '';
 }
+ipcMain.handle('thumb:game', async (_e, uri) => {
+  const id = (/rungameid\/(\d+)/.exec(String(uri || '')) || [])[1]; if (!id) return '';
+  for (const root of steamRoots()) { const t = steamImg(root, id); if (t) return t; }
+  return await steamHeader(id);
+});
 ipcMain.handle('games:scan', async () => {
   if (process.platform !== 'win32') return { steam: [], epic: [] };
   const steam = [], epic = [], seen = new Set();
@@ -607,6 +614,10 @@ ipcMain.handle('games:scan', async () => {
         } catch (e) {}
       }
     }
+  }
+  {
+    const miss = steam.filter(x => !x.thumb);
+    for (let i = 0; i < miss.length; i += 8) await Promise.all(miss.slice(i, i + 8).map(async x => { const id = (/rungameid\/(\d+)/.exec(x.uri) || [])[1]; if (id) x.thumb = await steamHeader(id); }));
   }
   try {
     const md = path.join(process.env.ProgramData || 'C:\\ProgramData', 'Epic', 'EpicGamesLauncher', 'Data', 'Manifests');
