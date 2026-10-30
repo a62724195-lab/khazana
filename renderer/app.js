@@ -262,11 +262,11 @@ function render() {
 function renderBulk() {
   $('bMove').innerHTML = '<option value="__">نقل إلى قسم…</option>' + secOptions().map(o => `<option value="${o.id}">${esc(o.label)}</option>`).join('') + '<option value="">📥 بدون قسم</option>';
   $('bulkN').textContent = sel.size;
-  $('bDel').disabled = !sel.size; $('bMove').disabled = !sel.size; $('bColor').disabled = !sel.size;
+  $('bDel').disabled = !sel.size; $('bVault').disabled = !sel.size; $('bMove').disabled = !sel.size; $('bColor').disabled = !sel.size;
 }
 function applySelUI() {
   document.querySelectorAll('#out .tile[data-id]').forEach(t => t.classList.toggle('sel', sel.has(t.dataset.id)));
-  $('bulkN').textContent = sel.size; $('bDel').disabled = !sel.size; $('bMove').disabled = !sel.size; $('bColor').disabled = !sel.size;
+  $('bulkN').textContent = sel.size; $('bDel').disabled = !sel.size; $('bVault').disabled = !sel.size; $('bMove').disabled = !sel.size; $('bColor').disabled = !sel.size;
 }
 function enterSel() { selMode = true; document.body.classList.add('selmode'); $('bulk').hidden = false; $('selBtn').classList.add('on'); renderBulk(); }
 function exitSel() { selMode = false; sel.clear(); document.body.classList.remove('selmode'); $('bulk').hidden = true; $('selBtn').classList.remove('on'); applySelUI(); }
@@ -274,6 +274,7 @@ function selectAllVisible() { document.querySelectorAll('#out .tile[data-id]').f
 $('selBtn').onclick = () => selMode ? exitSel() : enterSel();
 $('bCancel').onclick = exitSel;
 $('bAll').onclick = selectAllVisible;
+$('bVault').onclick = () => { const ids = [...sel]; if (!ids.length) return; exitSel(); moveToVault(ids, true, false); };
 $('bDel').onclick = () => { const ids = [...sel]; if (!ids.length) return; exitSel(); deleteMany(ids); };
 $('bColor').onchange = async e => { const v = e.target.value; e.target.value = '__'; if (v === '__' || !sel.size) return; items.forEach(i => { if (sel.has(i.id)) i.color = v; }); await persist(); render(); toast('تم تلوين ' + sel.size + ' عنصر'); };
 $('bMove').onchange = e => { const v = e.target.value; if (v === '__' || !sel.size) return; const ids = [...sel]; exitSel(); moveItems(ids, v); };
@@ -368,6 +369,11 @@ function askDraft(d, o = {}) {
     $('aiNote').textContent = '';
     ['fName', 'fDesc', 'fCat', 'fTags'].forEach(id => { $(id).oninput = () => { dirty[id] = true; }; });
     $('fUrl').oninput = setPv;
+    $('imgBtn').onclick = () => {
+      const f = document.createElement('input'); f.type = 'file'; f.accept = 'image/*';
+      f.onchange = () => { const file = f.files && f.files[0]; if (!file) return; const rd = new FileReader(); rd.onload = () => { const im = new Image(); im.onload = () => { const k = Math.min(1, 256 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); cur.thumb = c.toDataURL('image/png'); setPv(); }; im.src = rd.result; }; rd.readAsDataURL(file); };
+      f.click();
+    };
 
     const runAI = async force => {
       if (!hasKey) { $('aiNote').textContent = 'فعّل الذكاء الاصطناعي من ⋯ ← 🔑 عشان يتعرّف عليه تلقائياً'; return; }
@@ -446,6 +452,19 @@ $('sideList').addEventListener('click', async e => {
   const it = e.target.closest('.sitem'); if (it) navTo(it.dataset.sec);
 });
 
+/* ---------- 📦 نقل الملفات لمجلد خزنة ---------- */
+async function moveToVault(ids, ask, auto) {
+  if (!window.api.filesMove) return;
+  const L = items.filter(i => ids.includes(i.id) && i.path && !i.uri && !/\.lnk$/i.test(i.path) && !(auto && (i.kind === 'folder' || i.kind === 'app'))).map(i => ({ id: i.id, path: i.path, section: secName(i.section) }));
+  if (!L.length) return;
+  if (ask && !confirm(`تبي أنقل ${L.length} ملف لمجلد خزنة (Documents\\Khazana Files) وأشيلهم من مكانهم الحالي (مثل سطح المكتب)؟\nتقدر تتراجع بعدها.`)) return;
+  setBusy('أنقل الملفات…'); let r = null; try { r = await window.api.filesMove({ items: L }); } catch (e) {} setBusy('');
+  if (!r) return toast('تعذّر النقل');
+  const old = []; items.forEach(i => { const np = r.moved[i.id]; if (np) { old.push({ id: i.id, from: np, to: i.path }); i.path = np; } });
+  if (!old.length) return toast('ما انتقل شي (ملفات نظام أو محميّة)');
+  await persist(); await checkMissing(); render();
+  toast(`📦 انتقل ${old.length} ملف لمجلد خزنة`, async () => { await window.api.filesRestore({ moves: old }); old.forEach(o => { const it = items.find(i => i.id === o.id); if (it) it.path = o.to; }); await persist(); checkMissing(); render(); });
+}
 /* ---------- إضافة ---------- */
 async function addPaths(paths, forceSec) {
   paths = [...new Set(paths)].filter(p => p && !items.some(i => i.path === p));
@@ -464,6 +483,8 @@ async function addPaths(paths, forceSec) {
   }
   setBusy(''); await persist(); render(); checkMissing();
   if (n) toast(`انضاف ${n} عنصر`);
+  const mode = ui.moveMode || 'ask';
+  if (n && mode !== 'never') { const ids = items.filter(i => paths.includes(i.path)).map(i => i.id); await moveToVault(ids, mode === 'ask', true); }
 }
 async function addLink(url) {
   let host = ''; try { host = new URL(url).hostname.replace(/^www\./, ''); } catch (e) {}
@@ -630,17 +651,17 @@ $('moreMenu').addEventListener('click', async e => {
   }
   else if (a === 'thumbs') {
     const isSteam = i => /^steam:\/\/rungameid\/\d+/i.test(i.uri || '');
-    const todo = items.filter(i => i.path || isSteam(i)); let n = 0, bad = 0;
+    const todo = items.filter(i => i.path || isSteam(i)); let n = 0; const badN = [];
     for (let k = 0; k < todo.length; k++) {
       setBusy(`أحدّث الصور... ${k + 1} من ${todo.length}`);
       try {
         const it = todo[k];
-        if (!it.path && isSteam(it)) { if (!window.api.gameThumb) throw new Error('old'); const t = await window.api.gameThumb(it.uri); if (t) { it.thumb = t; it.cover = true; n++; } else bad++; }
-        else { const t = await window.api.makeThumb(it.path, it.kind); if (t) { it.thumb = t; n++; } else bad++; }
+        if (!it.path && isSteam(it)) { if (!window.api.gameThumb) throw new Error('old'); const t = await window.api.gameThumb(it.uri); if (t) { it.thumb = t; it.cover = true; n++; } else badN.push(it.name); }
+        else { const t = await window.api.makeThumb(it.path, it.kind); if (t) { it.thumb = t; n++; } else badN.push(it.name); }
       } catch (e) { setBusy(''); return toast('ملف main.js قديم، حدّث التطبيق (⋯ ← 🔄 تحديث التطبيق) ثم أعد التشغيل'); }
       if (k % 10 === 9) render();
     }
-    setBusy(''); await persist(); render(); toast(`تم تحديث ${n} من ${todo.length}` + (bad ? ` · ${bad} ما لقيت لهم صورة` : ''));
+    setBusy(''); await persist(); render(); toast(`تم تحديث ${n} من ${todo.length}` + (badN.length ? ` · ما لقيت صورة لـ: ${badN.slice(0, 4).join('، ')}` : '') + (badN.length ? ' (تقدر تحط صورة بنفسك: ✏️ ← 🖼️ صورة مخصّصة)' : ''));
   }
   else if (a === 'fill') {
     if (!hasKey) return toast('فعّل الذكاء الاصطناعي أول (⋯ ← 🔑)');
@@ -713,7 +734,7 @@ document.addEventListener('keydown', e => {
 
 /* ---------- 🔔 تنبيه التحديث ---------- */
 function showUpdBar(d) { if (!d) return; $('updTxt').textContent = `🔄 فيه تحديث جديد للتطبيق (${d.count} ملف)`; $('updBar').hidden = false; $('moreBtn').classList.add('hasupd'); }
-if (window.api.onUpdateAvail) { window.api.onUpdateAvail(showUpdBar); setTimeout(() => window.api.updatePending && window.api.updatePending().then(showUpdBar), 2500); }
+if (window.api.onUpdateAvail) { window.api.onUpdateAvail(showUpdBar); setTimeout(() => window.api.updatePending && Promise.resolve(window.api.updatePending()).then(showUpdBar), 2500); }
 $('updLater').onclick = () => { $('updBar').hidden = true; };
 $('updGo').onclick = async () => { $('updGo').disabled = true; $('updTxt').textContent = '⏳ أنزّل التحديث…'; const u = await window.api.updateApply(); if (u.ok) $('updTxt').textContent = '✅ تم! يعيد التشغيل…'; else { $('updTxt').textContent = 'فشل التحديث: ' + u.error; $('updGo').disabled = false; } };
 
@@ -1179,6 +1200,9 @@ const PREFS = [
     { t: 'رجّع الافتراضي', d: 'يرجّع كل التصميم لأصله (بياناتك ما تتأثر).', c: { fn: 'dreset', l: 'إعادة ضبط' } }
   ] },
   { id: 'data', ico: '💾', t: 'البيانات والنسخ', rows: [
+    { t: 'نقل الملفات عند إضافتها', d: 'لما تضيف ملف من سطح المكتب أو التنزيلات: ينتقل لمجلد خزنة ويختفي من مكانه، أو يبقى مكانه.', c: { sel: 'moveMode', o: [['ask', 'اسألني كل مرة'], ['always', 'انقل دايماً'], ['never', 'لا تنقل (يبقى بمكانه)']] } },
+    { t: 'مجلد ملفات خزنة', d: 'وين تنحفظ الملفات المنقولة (داخله مجلد لكل قسم).', c: { fn: 'filesdir', l: 'فتح المجلد' } },
+    { t: 'تغيير مجلد الملفات', d: 'مثلاً فلاشة أو OneDrive.', c: { fn: 'filespick', l: 'اختيار مجلد' } },
     { t: 'نسخة احتياطية الآن', d: 'احفظ نسخة كاملة من خزنتك في ملف.', c: { b: 'more:export', l: 'حفظ نسخة' } },
     { t: 'استعادة نسخة', d: 'ادمج عناصر من ملف نسخة احتياطية.', c: { b: 'more:import', l: 'اختيار ملف' } },
     { t: 'النسخ التلقائي اليومي', d: 'تُحفظ نسخة كل يوم وتبقى آخر 14. (تشغيله وإيقافه من أيقونة التراي)', c: { b: 'more:bk-open', l: 'فتح المجلد' } },
@@ -1218,7 +1242,7 @@ const PREFS = [
   ] }
 ];
 let prefsTab = 'look';
-function prefsVal(k) { if (k === 'lang') return ui.lang || window.I18N.get(); if (k === 'preset') return ui.preset || ''; if (k === 'theme') return ui.theme || 'auto'; if (k === 'view') return ui.view || 'big'; return ''; }
+function prefsVal(k) { if (k === 'lang') return ui.lang || window.I18N.get(); if (k === 'preset') return ui.preset || ''; if (k === 'theme') return ui.theme || 'auto'; if (k === 'view') return ui.view || 'big'; if (k === 'moveMode') return ui.moveMode || 'ask'; return ''; }
 const dval = k => ui[k] === undefined || ui[k] === null ? '' : String(ui[k]);
 function prefsCtl(c) {
   if (c.sel) return `<select data-ps="${c.sel}">${c.o.map(([v, l]) => `<option value="${v}" ${prefsVal(c.sel) === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
@@ -1250,7 +1274,9 @@ $('prefsPane').addEventListener('click', async e => {
   if (e.target.closest('[data-wpup]')) { pickWall(); return; }
   const pa = e.target.closest('[data-pa]'); if (pa) { const k = pa.dataset.pa.split(':')[1]; const b = document.querySelector('[data-more="' + k + '"]'); if (b) b.click(); return; }
   const pf = e.target.closest('[data-pf]'); if (!pf) return;
-  if (pf.dataset.pf === 'rand') { randomLook(); await persist(); drawPrefs(); }
+  if (pf.dataset.pf === 'filesdir') { const d = await window.api.filesDir(); window.api.reveal(d); }
+  else if (pf.dataset.pf === 'filespick') { const d = await window.api.filesChooseDir(); if (d) toast('📁 ' + d); }
+  else if (pf.dataset.pf === 'rand') { randomLook(); await persist(); drawPrefs(); }
   else if (pf.dataset.pf === 'dreset') { DKEYS.forEach(k => delete ui[k]); applyAppearance(); await persist(); drawPrefs(); toast('🎨 رجع التصميم الافتراضي'); }
   else if (pf.dataset.pf === 'groups') { closePrefs(); $('grpBtn').click(); }
   else if (pf.dataset.pf === 'sync') window.Zakker.openSync();
@@ -1288,6 +1314,7 @@ $('prefsPane').addEventListener('change', async e => {
   if (k === 'lang') { ui.lang = v; window.I18N.set(v); render(); }
   else if (k === 'preset') { ui.preset = v; applyAppearance(); }
   else if (k === 'theme') { ui.theme = v; applyAppearance(); }
+  else if (k === 'moveMode') { ui.moveMode = v; }
   else if (k === 'view') { ui.view = v; views = {}; applyView(); render(); }
   await persist(); drawPrefs();
 });

@@ -107,6 +107,49 @@ async function shortcutThumb(p, ext) {
   return '';
 }
 
+
+/* ---------- بدائل أيقونات التطبيقات (للبرامج الحديثة: Electron / MSIX / متجر ويندوز) ---------- */
+function psIcon(p) {
+  return new Promise(res => {
+    if (process.platform !== 'win32') return res('');
+    const script = "Add-Type -AssemblyName System.Drawing; $i=[System.Drawing.Icon]::ExtractAssociatedIcon($env:KZ_P); if($i){$b=$i.ToBitmap();$ms=New-Object IO.MemoryStream;$b.Save($ms,[System.Drawing.Imaging.ImageFormat]::Png);[Convert]::ToBase64String($ms.ToArray())}";
+    try {
+      require('child_process').execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script], { windowsHide: true, timeout: 9000, env: { ...process.env, KZ_P: p }, maxBuffer: 4 * 1024 * 1024 }, (err, out) => {
+        const b = String(out || '').trim(); res(!err && /^[A-Za-z0-9+/=]{100,}$/.test(b) ? 'data:image/png;base64,' + b : '');
+      });
+    } catch (e) { res(''); }
+  });
+}
+function nearbyIconFile(exe) {
+  try {
+    const dir = path.dirname(exe), base = path.basename(exe, path.extname(exe));
+    const names = [base + '.ico', base + '.png', 'icon.ico', 'app.ico', 'icon.png', 'logo.png', 'resources/app.ico', 'resources/icon.ico', 'resources/icon.png', 'assets/icon.png', 'assets/icon.ico'];
+    for (const n of names) { const f = path.join(dir, n); if (fs.existsSync(f)) { const img = nativeImage.createFromPath(f); if (!img.isEmpty()) return img.resize({ width: Math.min(256, img.getSize().width) }).toDataURL(); } }
+    // MSIX / تطبيقات المتجر: الشعار من AppxManifest
+    let d = dir;
+    for (let k = 0; k < 3; k++, d = path.dirname(d)) {
+      const mf = path.join(d, 'AppxManifest.xml'); if (!fs.existsSync(mf)) continue;
+      const x = fs.readFileSync(mf, 'utf8'); const logos = [...x.matchAll(/(?:Square44x44Logo|Square150x150Logo|Logo)="([^"]+)"/g)].map(m => m[1]);
+      for (const lg of logos) {
+        const rel = lg.replace(/\//g, path.sep), ld = path.join(d, path.dirname(rel)), stem = path.basename(rel, path.extname(rel));
+        let files = []; try { files = fs.readdirSync(ld).filter(n => n.toLowerCase().startsWith(stem.toLowerCase()) && /\.png$/i.test(n)); } catch (e) {}
+        files.sort((a, b) => (fs.statSync(path.join(ld, b)).size - fs.statSync(path.join(ld, a)).size));
+        if (files[0]) { const img = nativeImage.createFromPath(path.join(ld, files[0])); if (!img.isEmpty()) return img.resize({ width: Math.min(256, img.getSize().width) }).toDataURL(); }
+      }
+    }
+  } catch (e) {}
+  return '';
+}
+async function appIconFallback(p) {
+  let target = p;
+  try { if (/\.lnk$/i.test(p)) { const r = shell.readShortcutLink(p); if (r && r.target) target = r.target; } } catch (e) {}
+  let t = '';
+  if (/\.exe$/i.test(target)) { t = nearbyIconFile(target); if (t) return t; }
+  t = await psIcon(target); if (t) return t;
+  if (target !== p) { t = await psIcon(p); if (t) return t; }
+  return '';
+}
+
 /* صورة مصغّرة لأي عنصر: معاينة ويندوز الحقيقية (صور، فيديو، PDF، مستندات، برامج) ثم بدائل */
 async function makeThumb(p, kind) {
   const isIcon = kind === 'app' || kind === 'folder';
@@ -132,6 +175,7 @@ async function makeThumb(p, kind) {
     if (!ic.isEmpty()) return ic.toDataURL();
   } catch (e) {}
   try { await new Promise(r => setTimeout(r, 150)); const ic = await app.getFileIcon(p, { size: 'normal' }); if (!ic.isEmpty()) return ic.toDataURL(); } catch (e) {}
+  if (isIcon || ext0 === '.exe' || ext0 === '.lnk') { try { const f = await appIconFallback(p); if (f) return f; } catch (e) {} }
   return '';
 }
 
@@ -270,6 +314,49 @@ ipcMain.handle('item:openUrl', async (_e, u) => {
   return false;
 });
 ipcMain.handle('items:exists', (_e, paths) => (paths || []).map(p => { try { return fs.existsSync(p); } catch (e) { return false; } }));
+
+
+/* ---------- 📦 نقل الملفات لمجلد خزنة (بدل ما تظل في سطح المكتب) ---------- */
+const filesRoot = () => { const c = getSet().filesDir; return c && typeof c === 'string' ? c : path.join(app.getPath('documents'), 'Khazana Files'); };
+const safeName = s => String(s || '').replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').trim().slice(0, 60);
+function blockedForMove(p) {
+  const low = path.resolve(p).toLowerCase();
+  const bad = [process.env.WINDIR, process.env.ProgramFiles, process.env['ProgramFiles(x86)'], process.env.ProgramData, path.join(process.env.LOCALAPPDATA || '__x__', 'Programs')].filter(Boolean).map(x => x.toLowerCase());
+  if (path.dirname(low) === low) return true;
+  return bad.some(b => low === b || low.startsWith(b + path.sep));
+}
+function uniqueDest(dir, name) {
+  let t = path.join(dir, name), k = 1; const ext = path.extname(name), base = path.basename(name, ext);
+  while (fs.existsSync(t)) t = path.join(dir, `${base} (${k++})${ext}`);
+  return t;
+}
+function moveAny(src, dst) {
+  try { fs.renameSync(src, dst); return; } catch (e) { if (e.code !== 'EXDEV' && e.code !== 'EPERM') throw e; }
+  fs.cpSync(src, dst, { recursive: true, errorOnExist: true });
+  fs.rmSync(src, { recursive: true, force: true });
+}
+ipcMain.handle('files:dir', () => { const d = filesRoot(); try { fs.mkdirSync(d, { recursive: true }); } catch (e) {} return d; });
+ipcMain.handle('files:chooseDir', async () => { const r = await dialog.showOpenDialog(win, { properties: ['openDirectory', 'createDirectory'] }); if (r.canceled || !r.filePaths[0]) return ''; setSet('filesDir', r.filePaths[0]); return r.filePaths[0]; });
+ipcMain.handle('files:move', (_e, o = {}) => {
+  const out = { moved: {}, skipped: [], failed: [] };
+  const root = filesRoot();
+  for (const it of (Array.isArray(o.items) ? o.items : [])) {
+    try {
+      const src = it && it.path; if (typeof src !== 'string' || !src || !fs.existsSync(src)) { out.skipped.push(it && it.id); continue; }
+      if (blockedForMove(src) || /\.lnk$/i.test(src) || path.resolve(src).toLowerCase().startsWith(path.resolve(root).toLowerCase() + path.sep)) { out.skipped.push(it.id); continue; }
+      const sub = safeName(it.section); const dir = sub ? path.join(root, sub) : root; fs.mkdirSync(dir, { recursive: true });
+      const dst = uniqueDest(dir, path.basename(src)); moveAny(src, dst); out.moved[it.id] = dst;
+    } catch (e) { out.failed.push(it && it.id); }
+  }
+  return out;
+});
+ipcMain.handle('files:restore', (_e, o = {}) => {
+  let n = 0;
+  for (const mv of (Array.isArray(o.moves) ? o.moves : [])) {
+    try { if (!mv || !fs.existsSync(mv.from) || fs.existsSync(mv.to)) continue; fs.mkdirSync(path.dirname(mv.to), { recursive: true }); moveAny(mv.from, mv.to); n++; } catch (e) {}
+  }
+  return n;
+});
 
 /* ---------- 🔧 إصلاح المسارات بعد نقل الملفات ---------- */
 const RELOC_SKIP = new Set(['node_modules', '.git', '$recycle.bin', 'system volume information', 'windows', 'program files', 'program files (x86)', 'programdata', 'appdata', '.cache', 'cache']);
