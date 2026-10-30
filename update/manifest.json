@@ -1,9 +1,9 @@
 {
- "version": "2026-10-30 08:42",
+ "version": "2026-10-30 08:46",
  "files": [
   {
    "path": "renderer/app.js",
-   "sha": "6fd4d1b71527511b4167983c8d1d98f0390eb09fa4c742453dbaead2a277af3b"
+   "sha": "47b66b1c0e1521fb97ac3c8bf8a05464cdbc0884c2dd155790bfc0eef5aeacc7"
   },
   {
    "path": "renderer/canvas.js",
@@ -75,7 +75,7 @@
   },
   {
    "path": "main.js",
-   "sha": "e4d811b7498c534f33474685f0a41f9e8d64a561e5ce469fbf4d439a0a5ba455"
+   "sha": "2ef67e071aa454ecc8caf8131366d492be4e41cd2b874b3e08b27bb2e84d4854"
   },
   {
    "path": "preload.js",
