@@ -12,8 +12,8 @@
 <div id="wall"></div>
 <div id="updBar" hidden><span id="updTxt">🔄 فيه تحديث جديد للتطبيق</span><button id="updGo" class="sm pri">حدّث الحين</button><button id="updLater" class="sm">لاحقاً</button></div>
 <div class="top">
-  <div class="brand">🗄️ خزنة<span id="brandName"></span></div>
-  <div class="nav"><button id="navTd">🏠 اليوم</button><button id="navVault" class="on">🗄️ الخزنة</button><button id="navNt">📝 ملاحظاتي</button><button id="navCv">🎨 لوحتي</button><button id="navZk">🔔 ذكّرني <span id="navBadge"></span></button></div>
+  <div class="brand">🗄 خزنة<span id="brandName"></span></div>
+  <div class="nav"><button id="navTd">🏠 اليوم</button><button id="navVault" class="on">🗄 الخزنة</button><button id="navNt">📝 ملاحظاتي</button><button id="navCv">🎨 لوحتي</button><button id="navZk">🔔 ذكّرني <span id="navBadge"></span></button></div>
   <div class="searchbox">
     <input id="q" autofocus placeholder="اكتب أو اشرح شنو تبي: «أبي شي أحوّل فيه PDF» أو «صورة العقد»…">
     <button id="goBtn" title="بحث ذكي (Enter)">🔎</button>
@@ -30,19 +30,19 @@
   <div class="addwrap" id="moreWrap">
     <button id="moreBtn" title="المزيد">⋯</button>
     <div id="moreMenu" class="menu" hidden>
-      <button data-more="prefs">⚙️ الإعدادات</button>
+      <button data-more="prefs">⚙ الإعدادات</button>
       <button data-more="stats2">📊 إحصائيات خزنتي</button>
-      <button data-more="palette2">⌨️ لوحة الأوامر (Ctrl+K)</button>
+      <button data-more="palette2">⌨ لوحة الأوامر (Ctrl+K)</button>
       <button data-more="update2">🔄 تحديث التطبيق</button>
-      <button class="adv" data-more="scan">⚙️ استيراد برامجي المثبتة</button>
+      <button class="adv" data-more="scan">⚙ استيراد برامجي المثبتة</button>
       <button class="adv" data-more="thumbs">🔄 تحديث صور كل العناصر</button>
       <button class="adv" data-more="clean">🧹 فحص الملفات الميتة والمكررة</button>
       <button class="adv" data-more="games">🎮 استيراد ألعاب Steam و Epic</button>
       <button class="adv" data-more="bookmarks">🔖 استيراد مفضلة Chrome / Edge</button>
-      <button class="adv" data-more="trash">🗑️ سلة المحذوفات</button>
+      <button class="adv" data-more="trash">🗑 سلة المحذوفات</button>
       <button class="adv" data-more="profiles">👤 الملفات الشخصية (خزنة لكل غرض)</button>
       <button class="adv" data-more="watch">👀 اختيار مجلد مراقَب</button>
-      <button class="adv" data-more="palette">⌨️ لوحة الأوامر (Ctrl+K)</button>
+      <button class="adv" data-more="palette">⌨ لوحة الأوامر (Ctrl+K)</button>
       <button class="adv" data-more="update">🔄 تحديث التطبيق (من GitHub)</button>
       <button class="adv" data-more="stats">📊 إحصائيات خزنتي</button>
       <button class="adv" data-more="smart-recent">🪟 حاوية ذكية: فتحتها مؤخراً</button>
@@ -61,7 +61,7 @@
 
 <div id="prefs" hidden>
   <div class="pbox">
-    <div class="phead"><b>⚙️ الإعدادات</b><button id="prefsClose" class="sm" title="إغلاق (Esc)">✕ إغلاق</button></div>
+    <div class="phead"><b>⚙ الإعدادات</b><button id="prefsClose" class="sm" title="إغلاق (Esc)">✕ إغلاق</button></div>
     <div class="pbody"><nav id="prefsNav"></nav><div id="prefsPane"></div></div>
   </div>
 </div>
@@ -92,7 +92,7 @@
         </div></div>
       <div class="addwrap"><button id="grpBtn" class="sm" title="مجموعات: افتح عدة عناصر بضغطة">⚡ مجموعات</button>
         <div id="grpMenu" class="menu cust" hidden></div></div>
-      <button id="selBtn" class="sm" title="تحديد عدة عناصر (أو اسحب بالماوس على مساحة فاضية)">☑️ تحديد</button>
+      <button id="selBtn" class="sm" title="تحديد عدة عناصر (أو اسحب بالماوس على مساحة فاضية)">☑ تحديد</button>
       <select id="sortSel" title="الترتيب">
         <option value="recent">الأحدث</option>
         <option value="used">الأكثر فتحاً</option>
@@ -110,18 +110,18 @@
   <select id="bMove" class="sm"></select>
   <button id="bVault" class="sm" title="انقل الملفات المحددة لمجلد خزنة وشيلها من مكانها">📦 انقل لمجلد خزنة</button>
   <select id="bColor" class="sm"><option value="__">🎨 لون…</option><option value="">بدون لون</option><option value="#ef4444">🔴 أحمر</option><option value="#f97316">🟠 برتقالي</option><option value="#eab308">🟡 أصفر</option><option value="#22c55e">🟢 أخضر</option><option value="#3b82f6">🔵 أزرق</option><option value="#a855f7">🟣 بنفسجي</option><option value="#ec4899">🩷 وردي</option></select>
-  <button id="bDel" class="sm danger">🗑️ حذف</button>
+  <button id="bDel" class="sm danger">🗑 حذف</button>
   <button id="bCancel" class="sm">إلغاء</button>
 </div>
 
-<div id="drop">⬇️ أفلت هنا (أو على قسم معيّن في القائمة)</div>
+<div id="drop">⬇ أفلت هنا (أو على قسم معيّن في القائمة)</div>
 <div id="busy" hidden><div id="busyTxt"></div></div>
 
 <dialog id="dlg">
   <form id="form">
     <div class="dhead"><b id="dTitle"></b><span id="dProg" class="hint"></span></div>
     <div class="pv"><div id="pvIco" class="pvico"></div><div id="pvPath" class="pvpath"></div></div>
-    <div class="row"><button type="button" id="imgBtn" class="sm">🖼️ صورة مخصّصة…</button> <button type="button" id="diagBtn" class="sm" hidden title="تقرير يوضح ليش الصورة ما تطلع">🩺 فحص الصورة</button></div>
+    <div class="row"><button type="button" id="imgBtn" class="sm">🖼 صورة مخصّصة…</button> <button type="button" id="diagBtn" class="sm" hidden title="تقرير يوضح ليش الصورة ما تطلع">🩺 فحص الصورة</button></div>
     <div id="rowPath" class="row" hidden><button type="button" id="relinkBtn" class="sm">تغيير المسار…</button></div>
     <div id="aiNote" class="ainote"></div>
     <label>الاسم</label><input id="fName" class="f" required>
@@ -177,11 +177,11 @@
 <dialog id="cleanDlg" class="wide">
   <b>🧹 فحص الخزنة</b>
   <div id="cleanBody"></div>
-  <div class="drow"><button type="button" id="cleanClose" class="sm">إغلاق</button><span class="grp"><button type="button" id="cleanDel" class="pri danger" hidden>🗑️ احذف المحدد من الخزنة</button></span></div>
+  <div class="drow"><button type="button" id="cleanClose" class="sm">إغلاق</button><span class="grp"><button type="button" id="cleanDel" class="pri danger" hidden>🗑 احذف المحدد من الخزنة</button></span></div>
 </dialog>
 
 <dialog id="trashDlg" class="wide">
-  <b>🗑️ سلة المحذوفات</b> <span class="hint">(تبقى 30 يوم ثم تُمسح)</span>
+  <b>🗑 سلة المحذوفات</b> <span class="hint">(تبقى 30 يوم ثم تُمسح)</span>
   <div id="trashBody"></div>
   <div class="drow"><button type="button" id="trashEmpty" class="sm danger">إفراغ السلة</button><button type="button" id="trashClose" class="sm">إغلاق</button></div>
 </dialog>

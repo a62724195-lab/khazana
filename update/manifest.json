@@ -1,17 +1,17 @@
 {
- "version": "2026-10-30 08:46",
+ "version": "2026-10-31 17:01",
  "files": [
   {
    "path": "renderer/app.js",
-   "sha": "47b66b1c0e1521fb97ac3c8bf8a05464cdbc0884c2dd155790bfc0eef5aeacc7"
+   "sha": "1aa74654534f01c6f98fd997f91fefee5c0aad971ea70cea8236b6db132a096f"
   },
   {
    "path": "renderer/canvas.js",
-   "sha": "51230e8a2ed3e6992dff8bcbaf1d16b9c303286543786675e16821fa761f7360"
+   "sha": "32a6dd0455e570ddb2259e760d05254d1c640b6b81e1923f9bb9666e5825b864"
   },
   {
    "path": "renderer/capture.css",
-   "sha": "5d058ef7d1dcb5160b88d4c91b1368e544a2dd9fbd201de58f3fad7e662a37aa"
+   "sha": "af51ecfc80540246f02cf8b36cea5b56ca521eaaf484b730de96157da6f1e74e"
   },
   {
    "path": "renderer/capture.html",
@@ -23,7 +23,7 @@
   },
   {
    "path": "renderer/fence.css",
-   "sha": "5ec6fe7ca65ce036bca20064c4d002acee63da86cd15fabfb6c39999eaa52859"
+   "sha": "5bb16cd182225b15e17585d9f43d64484af872111883141b527e7d5cf53a0881"
   },
   {
    "path": "renderer/fence.html",
@@ -31,23 +31,23 @@
   },
   {
    "path": "renderer/fence.js",
-   "sha": "62b16ee61139a82da3d42b9714adf09c60e085d70fac83c0666783973870f727"
+   "sha": "be57ed00937613328174f278e2da407cc93c37907e3d56faadf9b2d017b5e64e"
   },
   {
    "path": "renderer/i18n.js",
-   "sha": "93d7a750042424034d4ec3c06fe7994584fd6f5e31e8f1ecb320b8f9a93b435f"
+   "sha": "fc46a08481f1ab8de5ea6a4f1e896fcf1df5b900a17300c0ac1f19071cddb084"
   },
   {
    "path": "renderer/index.html",
-   "sha": "19a02f5480f0f1fa012b6555889b41a630d6f67b08374dca1908991a30694147"
+   "sha": "dfa0673f2bded286ebab235537537940db8b1133a6b08ce217c875698b9ad319"
   },
   {
    "path": "renderer/notes.js",
-   "sha": "680c5390feb7b1ba07aa058312d4cf5fe5d29e79f4e37f2b08a9cf4e6ceb20ed"
+   "sha": "c80c34dd4c68ad7ba851125489754210ebe79ac2490a52b1df6126c1fef31fdd"
   },
   {
    "path": "renderer/quick.css",
-   "sha": "ca7c7d76c7ab56ad293e548921e9e75da48f0913a69e575ba965ea216aa16aed"
+   "sha": "327b8a2e0d0e0581b90c4088bdeef6eef731d099deee6bdde7e111c1fe28d198"
   },
   {
    "path": "renderer/quick.html",
@@ -55,7 +55,7 @@
   },
   {
    "path": "renderer/quick.js",
-   "sha": "df33cde9055e9cb311466986e6f09bacf72194dbf6ad23c393139ac31d5fc90f"
+   "sha": "7f7b4ef56e949339f729bde5b8ca6fe5381d246f3801c0fce82f78a1756b6267"
   },
   {
    "path": "renderer/splash.js",
@@ -63,7 +63,7 @@
   },
   {
    "path": "renderer/style.css",
-   "sha": "2e8f429d94911891c4fc341b546234027601889ec5768bc546d427cf8d68a8c6"
+   "sha": "70c9f635ee7592ee5bcd08e6b29ec2d15cebe12c45c08bcdb6eaec6b8e865391"
   },
   {
    "path": "renderer/zakker.css",
@@ -71,7 +71,7 @@
   },
   {
    "path": "renderer/zakker.js",
-   "sha": "de0b4990a4fdd75f1edef55b88b97186e408058990af53e3a3217d7c52f8bc9b"
+   "sha": "5fba7028484dfe83a11fff9d15731b792ce1f4ad8767092b68a6fdf3956abdbc"
   },
   {
    "path": "main.js",

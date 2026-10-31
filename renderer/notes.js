@@ -56,13 +56,13 @@
     const tg = allTags();
     N.host.querySelector('#ntTags').innerHTML = tg.length ? `<button class="ntag ${N.tag ? '' : 'on'}" data-tag="">الكل</button>` + tg.map(([t, c]) => `<button class="ntag ${N.tag === t ? 'on' : ''}" data-tag="${esc(t)}">#${esc(t)} <i>${c}</i></button>`).join('') : '';
     let h = l.map(n => {
-      const pre = n.lock ? '🔒 محمية بكلمة سر' : (n.body || '').replace(/!\[\]\(img:[a-z0-9]+\)/g, ' 🖼️ ').replace(/\[\[|\]\]/g, '').replace(/\[[ xX]\]/g, ' ').replace(/[#*>`\-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 90);
+      const pre = n.lock ? '🔒 محمية بكلمة سر' : (n.body || '').replace(/!\[\]\(img:[a-z0-9]+\)/g, ' 🖼 ').replace(/\[\[|\]\]/g, '').replace(/\[[ xX]\]/g, ' ').replace(/[#*>`\-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 90);
       return `<div class="nit ${N.cur === n.id ? 'on' : ''}" data-id="${n.id}" ${n.color ? `style="--nc:${n.color}"` : ''}><div class="nt1">${n.pinned ? '📌 ' : ''}${n.lock ? '🔒 ' : ''}<b>${esc(n.title || 'بدون عنوان')}</b><span class="nd">${ago(n.updated || n.created || Date.now())}</span></div><div class="nt2">${esc(pre) || '<i>فاضية</i>'}</div></div>`;
     }).join('');
     if (!l.length) h = `<div class="nempty">${list().length ? 'ما لقيت ملاحظة بهالبحث.' : 'ما عندك ملاحظات للحين.<br>اكتب أفكارك، مهامك، أي شي… وتنحفظ لحالها.'}</div>`;
     const vn = vaultNotes();
     if (vn.length) h += `<button class="nimp" id="ntImp">📥 استيراد ملاحظات الخزنة (${vn.length})</button>`;
-    if (list().length) h += `<button class="nimp" id="ntExpAll">⬇️ تصدير كل الملاحظات (Markdown)</button>`;
+    if (list().length) h += `<button class="nimp" id="ntExpAll">⬇ تصدير كل الملاحظات (Markdown)</button>`;
     L.innerHTML = h;
   }
 
@@ -84,11 +84,11 @@
         ${n.lock ? `<div class="hint">هذي الملاحظة محمية.</div><button class="sm" id="ntRelock">أقفلها الحين</button><button class="sm" id="ntUnlockAll" style="color:#ef4444">إزالة الحماية</button>` : `<div class="hint">اكتب كلمة سر. (حماية خفيفة تخفي الملاحظة داخل البرنامج، الملف نفسه غير مشفّر. لا تنسى الكلمة!)</div><input id="ntLkP" type="password" class="f" placeholder="كلمة السر"><button class="pri" id="ntLkSet">حماية</button>`}<div id="ntLkErr" class="lkerr"></div></div></div>`;
     },
     exp() {
-      return `<div class="npick" data-ov="1"><div class="npbox"><div class="nph"><b>⬇️ تصدير الملاحظة</b><button class="sm" data-ovx="1">✕</button></div><button class="sm" id="ntExpMd">حفظ كملف Markdown (.md)</button><button class="sm" id="ntExpCopy">نسخ النص للحافظة</button></div></div>`;
+      return `<div class="npick" data-ov="1"><div class="npbox"><div class="nph"><b>⬇ تصدير الملاحظة</b><button class="sm" data-ovx="1">✕</button></div><button class="sm" id="ntExpMd">حفظ كملف Markdown (.md)</button><button class="sm" id="ntExpCopy">نسخ النص للحافظة</button></div></div>`;
     },
     ai() {
       return `<div class="npick" data-ov="1"><div class="npbox"><div class="nph"><b>✨ ذكاء اصطناعي</b><button class="sm" data-ovx="1">✕</button></div>
-        <button class="sm" data-ai="summarize">📝 لخّص</button><button class="sm" data-ai="tasks">☑️ استخرج المهام</button><button class="sm" data-ai="tags">🏷️ اقترح وسوم</button><button class="sm" data-ai="improve">🪄 حسّن الصياغة</button>
+        <button class="sm" data-ai="summarize">📝 لخّص</button><button class="sm" data-ai="tasks">☑ استخرج المهام</button><button class="sm" data-ai="tags">🏷 اقترح وسوم</button><button class="sm" data-ai="improve">🪄 حسّن الصياغة</button>
         <div class="hint">${N.busy ? '⏳ يفكر…' : 'يحتاج مفتاح Anthropic (من الإعدادات ← الذكاء). تنرسل هذي الملاحظة بس.'}</div></div></div>`;
     }
   };
@@ -104,9 +104,9 @@
     const links = (n.links || []).map(id => N.ctx.items().find(i => i.id === id)).filter(Boolean);
     const bl = backlinks(n);
     E.innerHTML = `<div class="nhead"><button class="sm nback" id="ntBack">‹ القائمة</button><input id="ntTitle" class="f" placeholder="العنوان" value="${esc(n.title || '')}">
-      <div class="ntools"><button class="sm" data-fmt="h" title="عنوان">H</button><button class="sm" data-fmt="b" title="غامق"><b>B</b></button><button class="sm" data-fmt="ul" title="قائمة">•</button><button class="sm" data-fmt="ck" title="قائمة مهام">☑️</button><button class="sm" data-fmt="q" title="اقتباس">❝</button><button class="sm" data-fmt="wl" title="رابط لملاحظة [[ ]]">[[ ]]</button>
-      <span class="sepv"></span><button class="sm" id="ntRem" title="ذكّرني بالسطر الحالي">⏰</button><button class="sm" id="ntLink" title="اربط عنصر من الخزنة">🔗</button><button class="sm" id="ntAi" title="ذكاء اصطناعي">✨</button><button class="sm ${n.lock ? 'act' : ''}" id="ntLock" title="حماية بكلمة سر">${n.lock ? '🔒' : '🔓'}</button><button class="sm" id="ntExp" title="تصدير">⬇️</button>
-      <button class="sm ${n.pinned ? 'act' : ''}" id="ntPin" title="تثبيت">📌</button><button class="sm ${N.prev ? 'act' : ''}" id="ntPrev" title="معاينة / تحرير">👁</button><button class="sm" id="ntDel" title="حذف">🗑️</button></div></div>
+      <div class="ntools"><button class="sm" data-fmt="h" title="عنوان">H</button><button class="sm" data-fmt="b" title="غامق"><b>B</b></button><button class="sm" data-fmt="ul" title="قائمة">•</button><button class="sm" data-fmt="ck" title="قائمة مهام">☑</button><button class="sm" data-fmt="q" title="اقتباس">❝</button><button class="sm" data-fmt="wl" title="رابط لملاحظة [[ ]]">[[ ]]</button>
+      <span class="sepv"></span><button class="sm" id="ntRem" title="ذكّرني بالسطر الحالي">⏰</button><button class="sm" id="ntLink" title="اربط عنصر من الخزنة">🔗</button><button class="sm" id="ntAi" title="ذكاء اصطناعي">✨</button><button class="sm ${n.lock ? 'act' : ''}" id="ntLock" title="حماية بكلمة سر">${n.lock ? '🔒' : '🔓'}</button><button class="sm" id="ntExp" title="تصدير">⬇</button>
+      <button class="sm ${n.pinned ? 'act' : ''}" id="ntPin" title="تثبيت">📌</button><button class="sm ${N.prev ? 'act' : ''}" id="ntPrev" title="معاينة / تحرير">👁</button><button class="sm" id="ntDel" title="حذف">🗑</button></div></div>
       <div class="nclr">${COLORS.map(c => `<button class="nsw ${n.color === c || (!n.color && !c) ? 'on' : ''}" data-c="${c}" style="${c ? 'background:' + c : ''}">${c ? '' : '∅'}</button>`).join('')}<input id="ntTagIn" class="f" placeholder="وسوم: عمل، فكرة، دراسة…" value="${esc(n.tags || '')}"></div>
       ${links.length ? `<div class="nlinks">${links.map(i => `<span class="nlk" data-open="${i.id}">🔗 ${esc(i.name)}<b data-unlink="${i.id}" title="فك الربط">×</b></span>`).join('')}</div>` : ''}
       ${N.undo && N.undo.id === n.id ? `<div class="nundo">تم التحسين <button class="sm" id="ntUndo">↶ تراجع</button></div>` : ''}
@@ -183,7 +183,7 @@
       const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
       const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 5); (n.imgs = n.imgs || {})[id] = c.toDataURL('image/jpeg', 0.8);
       const s = t.selectionStart, ins = `\n![](img:${id})\n`; t.value = t.value.slice(0, s) + ins + t.value.slice(t.selectionEnd); t.setSelectionRange(s + ins.length, s + ins.length);
-      n.body = t.value; touch(n); upInfo(); N.ctx.toast('🖼️ انضافت الصورة (اضغط 👁 للمعاينة)');
+      n.body = t.value; touch(n); upInfo(); N.ctx.toast('🖼 انضافت الصورة (اضغط 👁 للمعاينة)');
     }; im.src = fr.result; }; fr.readAsDataURL(file);
   }
 
@@ -255,7 +255,7 @@
       const it = t.closest('.nit'); if (it) { N.cur = it.dataset.id; N.prev = false; N.ov = null; draw(); return; }
       if (t.closest('#ntBack')) { N.cur = null; draw(); return; }
       if (t.closest('#ntImp')) { const c = N.ctx.importVault(vaultNotes()); N.ctx.toast('📥 انستوردت ' + c + ' ملاحظة'); draw(); return; }
-      if (t.closest('#ntExpAll')) { download('khazana-notes.md', list().filter(n => !n.lock).map(mdExport).join('\n---\n\n')); N.ctx.toast('⬇️ انحفظ الملف (مجلد التنزيلات). الملاحظات المحمية ما تنصدّر.'); return; }
+      if (t.closest('#ntExpAll')) { download('khazana-notes.md', list().filter(n => !n.lock).map(mdExport).join('\n---\n\n')); N.ctx.toast('⬇ انحفظ الملف (مجلد التنزيلات). الملاحظات المحمية ما تنصدّر.'); return; }
       if (t.closest('#ntUnGo')) { unlockGo(); return; }
       const n = find(N.cur); if (!n) return;
       const go = t.closest('[data-go]'); if (go) { N.cur = go.dataset.go; N.prev = false; draw(); return; }
@@ -279,7 +279,7 @@
       if (t.closest('#ntLkSet')) { const p = host.querySelector('#ntLkP').value; if (p.length < 3) { host.querySelector('#ntLkErr').textContent = 'كلمة السر 3 أحرف على الأقل'; return; } const salt = N.ctx.salt(); n.lock = { salt, hash: await N.ctx.hash(p, salt) }; N.unlocked.add(n.id); touch(n); N.ov = null; draw(); N.ctx.toast('🔒 انحمت الملاحظة'); return; }
       if (t.closest('#ntRelock')) { N.unlocked.delete(n.id); N.ov = null; draw(); N.ctx.toast('انقفلت 🔒'); return; }
       if (t.closest('#ntUnlockAll')) { delete n.lock; touch(n); N.ov = null; draw(); N.ctx.toast('انشالت الحماية'); return; }
-      if (t.closest('#ntExpMd')) { download(fname(n.title), mdExport(n)); N.ov = null; drawEditor(); N.ctx.toast('⬇️ انحفظ الملف (مجلد التنزيلات)'); return; }
+      if (t.closest('#ntExpMd')) { download(fname(n.title), mdExport(n)); N.ov = null; drawEditor(); N.ctx.toast('⬇ انحفظ الملف (مجلد التنزيلات)'); return; }
       if (t.closest('#ntExpCopy')) { try { await navigator.clipboard.writeText(mdExport(n)); N.ctx.toast('📋 اننسخت'); } catch (er) { N.ctx.toast('تعذّر النسخ'); } N.ov = null; drawEditor(); return; }
       if (t.closest('#ntUndo')) { if (N.undo && N.undo.id === n.id) { n.body = N.undo.body; N.undo = null; touch(n); drawEditor(); } return; }
       const ai = t.closest('[data-ai]'); if (ai && !N.busy) {

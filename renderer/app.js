@@ -1,9 +1,9 @@
 const $ = id => document.getElementById(id);
-const KIND_ICON = { app: '⚙️', image: '🖼️', video: '🎬', audio: '🎵', doc: '📄', archive: '🗜️', code: '💻', folder: '📁', link: '🔗', note: '📝', other: '📦' };
+const KIND_ICON = { app: '⚙', image: '🖼', video: '🎬', audio: '🎵', doc: '📄', archive: '🗜', code: '💻', folder: '📁', link: '🔗', note: '📝', other: '📦' };
 const KIND_CAT = { app: 'برامج', image: 'صور', video: 'فيديو', audio: 'صوت', doc: 'مستندات', archive: 'أرشيف', code: 'أكواد', folder: 'مجلدات', link: 'روابط', note: 'ملاحظات', other: 'أخرى' };
 const OPEN_LABEL = { app: 'تشغيل', link: 'فتح الرابط', note: 'عرض' };
 const IMG_OK = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg', '.ico']);
-const EMOJIS = ['⭐', '📁', '💼', '🖼️', '🎮', '📚', '🎵', '🔒', '🏠', '🛠️'];
+const EMOJIS = ['⭐', '📁', '💼', '🖼', '🎮', '📚', '🎵', '🔒', '🏠', '🛠'];
 
 let groups = [], colorF = '', play = {}, trash = []; const unlocked = new Set();
 const TAGC = ['', '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899'];
@@ -150,7 +150,7 @@ function headHTML() {
   if (!secF || secF === '__none') return '';
   const path = pathOf(secF); const ks = kids(secF);
   const lk = path.filter(s => s.lock && unlocked.has(s.id)).pop();
-  let h = '<div class="crumbs"><span data-sec="">🗄️ الكل</span>' + path.map((s, i) => ` › <span data-sec="${s.id}" class="${i === path.length - 1 ? 'cur' : ''}">${esc(s.emoji || '📁')} ${esc(s.name)}</span>`).join('') + (lk ? ` <button class="sm relock" data-relock="${lk.id}">🔒 أقفل الآن</button>` : '') + '</div>';
+  let h = '<div class="crumbs"><span data-sec="">🗄 الكل</span>' + path.map((s, i) => ` › <span data-sec="${s.id}" class="${i === path.length - 1 ? 'cur' : ''}">${esc(s.emoji || '📁')} ${esc(s.name)}</span>`).join('') + (lk ? ` <button class="sm relock" data-relock="${lk.id}">🔒 أقفل الآن</button>` : '') + '</div>';
   h += '<div class="rooms">' + ks.map(k => `<div class="room" data-sec="${k.id}">${esc(k.emoji || '📁')} <b>${esc(k.name)}</b> <span class="sc">${secTotal(k.id)}</span></div>`).join('')
     + '<button class="sm" data-newroom="1">+ غرفة جديدة</button>'
     + (ks.length ? `<label class="inc"><input type="checkbox" id="incSub" ${incSub ? 'checked' : ''}> مع محتوى الغرف</label>` : '') + '</div>';
@@ -158,11 +158,11 @@ function headHTML() {
 }
 function renderSide() {
   const own = {}; visItems().forEach(i => { const k = i.section || ''; own[k] = (own[k] || 0) + 1; });
-  let h = `<div class="sitem ${secF === '' ? 'on' : ''}" data-sec="">🗄️ <span class="sn">الكل</span><span class="sc">${visItems().length}</span></div>`;
+  let h = `<div class="sitem ${secF === '' ? 'on' : ''}" data-sec="">🗄 <span class="sn">الكل</span><span class="sc">${visItems().length}</span></div>`;
   const walk = (pid, d, seen) => kids(pid).forEach(s => {
     if (seen.has(s.id)) return;
     const hasK = kids(s.id).length > 0, open = !collapsed.has(s.id);
-    h += `<div class="sitem ${secF === s.id ? 'on' : ''}" data-sec="${s.id}" style="padding-inline-start:${8 + d * 14}px"><span class="tog" ${hasK ? `data-tog="${s.id}"` : ''}>${hasK ? (open ? '▾' : '▸') : ''}</span>${s.color ? `<i class="dot" style="background:${esc(s.color)}"></i>` : ''}${esc(s.emoji || '📁')} <span class="sn" title="${esc(s.name)}">${esc(s.name)}</span>${s.lock ? `<span class="lk">${unlocked.has(s.id) ? '🔓' : '🔒'}</span>` : ''}<span class="sc">${isLocked(s.id) ? '' : (hasK ? secTotal(s.id) : (own[s.id] || 0))}</span><span class="sact"><button data-sfence="${s.id}" title="حاوية على سطح المكتب">🪟</button><button data-sedit="${s.id}" title="تعديل / نقل">✏️</button><button data-sdel="${s.id}" title="حذف القسم">🗑️</button></span></div>`;
+    h += `<div class="sitem ${secF === s.id ? 'on' : ''}" data-sec="${s.id}" style="padding-inline-start:${8 + d * 14}px"><span class="tog" ${hasK ? `data-tog="${s.id}"` : ''}>${hasK ? (open ? '▾' : '▸') : ''}</span>${s.color ? `<i class="dot" style="background:${esc(s.color)}"></i>` : ''}${esc(s.emoji || '📁')} <span class="sn" title="${esc(s.name)}">${esc(s.name)}</span>${s.lock ? `<span class="lk">${unlocked.has(s.id) ? '🔓' : '🔒'}</span>` : ''}<span class="sc">${isLocked(s.id) ? '' : (hasK ? secTotal(s.id) : (own[s.id] || 0))}</span><span class="sact"><button data-sfence="${s.id}" title="حاوية على سطح المكتب">🪟</button><button data-sedit="${s.id}" title="تعديل / نقل">✏</button><button data-sdel="${s.id}" title="حذف القسم">🗑</button></span></div>`;
     if (hasK && open) walk(s.id, d + 1, new Set([...seen, s.id]));
   });
   walk('', 0, new Set());
@@ -195,7 +195,7 @@ document.addEventListener('error', e => {
   if (t && t.tagName === 'IMG' && t.dataset && t.dataset.fb !== undefined && !t.dataset.done) {
     t.dataset.done = '1';
     if (t.dataset.fb) t.src = t.dataset.fb;
-    else { const s = document.createElement('span'); s.className = 'emo'; s.textContent = '🖼️'; t.replaceWith(s); }
+    else { const s = document.createElement('span'); s.className = 'emo'; s.textContent = '🖼'; t.replaceWith(s); }
   }
 }, true);
 const fmtDur = s => { const m = Math.round(s / 60); return m < 60 ? m + ' د' : Math.floor(m / 60) + ' س' + (m % 60 ? ' ' + (m % 60) + ' د' : ''); };
@@ -207,7 +207,7 @@ function tileHTML(i, why) {
     <div class="pre">${previewHTML(i)}</div>
     <div class="body">
       <div class="nm" title="${esc(i.name)}">${i.pinned ? '⭐ ' : ''}${esc(i.name)}</div>
-      <div class="meta">${sn && secF === '' ? `<span class="tag">📁 ${esc(sn)}</span>` : ''}${i.category ? `<span class="tag">${esc(i.category)}</span>` : ''}${i.status === 'later' ? '<span class="tag later">بعدين</span>' : ''}${play[i.id] >= 300 ? `<span class="tag">🕒 ${fmtDur(play[i.id])}</span>` : ''}${miss ? '<span class="tag bad">⚠️ مفقود</span>' : ''}</div>
+      <div class="meta">${sn && secF === '' ? `<span class="tag">📁 ${esc(sn)}</span>` : ''}${i.category ? `<span class="tag">${esc(i.category)}</span>` : ''}${i.status === 'later' ? '<span class="tag later">بعدين</span>' : ''}${play[i.id] >= 300 ? `<span class="tag">🕒 ${fmtDur(play[i.id])}</span>` : ''}${miss ? '<span class="tag bad">⚠ مفقود</span>' : ''}</div>
       ${i.desc ? `<div class="ds">${esc(i.desc)}</div>` : ''}
       ${why ? `<div class="why">💡 ${esc(why)}</div>` : ''}
     </div>
@@ -217,8 +217,8 @@ function tileHTML(i, why) {
         ${i.path ? '<button data-act="reveal" title="إظهار في المجلد">📂</button>' : ''}
         <button data-act="rem" title="ذكّرني بهذا">🔔</button>
         <button data-act="pin" class="${i.pinned ? 'pinon' : ''}" title="${i.pinned ? 'إلغاء التثبيت' : 'تثبيت في الأعلى'}">${i.pinned ? '⭐' : '☆'}</button>
-        <button data-act="edit" title="تعديل">✏️</button>
-        <button data-act="del" title="حذف">🗑️</button>
+        <button data-act="edit" title="تعديل">✏</button>
+        <button data-act="del" title="حذف">🗑</button>
       </div>
     </div>
   </div>`;
@@ -237,7 +237,7 @@ function render() {
   renderSide(); renderChips(); renderBulk();
   let h = '';
   const ls = secF && secF !== '__none' ? lockingSec(secF) : null;
-  if (ls) { $('out').innerHTML = `<div class="crumbs"><span data-sec="">🗄️ الكل</span></div>` + lockHTML(ls); $('out').dataset.lock = ls.id; applyView(); return; }
+  if (ls) { $('out').innerHTML = `<div class="crumbs"><span data-sec="">🗄 الكل</span></div>` + lockHTML(ls); $('out').dataset.lock = ls.id; applyView(); return; }
   delete $('out').dataset.lock;
   if (result) {
     const found = result.matches.map(m => ({ it: items.find(i => i.id === m.id), why: m.why })).filter(x => x.it);
@@ -245,12 +245,12 @@ function render() {
     h += found.length ? `<div class="grid">${found.map(x => tileHTML(x.it, x.why)).join('')}</div>` : `<div class="hint" style="padding:12px">ما لقيت شي مناسب في خزنتك.</div>`;
     if (result.suggestions && result.suggestions.length) {
       h += `<div class="sec"><span>اقتراحات ما عندك</span></div><div class="grid">` + result.suggestions.map((s, k) => `
-        <div class="tile"><div class="pre"><span class="emo">⚙️</span></div><div class="body"><div class="nm">${esc(s.name)}</div><div class="ds">${esc(s.desc)}</div></div>
+        <div class="tile"><div class="pre"><span class="emo">⚙</span></div><div class="body"><div class="nm">${esc(s.name)}</div><div class="ds">${esc(s.desc)}</div></div>
         <div class="acts"><button class="open" data-sug="${k}">+ أضفه لـ«بعدين»</button><div class="mini"><button data-gsug="${k}" title="بحث في قوقل">🌐</button></div></div></div>`).join('') + `</div>`;
     }
   } else {
     const list = sortItems(scope().filter(i => (!catF || i.category === catF) && (!laterF || i.status === 'later') && (!colorF || i.color === colorF)));
-    if (!items.length) h = `<div class="hero"><div class="hbig">🗄️</div><b>خزنتك جاهزة</b><p>اسحب أي ملف أو صورة أو برنامج أو مجلد وأفلته هنا،<br>وخزنة تسألك عنه وتحفظه وتعرف تلاقيه بوصفه.</p><div class="hbtns"><button class="pri" data-hero="files">＋ أضف ملفات</button><button data-hero="scan">⚙️ استورد برامجي المثبتة</button><button data-hero="link">🔗 أضف رابط</button><button data-hero="note">📝 ملاحظة</button></div></div>`;
+    if (!items.length) h = `<div class="hero"><div class="hbig">🗄</div><b>خزنتك جاهزة</b><p>اسحب أي ملف أو صورة أو برنامج أو مجلد وأفلته هنا،<br>وخزنة تسألك عنه وتحفظه وتعرف تلاقيه بوصفه.</p><div class="hbtns"><button class="pri" data-hero="files">＋ أضف ملفات</button><button data-hero="scan">⚙ استورد برامجي المثبتة</button><button data-hero="link">🔗 أضف رابط</button><button data-hero="note">📝 ملاحظة</button></div></div>`;
     else if (!list.length) h = `<div class="empty"><b>${secF && secF !== '__none' ? 'ما في عناصر هنا' : 'ما في عناصر هنا'}</b>${secF && secF !== '__none' ? 'اسحب ملفات جديدة هنا، أو اسحب عناصر من الخزنة وأفلتها على هذا القسم أو على إحدى غرفه.' : ''}</div>`;
     else h = `<div class="grid">${list.map(i => tileHTML(i)).join('')}</div>`;
     h = headHTML() + h;
@@ -517,7 +517,7 @@ async function openItem(it) {
   else if (!it.path && it.kind === 'app') r = { ok: await window.api.openUrl('https://www.google.com/search?q=' + encodeURIComponent(it.name + ' download')) };
   else r = await window.api.open(it.path);
   if (!r.ok) {
-    if (r.error === 'missing') { missing.add(it.id); render(); toast('الملف مو موجود في مكانه. اضغط ✏️ ثم «تغيير المسار»'); }
+    if (r.error === 'missing') { missing.add(it.id); render(); toast('الملف مو موجود في مكانه. اضغط ✏ ثم «تغيير المسار»'); }
     else toast('ما قدرت أفتحه' + (r.error ? ': ' + r.error : ''));
     return;
   }
@@ -668,7 +668,7 @@ $('moreMenu').addEventListener('click', async e => {
       } catch (e) { setBusy(''); return toast('ملف main.js قديم، حدّث التطبيق (⋯ ← 🔄 تحديث التطبيق) ثم أعد التشغيل'); }
       if (k % 10 === 9) render();
     }
-    setBusy(''); await persist(); render(); toast(`تم تحديث ${n} من ${todo.length}` + (badN.length ? ` · ما لقيت صورة لـ: ${badN.slice(0, 4).join('، ')}` : '') + (badN.length ? ' (تقدر تحط صورة بنفسك: ✏️ ← 🖼️ صورة مخصّصة)' : ''));
+    setBusy(''); await persist(); render(); toast(`تم تحديث ${n} من ${todo.length}` + (badN.length ? ` · ما لقيت صورة لـ: ${badN.slice(0, 4).join('، ')}` : '') + (badN.length ? ' (تقدر تحط صورة بنفسك: ✏ ← 🖼 صورة مخصّصة)' : ''));
   }
   else if (a === 'fill') {
     if (!hasKey) return toast('فعّل الذكاء الاصطناعي أول (⋯ ← 🔑)');
@@ -759,7 +759,7 @@ let missDismissed = false;
 function updateMissBar() {
   const n = missing.size, bar = $('missBar'); if (!bar) return;
   bar.hidden = !n || missDismissed || document.body.classList.contains('zkview') || document.body.classList.contains('ntview') || document.body.classList.contains('tdview') || document.body.classList.contains('cvview');
-  if (n) $('missTxt').textContent = `⚠️ ${n} عنصر مسارهم مفقود (غالباً انتقلوا لمكان ثاني)`;
+  if (n) $('missTxt').textContent = `⚠ ${n} عنصر مسارهم مفقود (غالباً انتقلوا لمكان ثاني)`;
 }
 async function relocate(ids, roots, silent) {
   const L = items.filter(i => ids.includes(i.id) && i.path).map(i => ({ id: i.id, path: i.path, size: i.size, isDir: i.kind === 'folder' }));
@@ -817,7 +817,7 @@ window.Canvas.mount($('cv'), { get: () => boards, save: () => persist(), items: 
 /* ---------- صفحة اليوم ---------- */
 function drawToday() {
   const ar = (ui.lang || window.I18N.get()) !== 'en', now = new Date(), h = now.getHours();
-  const hi = h < 5 ? '🌙 سهران؟' : h < 12 ? '☀️ صباح الخير' : h < 17 ? '🌤️ طاب يومك' : h < 21 ? '🌆 مساء الخير' : '🌙 تصبح على خير';
+  const hi = h < 5 ? '🌙 سهران؟' : h < 12 ? '☀ صباح الخير' : h < 17 ? '🌤 طاب يومك' : h < 21 ? '🌆 مساء الخير' : '🌙 تصبح على خير';
   const dt = now.toLocaleDateString(ar ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' });
   const endDay = new Date(now); endDay.setHours(23, 59, 59, 999);
   const rems = (window.Zakker.list ? window.Zakker.list() : []).filter(r => !r.done && r.when && r.when <= endDay.getTime()).sort((a, b) => a.when - b.when).slice(0, 6);
@@ -827,7 +827,7 @@ function drawToday() {
   const itm = i => `<div class="tdi" data-it="${i.id}">${i.thumb ? `<img src="${i.thumb}">` : '<span>📄</span>'}<b>${esc(i.name)}</b></div>`;
   const tm = r => new Date(r.when).toLocaleTimeString(ar ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit' });
   $('td').innerHTML = `<div class="tdw"><div class="tdh"><h1>${hi}</h1><span>${esc(dt)}</span></div>
-    ${missing.size ? `<div class="tdmiss"><b>⚠️ ${missing.size} عنصر مسارهم مفقود (غالباً انتقلوا لمكان ثاني)</b><button class="sm pri" data-tq="mauto">🔧 إصلاح تلقائي</button><button class="sm" data-tq="mpick">📂 اختر المجلد اللي نقلتهم له</button></div>` : ''}
+    ${missing.size ? `<div class="tdmiss"><b>⚠ ${missing.size} عنصر مسارهم مفقود (غالباً انتقلوا لمكان ثاني)</b><button class="sm pri" data-tq="mauto">🔧 إصلاح تلقائي</button><button class="sm" data-tq="mpick">📂 اختر المجلد اللي نقلتهم له</button></div>` : ''}
     <div class="tdq"><button data-tq="note">📝 ملاحظة سريعة</button><button data-tq="add">➕ إضافة عنصر</button><button data-tq="rem">🔔 تذكير</button><button data-tq="cv">🎨 لوحتي</button><button data-tq="srch">🔎 بحث شامل (Ctrl+K)</button></div>
     <div class="tdg">
       <section><h3>🔔 تذكيرات اليوم</h3>${rems.map(r => `<div class="tdr ${r.when < Date.now() ? 'late' : ''}" data-tq="rem"><b>${esc(r.title)}</b><small>${tm(r)}</small></div>`).join('') || '<div class="hint">ما عندك تذكيرات اليوم 🎉</div>'}</section>
@@ -835,7 +835,7 @@ function drawToday() {
       <section><h3>⭐ الأكثر استخداماً</h3><div class="tdit">${top.map(itm).join('') || '<div class="hint">افتح عناصرك وبتظهر هنا.</div>'}</div></section>
       <section><h3>🕘 فتحتها مؤخراً</h3><div class="tdit">${rec.map(itm).join('') || '<div class="hint">ما فتحت شي لسا.</div>'}</div></section>
     </div>
-    <div class="tdf">🗄️ ${visItems().length} عنصر · 📝 ${nts.length ? window.Notes.count() : 0} ملاحظة · 🎨 ${window.Canvas.count()} بطاقة في اللوحة</div></div>`;
+    <div class="tdf">🗄 ${visItems().length} عنصر · 📝 ${nts.length ? window.Notes.count() : 0} ملاحظة · 🎨 ${window.Canvas.count()} بطاقة في اللوحة</div></div>`;
 }
 $('td').addEventListener('click', e => {
   const it = e.target.closest('[data-it]'); if (it) { const x = items.find(i => i.id === it.dataset.it); if (x) openItem(x); return; }
@@ -898,7 +898,7 @@ async function runGroup(g) {
   for (const it of list) { await openItem(it); await sleep(450); }
 }
 function renderGrpMenu() {
-  $('grpMenu').innerHTML = (groups.length ? groups.map(g => `<div class="grow" data-g="${g.id}"><button class="grun" data-grun="${g.id}" title="تشغيل">▶ ${esc(g.emoji || '⚡')} ${esc(g.name)} <span class="hint">(${(g.ids || []).length})</span>${g.sched && g.sched.on ? ` <span class="hint">⏰ ${esc(g.sched.time)}</span>` : ''}</button><button data-gedit="${g.id}" title="تعديل">✏️</button><button data-gdel="${g.id}" title="حذف">🗑️</button></div>`).join('') : '<div class="hint" style="padding:6px 4px">ما عندك مجموعات. مثلاً «وضع الدراسة» تفتح متصفح + ملفاتك + ملاحظاتك بضغطة.</div>')
+  $('grpMenu').innerHTML = (groups.length ? groups.map(g => `<div class="grow" data-g="${g.id}"><button class="grun" data-grun="${g.id}" title="تشغيل">▶ ${esc(g.emoji || '⚡')} ${esc(g.name)} <span class="hint">(${(g.ids || []).length})</span>${g.sched && g.sched.on ? ` <span class="hint">⏰ ${esc(g.sched.time)}</span>` : ''}</button><button data-gedit="${g.id}" title="تعديل">✏</button><button data-gdel="${g.id}" title="حذف">🗑</button></div>`).join('') : '<div class="hint" style="padding:6px 4px">ما عندك مجموعات. مثلاً «وضع الدراسة» تفتح متصفح + ملفاتك + ملاحظاتك بضغطة.</div>')
     + '<button class="sm" id="grpNew" style="margin-top:6px">+ مجموعة جديدة</button>';
 }
 $('grpBtn').onclick = e => { e.stopPropagation(); const h = $('grpMenu').hidden; closeMenus(); renderGrpMenu(); $('grpMenu').hidden = !h; };
@@ -963,13 +963,13 @@ async function openClean() {
   });
   const row = (i, chk, extra) => `<label class="chk-row"><input type="checkbox" data-cid="${i.id}" ${chk ? 'checked' : ''}> <span class="ci">${i.thumb ? `<img src="${esc(i.thumb)}" alt="">` : (KIND_ICON[i.kind] || '📄')}</span><span class="cn"><b>${esc(i.name)}</b><span class="hint" dir="ltr">${esc(i.path || i.url || '')}</span></span>${extra || ''}</label>`;
   let h = '';
-  h += `<div class="sec"><span>⚠️ ملفات مفقودة (${dead.length})</span></div>`;
+  h += `<div class="sec"><span>⚠ ملفات مفقودة (${dead.length})</span></div>`;
   if (dead.length) h += '<div class="drow" style="justify-content:flex-start;gap:8px;padding:2px 0 8px"><button type="button" class="sm pri" id="cleanAuto">🔧 إصلاح تلقائي</button><button type="button" class="sm" id="cleanPick">📂 دوّر في مجلد…</button><span class="hint">يطبّق على اللي تحدده، وإذا ما حددت شي يطبّق على الكل</span></div>';
   h += dead.length ? dead.map(i => row(i, false, `<button type="button" class="sm" data-relink="${i.id}">📍 غيّر المسار</button>`)).join('') : '<div class="hint" style="padding:6px 4px">✅ كل ملفاتك موجودة في أماكنها.</div>';
   h += `<div class="sec"><span>👯 مكررات (${dups.length} مجموعة)</span></div>`;
   h += dups.length ? dups.map(g => `<div class="dgrp"><div class="hint">${g.why} — العلامة على اللي يتحذف، واحد منهم يبقى</div>${g.list.map((i, k) => row(i, k > 0, k === 0 ? '<span class="tag">يبقى</span>' : '')).join('')}</div>`).join('') : '<div class="hint" style="padding:6px 4px">✅ ما في مكررات.</div>';
   body.innerHTML = h;
-  const upd = () => { $('cleanDel').hidden = !body.querySelector('input:checked'); $('cleanDel').textContent = `🗑️ احذف المحدد (${body.querySelectorAll('input:checked').length}) من الخزنة`; };
+  const upd = () => { $('cleanDel').hidden = !body.querySelector('input:checked'); $('cleanDel').textContent = `🗑 احذف المحدد (${body.querySelectorAll('input:checked').length}) من الخزنة`; };
   body.onchange = upd; upd();
   const targets = () => { const c = [...body.querySelectorAll('input:checked')].map(x => x.dataset.cid).filter(id => dead.some(d => d.id === id)); return c.length ? c : dead.map(d => d.id); };
   body.onclick = async e => {
@@ -1026,7 +1026,7 @@ async function openStats() {
   h += `<div class="sec"><span>🔥 الأكثر فتحاً</span></div>` + (top.length ? top.map(i => `<div class="srow">${nm(i)}${bar(i.openCount, mx)}<span class="sv">${i.openCount}</span></div>`).join('') : '<div class="hint" style="padding:6px">لسا ما فتحت شي من خزنة.</div>');
   h += `<div class="sec"><span>🕒 أكثر وقت استخدام</span></div>` + (topP.length ? topP.map(i => `<div class="srow">${nm(i)}${bar(play[i.id], mp, '#ea580c')}<span class="sv">${fmtDur(play[i.id])}</span></div>`).join('') : '<div class="hint" style="padding:6px">يبدأ الحساب لما تشغّل برنامج أو لعبة (.exe) من خزنة أو من ويندوز وخزنة شغّالة في الخلفية.</div>');
   h += `<div class="sec"><span>📅 آخر 7 أيام (مرات الفتح)</span></div><div class="sdays">` + days.map(d => `<div class="sd"><div class="sdb"><i style="height:${Math.round(d.n / md * 100)}%"></i></div><b>${d.n}</b><span>${esc(d.l)}</span></div>`).join('') + '</div>';
-  h += `<div class="sec"><span>🗂️ حسب النوع</span></div><div class="skinds">` + Object.entries(kinds).sort((x, y) => y[1] - x[1]).map(([k, n]) => `<span class="tag">${KIND_ICON[k] || '📦'} ${KIND_CAT[k] || k} ${n}</span>`).join('') + '</div>';
+  h += `<div class="sec"><span>🗂 حسب النوع</span></div><div class="skinds">` + Object.entries(kinds).sort((x, y) => y[1] - x[1]).map(([k, n]) => `<span class="tag">${KIND_ICON[k] || '📦'} ${KIND_CAT[k] || k} ${n}</span>`).join('') + '</div>';
   $('statsBody').innerHTML = h; $('statsClose').onclick = () => $('statsDlg').close(); $('statsDlg').showModal();
 }
 
@@ -1083,11 +1083,11 @@ async function importBookmarks() {
   normalizeSections(); await persist(); navTo(root.id); toast(`انضاف ${fresh.length} رابط 🔖`);
 }
 
-/* ---------- 🗑️ سلة المحذوفات ---------- */
+/* ---------- 🗑 سلة المحذوفات ---------- */
 function openTrash() {
   const dlg = $('trashDlg'), body = $('trashBody');
   const draw = () => {
-    body.innerHTML = trash.length ? trash.map(x => `<div class="chk-row"><span class="ci">${x.thumb ? `<img src="${esc(x.thumb)}" alt="">` : (KIND_ICON[x.kind] || '📄')}</span><span class="cn"><b>${esc(x.name)}</b><span class="hint">حُذف ${new Date(x._del).toLocaleDateString('ar')}</span></span><button type="button" class="sm" data-tr="${x.id}">↩️ استرجاع</button></div>`).join('') : '<div class="hint" style="padding:14px">السلة فاضية.</div>';
+    body.innerHTML = trash.length ? trash.map(x => `<div class="chk-row"><span class="ci">${x.thumb ? `<img src="${esc(x.thumb)}" alt="">` : (KIND_ICON[x.kind] || '📄')}</span><span class="cn"><b>${esc(x.name)}</b><span class="hint">حُذف ${new Date(x._del).toLocaleDateString('ar')}</span></span><button type="button" class="sm" data-tr="${x.id}">↩ استرجاع</button></div>`).join('') : '<div class="hint" style="padding:14px">السلة فاضية.</div>';
     $('trashEmpty').disabled = !trash.length;
   };
   body.onclick = async e => {
@@ -1129,7 +1129,7 @@ $('remSave').onclick = async () => {
   await window.Zakker.addRem('افتح: ' + remItem.name, ts, { ref: remItem.id }); $('remDlg').close(); toast('🔔 تم! يذكّرك في تبويب ذكّرني');
 };
 
-/* ---------- ⌨️ لوحة الأوامر Ctrl+K ---------- */
+/* ---------- ⌨ لوحة الأوامر Ctrl+K ---------- */
 let cmdList = [], cmdSel = 0;
 function cmdAll() {
   const mc = k => () => { const b = document.querySelector('[data-more="' + k + '"]'); if (b) b.click(); };
@@ -1139,10 +1139,10 @@ function cmdAll() {
     ['📁 قسم جديد', 'section new قسم', () => newSection('')],
     ['📊 الإحصائيات', 'stats احصائيات', mc('stats')], ['🧹 فحص الملفات الميتة والمكررة', 'clean dead duplicate مكرر ميت', mc('clean')],
     ['🎮 استيراد ألعاب Steam و Epic', 'games steam epic العاب', mc('games')], ['🔖 استيراد مفضلة المتصفح', 'bookmarks مفضلة', mc('bookmarks')],
-    ['🗑️ سلة المحذوفات', 'trash سلة', mc('trash')], ['👤 الملفات الشخصية', 'profile ملف شخصي', mc('profiles')],
+    ['🗑 سلة المحذوفات', 'trash سلة', mc('trash')], ['👤 الملفات الشخصية', 'profile ملف شخصي', mc('profiles')],
     ['🔄 تحديث التطبيق', 'update تحديث', mc('update')], ['💾 نسخة احتياطية', 'backup نسخة', mc('export')], ['🔑 الذكاء الاصطناعي', 'ai مفتاح', mc('settings')],
-    ['🗄️ الخزنة', 'vault خزنة', () => showView('vault')], ['📝 ملاحظاتي', 'notes ملاحظات افكار', () => showView('nt')], ['📝 ملاحظة جديدة', 'new note ملاحظة جديدة فكرة', () => { showView('nt'); window.Notes.create('blank'); }], ['✅ قائمة مهام جديدة', 'todo checklist مهام', () => { showView('nt'); window.Notes.create('todo'); }], ['💡 فكرة جديدة', 'idea فكرة', () => { showView('nt'); window.Notes.create('idea'); }], ['🔔 ذكّرني', 'reminders تذكير', () => showView('zk')], ['🏠 صفحة اليوم', 'today اليوم home', () => showView('td')], ['🎨 لوحتي', 'canvas board لوحة', () => showView('cv')],
-    ['🎨 التخصيص', 'customize تخصيص', () => $('custBtn').click()], ['☑️ تحديد عدة عناصر', 'select تحديد', () => $('selBtn').click()],
+    ['🗄 الخزنة', 'vault خزنة', () => showView('vault')], ['📝 ملاحظاتي', 'notes ملاحظات افكار', () => showView('nt')], ['📝 ملاحظة جديدة', 'new note ملاحظة جديدة فكرة', () => { showView('nt'); window.Notes.create('blank'); }], ['✅ قائمة مهام جديدة', 'todo checklist مهام', () => { showView('nt'); window.Notes.create('todo'); }], ['💡 فكرة جديدة', 'idea فكرة', () => { showView('nt'); window.Notes.create('idea'); }], ['🔔 ذكّرني', 'reminders تذكير', () => showView('zk')], ['🏠 صفحة اليوم', 'today اليوم home', () => showView('td')], ['🎨 لوحتي', 'canvas board لوحة', () => showView('cv')],
+    ['🎨 التخصيص', 'customize تخصيص', () => $('custBtn').click()], ['☑ تحديد عدة عناصر', 'select تحديد', () => $('selBtn').click()],
     ['▦ عرض: بطاقات كبيرة', 'view big', () => document.querySelector('[data-v="big"]').click()], ['▪▪ عرض: بطاقات صغيرة', 'view small', () => document.querySelector('[data-v="small"]').click()], ['☰ عرض: قائمة', 'view list', () => document.querySelector('[data-v="list"]').click()],
     ['⚡ مجموعة جديدة', 'group مجموعة', () => editGroup(null)]
   ];
@@ -1178,7 +1178,7 @@ $('cmdkList').addEventListener('click', e => { const r = e.target.closest('[data
 $('cmdk').addEventListener('mousedown', e => { if (e.target.id === 'cmdk') closePalette(); });
 document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k') { e.preventDefault(); $('cmdk').hidden ? openPalette() : closePalette(); } });
 
-/* ---------- ⚙️ صفحة الإعدادات ---------- */
+/* ---------- ⚙ صفحة الإعدادات ---------- */
 const PREFS = [
   { id: 'look', ico: '🎨', t: 'المظهر', rows: [
     { t: 'اللغة', d: 'لغة واجهة التطبيق.', c: { sel: 'lang', o: [['ar', 'العربية'], ['en', 'English']] } },
@@ -1190,7 +1190,7 @@ const PREFS = [
     { t: 'إظهار الوصف', d: 'الوصف تحت اسم العنصر.', c: { tg: 'showDesc' } },
     { t: 'إظهار التصنيف والوسوم', d: 'الشارات الصغيرة على البطاقة.', c: { tg: 'showTags' } }
   ] },
-  { id: 'design', ico: '🖌️', t: 'التصميم', rows: [
+  { id: 'design', ico: '🖌', t: 'التصميم', rows: [
     { t: 'الثيمات', d: 'اختر شكل التطبيق الكامل.', col: 1, c: { pre: 1 } },
     { t: 'لون التطبيق', d: 'اختر من الألوان أو اصنع لونك من القوس الملوّن.', col: 1, c: { sw: 1, cu: 1 } },
     { t: 'زوايا البطاقات', d: 'حادة أو دائرية أو كبسولة.', c: { sg: 'rad', o: [['', 'عادي'], ['s', 'حادة'], ['r', 'دائرية'], ['p', 'كبسولة']] } },
@@ -1243,7 +1243,7 @@ const PREFS = [
   { id: 'ai', ico: '✨', t: 'الذكاء الاصطناعي', rows: [
     { t: 'مفتاح Anthropic API (اختياري)', d: 'بدون مفتاح كل شي يشتغل بالكلمات. بالمفتاح: تعرّف تلقائي على الملفات وبحث بالوصف. المفتاح مشفّر على جهازك.', c: { b: 'more:settings', l: 'إدارة المفتاح' } }
   ] },
-  { id: 'about', ico: 'ℹ️', t: 'حول والتحديث', rows: [
+  { id: 'about', ico: 'ℹ', t: 'حول والتحديث', rows: [
     { t: 'تحديث التطبيق', d: 'يجيب أحدث الملفات من GitHub ويعيد التشغيل.', c: { b: 'more:update', l: 'تحقق من التحديث' } },
     { t: 'مزامنة ذكّرني مع الجوال', d: 'حساب Supabase مجاني (اختياري).', c: { fn: 'sync', l: 'إعداد المزامنة' } },
     { t: 'خزنة مفتوحة المصدر ومجانية', d: 'الكود والتحميل والتحديثات على GitHub.', c: { fn: 'github', l: 'فتح GitHub' } }
@@ -1259,7 +1259,7 @@ function prefsCtl(c) {
   if (c.pre) return `<div class="pgal">${PRESETS.map(([k, n, b, cd, a]) => `<button type="button" class="pcard ${(ui.preset || '') === k ? 'on' : ''}" data-pp="${k}"><span class="pv" style="background:${b}"><i style="background:${cd}"></i><i style="background:${cd}"></i><b style="background:${a}"></b></span>${esc(n)}</button>`).join('')}</div>`;
   if (c.sg) return `<div class="seg2">${c.o.map(([v, l]) => `<button type="button" class="${dval(c.sg) === v ? 'on' : ''}" data-sg="${c.sg}" data-v="${v}">${esc(l)}</button>`).join('')}</div>`;
   if (c.rg) { const v = +ui[c.rg] || c.def; return `<div class="rg"><input type="range" data-rg="${c.rg}" min="${c.min}" max="${c.max}" step="${c.step}" value="${v}"><output>${v}${c.u}</output></div>`; }
-  if (c.wp) return `<div class="wgal"><button type="button" class="wsw none ${!ui.wp ? 'on' : ''}" data-wp="" title="بدون"></button>${Object.keys(WALLS).map(k => `<button type="button" class="wsw ${ui.wp === k ? 'on' : ''}" data-wp="${k}" style="background-image:${WALLS[k]}"></button>`).join('')}<button type="button" class="sm" data-wpup="1">🖼️ صورتي</button></div>`;
+  if (c.wp) return `<div class="wgal"><button type="button" class="wsw none ${!ui.wp ? 'on' : ''}" data-wp="" title="بدون"></button>${Object.keys(WALLS).map(k => `<button type="button" class="wsw ${ui.wp === k ? 'on' : ''}" data-wp="${k}" style="background-image:${WALLS[k]}"></button>`).join('')}<button type="button" class="sm" data-wpup="1">🖼 صورتي</button></div>`;
   if (c.b) return `<button class="sm" data-pa="${c.b}">${esc(c.l)}</button>`;
   if (c.fn) return `<button class="sm" data-pf="${c.fn}">${esc(c.l)}</button>`;
   return '';
@@ -1304,7 +1304,7 @@ function pickWall() {
     rd.onload = () => { const im = new Image(); im.onload = async () => {
       const k = Math.min(1, 1600 / im.width), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
       c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); ui.wimg = c.toDataURL('image/jpeg', .72); ui.wp = 'img'; if (!ui.wd) ui.wd = 25;
-      applyAppearance(); await persist(); drawPrefs(); toast('🖼️ انضافت الخلفية');
+      applyAppearance(); await persist(); drawPrefs(); toast('🖼 انضافت الخلفية');
     }; im.src = rd.result; };
     rd.readAsDataURL(file);
   };

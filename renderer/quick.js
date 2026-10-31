@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-const KI = { app: '🧩', image: '🖼️', folder: '📁', link: '🔗', note: '📝', doc: '📄', pdf: '📕', video: '🎬', audio: '🎵', archive: '🗜️' };
+const KI = { app: '🧩', image: '🖼', folder: '📁', link: '🔗', note: '📝', doc: '📄', pdf: '📕', video: '🎬', audio: '🎵', archive: '🗜' };
 const KC = { _group: '⚡ مجموعة', app: 'برامج', image: 'صور', folder: 'مجلدات', link: 'روابط', note: 'ملاحظات', doc: 'مستندات', pdf: 'PDF', video: 'فيديو', audio: 'صوت', archive: 'مضغوطات' };
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const norm = s => (s || '').toLowerCase().replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');

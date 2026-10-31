@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 const sec = new URLSearchParams(location.search).get('sec');
-const KI = { app: '🧩', image: '🖼️', folder: '📁', link: '🔗', note: '📝', doc: '📄', pdf: '📕', video: '🎬', audio: '🎵', archive: '🗜️' };
+const KI = { app: '🧩', image: '🖼', folder: '📁', link: '🔗', note: '📝', doc: '📄', pdf: '📕', video: '🎬', audio: '🎵', archive: '🗜' };
 const IMG_OK = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg']);
 const clean = n => String(n || '').replace(/(\.(exe|lnk|url|bat))?\s*[-–]\s*(اختصار|shortcut)\s*$/i, '').replace(/\.(exe|lnk|url)$/i, '').trim() || n;
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -71,7 +71,7 @@ $('grid').addEventListener('click', async e => {
 });
 document.addEventListener('error', e => {
   const t = e.target;
-  if (t && t.tagName === 'IMG' && t.dataset && t.dataset.fb !== undefined && !t.dataset.done) { t.dataset.done = 1; if (t.dataset.fb) { t.src = t.dataset.fb; t.className = ''; } else t.replaceWith(document.createTextNode('🖼️')); }
+  if (t && t.tagName === 'IMG' && t.dataset && t.dataset.fb !== undefined && !t.dataset.done) { t.dataset.done = 1; if (t.dataset.fb) { t.src = t.dataset.fb; t.className = ''; } else t.replaceWith(document.createTextNode('🖼')); }
 }, true);
 $('back').onclick = () => { const s = sections.find(x => x.id === cur); cur = s && s.parent && sections.some(x => x.id === s.parent) && cur !== sec ? s.parent : sec; render(); };
 $('cls').onclick = () => window.api.fenceClose();

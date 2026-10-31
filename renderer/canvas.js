@@ -19,9 +19,9 @@
     const bs = boards();
     C.host.innerHTML = `<div class="cvbar">
       <select id="cvSel">${bs.map(b => `<option value="${b.id}" ${b.id === C.cur ? 'selected' : ''}>${esc(b.name)}</option>`).join('')}</select>
-      <button class="sm" id="cvNew" title="لوحة جديدة">+ لوحة</button><button class="sm" id="cvRen" title="إعادة تسمية">✏️</button><button class="sm" id="cvDel" title="حذف اللوحة">🗑️</button>
+      <button class="sm" id="cvNew" title="لوحة جديدة">+ لوحة</button><button class="sm" id="cvRen" title="إعادة تسمية">✏</button><button class="sm" id="cvDel" title="حذف اللوحة">🗑</button>
       <span class="cvsep"></span>
-      <button class="sm" id="cvTxt">📝 نص</button><button class="sm" id="cvImg">🖼️ صورة</button><button class="sm" id="cvItem">🗄️ عنصر</button><button class="sm" id="cvNote">📓 ملاحظة</button>
+      <button class="sm" id="cvTxt">📝 نص</button><button class="sm" id="cvImg">🖼 صورة</button><button class="sm" id="cvItem">🗄 عنصر</button><button class="sm" id="cvNote">📓 ملاحظة</button>
       <span class="cvsep"></span>
       <span id="cvCols" class="cvcols">${COLORS.map(c => `<button class="cvc" data-c="${c}" style="background:${c || 'var(--card)'}"></button>`).join('')}</span>
       <button class="sm" id="cvRm" title="حذف المحدد (Delete)">❌</button>

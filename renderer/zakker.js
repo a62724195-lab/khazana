@@ -195,8 +195,8 @@ create policy "zk files delete" on storage.objects for delete to authenticated
   }
   async function sync() {
     if (T.syncing || !T.cfg.session) return; T.syncing = true; setStatus('جاري المزامنة…');
-    try { await push(); await pull(); setStatus('☁️ متزامن ' + new Date().toLocaleTimeString('ar-SA-u-ca-gregory', { hour: 'numeric', minute: '2-digit' })); }
-    catch (e) { setStatus('⚠️ ' + (e.message || 'فشلت المزامنة')); }
+    try { await push(); await pull(); setStatus('☁ متزامن ' + new Date().toLocaleTimeString('ar-SA-u-ca-gregory', { hour: 'numeric', minute: '2-digit' })); }
+    catch (e) { setStatus('⚠ ' + (e.message || 'فشلت المزامنة')); }
     finally { T.syncing = false; }
   }
   function scheduleSync() { if (!T.cfg.session) return; clearTimeout(T.syncT); T.syncT = setTimeout(sync, 1500); }
@@ -276,7 +276,7 @@ create policy "zk files delete" on storage.objects for delete to authenticated
       ? `<div class="zk-card"><div class="zk-row"><div><b>📎 ${esc(f.name)}</b><div class="zk-mut">${fmt(f.ts)}${f.size ? ' · ' + size(f.size) : ''}${!f.uploaded && T.cfg.session ? ' · ⏳ ينرفع' : ''}</div></div><button class="zk-btn zk-g zk-red" data-del="${f.id}">حذف</button></div>${/^image\//.test(f.ctype || '') ? `<img data-img="${f.id}" ${T.urls[f.id] ? `src="${T.urls[f.id]}"` : 'hidden'} class="zk-img" alt="">` : ''}<div style="margin-top:8px"><button class="zk-btn" data-open="${f.id}">فتح / تنزيل</button></div></div>`
       : `<div class="zk-card"><div class="zk-row"><b>📝 ${esc(f.name)}</b><button class="zk-btn zk-g zk-red" data-del="${f.id}">حذف</button></div><div class="zk-body">${esc(f.body)}</div><button class="zk-btn" style="margin-top:8px" data-copy="${f.id}">نسخ</button></div>`).join('') : '<div class="zk-mut">ما فيه ملفات أو نصوص بعد.</div>';
     fs.filter(f => f.type === 'file' && /^image\//.test(f.ctype || '')).forEach(ensureImg);
-    const st = document.getElementById('zk-st'); if (st) st.textContent = T.status || (T.cfg.session ? '☁️' : 'مزامنة');
+    const st = document.getElementById('zk-st'); if (st) st.textContent = T.status || (T.cfg.session ? '☁' : 'مزامنة');
   }
   function setWhen(ts) { T.whenTs = ts; const el = q('#zk-pv'); if (el) el.textContent = ts ? 'راح أذكرك: ' + fmt(ts) : ''; }
   function fromTime() { const v = q('#zk-tm').value; if (!v) return; const [h, m] = v.split(':').map(Number); const d = new Date(); d.setSeconds(0, 0); d.setDate(d.getDate() + T.dayOff); d.setHours(h, m); if (d.getTime() <= Date.now() && T.dayOff == 0) d.setDate(d.getDate() + 1); setWhen(d.getTime()); }
@@ -284,7 +284,7 @@ create policy "zk files delete" on storage.objects for delete to authenticated
   function showTab(t) { T.tab = t; q('#zk-p1').hidden = t !== 'r'; q('#zk-p2').hidden = t !== 'f'; q('#zk-t1').classList.toggle('on', t === 'r'); q('#zk-t2').classList.toggle('on', t === 'f'); }
 
   const SKELETON = `<div class="zk">
-  <div class="zk-tabs"><button id="zk-t1" class="on">🔔 التذكيرات</button><button id="zk-t2">📎 الملفات والنصوص</button><button id="zk-t3" class="zk-sync">☁️ <span id="zk-st">مزامنة</span></button></div>
+  <div class="zk-tabs"><button id="zk-t1" class="on">🔔 التذكيرات</button><button id="zk-t2">📎 الملفات والنصوص</button><button id="zk-t3" class="zk-sync">☁ <span id="zk-st">مزامنة</span></button></div>
   <div id="zk-msg" class="zk-mut"></div>
   <section id="zk-p1">
     <div class="zk-card">
@@ -355,7 +355,7 @@ create policy "zk files delete" on storage.objects for delete to authenticated
     let el = document.getElementById('zk-sync');
     if (!el) { el = document.createElement('div'); el.id = 'zk-sync'; document.body.appendChild(el); }
     const c = T.cfg, on = !!c.session;
-    el.innerHTML = `<div class="zk-sbox"><b>☁️ المزامنة بين الجوال والكمبيوتر</b>
+    el.innerHTML = `<div class="zk-sbox"><b>☁ المزامنة بين الجوال والكمبيوتر</b>
       <p class="zk-mut">حسابك مجاني على Supabase (بدون بطاقة). تذكيراتك وملاحظاتك وملفاتك تظهر في كل أجهزتك. خزنة ويندوز نفسها (الملفات والبرامج) ما تتزامن.</p>
       ${on ? `<div class="zk-card">مسجّل دخول: <b dir="ltr">${esc(c.email || '')}</b></div><div class="zk-rbtns"><button class="zk-btn" id="zk-now">زامن الحين</button><button class="zk-btn zk-g zk-red" id="zk-out">تسجيل خروج</button><button class="zk-btn zk-g" id="zk-x">إغلاق</button></div>`
         : `<label>رابط المشروع (Project URL)</label><input id="zk-u" class="zk-in" dir="ltr" placeholder="https://xxxx.supabase.co" value="${esc(c.url || '')}">
@@ -397,7 +397,7 @@ create policy "zk files delete" on storage.objects for delete to authenticated
     setInterval(() => sync(), 20000);
     window.addEventListener('online', sync); window.addEventListener('focus', sync);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) { sync(); tick(); } });
-    nativeInit(); setStatus(T.cfg.session ? '☁️' : 'مزامنة'); render(); if (T.cfg.session) sync();
+    nativeInit(); setStatus(T.cfg.session ? '☁' : 'مزامنة'); render(); if (T.cfg.session) sync();
   }
   /* مزامنة وثائق (الملاحظات) عبر نفس الجدول */
   const getDocs = () => T.items.filter(i => i.type === 'notedoc');
