@@ -1,5 +1,5 @@
 {
- "version": "2026-10-31 17:01",
+ "version": "2026-10-31 17:05",
  "files": [
   {
    "path": "renderer/app.js",
@@ -40,6 +40,10 @@
   {
    "path": "renderer/index.html",
    "sha": "dfa0673f2bded286ebab235537537940db8b1133a6b08ce217c875698b9ad319"
+  },
+  {
+   "path": "renderer/kzicons.woff",
+   "sha": "8ec8c32b7a67410b48f73901ad1b288c1f969e52a61398922d00f28d33935389"
   },
   {
    "path": "renderer/notes.js",
