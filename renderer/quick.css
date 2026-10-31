@@ -1,5 +1,6 @@
 @font-face{font-family:KZIcons;src:url(kzicons.woff) format('woff')}
 *{box-sizing:border-box}
+button,input,select,textarea{font-family:inherit}
 html,body{margin:0;background:transparent;overflow:hidden;font-family:KZIcons,"Segoe UI",Tahoma,sans-serif;user-select:none}
 #box{margin:0;border-radius:16px;background:rgba(24,28,38,.94);border:1px solid rgba(255,255,255,.2);color:#fff;overflow:hidden}
 #bar{height:74px;display:flex;align-items:center;gap:12px;padding:0 20px;font-size:22px}
