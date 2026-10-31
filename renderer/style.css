@@ -549,3 +549,26 @@ body.tdview .layout,body.tdview .searchbox,body.tdview .addwrap:not(#moreWrap),b
 #updBar[hidden]{display:none}#updBar button{background:var(--card);color:var(--ink);border-color:transparent}#updBar button.pri{background:var(--ink);color:var(--card)}
 @keyframes updin{from{transform:translateY(30px);opacity:0}}
 #moreBtn.hasupd{position:relative}#moreBtn.hasupd::after{content:'';position:absolute;top:2px;inset-inline-end:2px;width:10px;height:10px;border-radius:50%;background:#ef4444;border:2px solid var(--bg)}
+
+/* ===== حركات ناعمة (تتعطّل من التخصيص ← الحركة: إيقاف) ===== */
+@keyframes viewin{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes tilein{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes dlgin{from{opacity:0;transform:translateY(18px) scale(.95)}to{opacity:1;transform:none}}
+@keyframes bdin{from{opacity:0}to{opacity:1}}
+@keyframes starpop{0%{transform:scale(1)}40%{transform:scale(1.45) rotate(-12deg)}100%{transform:scale(1)}}
+#td,#cv,#nt,#zk{animation:viewin .32s cubic-bezier(.2,.8,.2,1) both}
+.tile{animation:tilein .42s cubic-bezier(.2,.8,.2,1) both}
+.tile:nth-child(2){animation-delay:.03s}.tile:nth-child(3){animation-delay:.06s}.tile:nth-child(4){animation-delay:.09s}
+.tile:nth-child(5){animation-delay:.12s}.tile:nth-child(6){animation-delay:.15s}.tile:nth-child(7){animation-delay:.18s}
+.tile:nth-child(8){animation-delay:.21s}.tile:nth-child(n+9){animation-delay:.24s}
+dialog[open]{animation:dlgin .26s cubic-bezier(.2,.9,.3,1.2)}
+dialog[open]::backdrop{animation:bdin .25s ease}
+button{transition:background .18s,border-color .18s,color .18s,transform .15s,box-shadow .18s}
+button:active{transform:scale(.95)}
+button:hover:not(:disabled){box-shadow:0 3px 10px rgba(0,0,0,.1)}
+.tile button:hover{transform:translateY(-1px) scale(1.08)}
+#navTd,#navVault,#navNt,#navCv,#navZk{transition:background .22s,color .22s,transform .15s,box-shadow .22s}
+#navTd:hover,#navVault:hover,#navNt:hover,#navCv:hover,#navZk:hover{transform:translateY(-2px)}
+#toast{animation:tilein .3s cubic-bezier(.2,.8,.2,1)}
+.tile .pre img.icon{transition:transform .25s ease}
+input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 28%,transparent);transition:box-shadow .2s}
