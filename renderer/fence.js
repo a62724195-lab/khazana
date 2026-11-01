@@ -5,7 +5,7 @@ const IMG_OK = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'
 const clean = n => String(n || '').replace(/(\.(exe|lnk|url|bat))?\s*[-–]\s*(اختصار|shortcut)\s*$/i, '').replace(/\.(exe|lnk|url)$/i, '').trim() || n;
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fileURL = p => 'file:///' + String(p).replace(/\\/g, '/').split('/').map((x, i) => i === 0 && /^[A-Za-z]:$/.test(x) ? x : encodeURIComponent(x)).join('/').replace(/^\/+/, '');
-let st = { d: 'glass', op: 100, r: 14, ra: true, sz: 'm', lay: 'grid', nm: true, acc: '', mat: '', matOK: false };
+let st = { d: 'glass', op: 100, r: 14, ra: true, t3: true, sz: 'm', lay: 'grid', nm: true, acc: '', mat: '', matOK: false };
 const APP_R = { s: 5, r: 22, p: 30 };
 let groups = [], items = [], sections = [], ui = {}, cur = sec, sig = '', collapsed = false;
 
@@ -189,7 +189,8 @@ function applyStyle() {
   const b = $('box'); b.dataset.d = st.d; b.dataset.sz = st.sz; b.dataset.lay = st.lay; b.dataset.nm = st.nm ? 'on' : 'off';
   b.style.setProperty('--op', st.op / 100); b.style.setProperty('--r', (st.mat ? 0 : (st.ra ? (APP_R[ui.rad] ?? 14) : st.r)) + 'px');
   if (st.mat) b.dataset.mat = st.mat; else delete b.dataset.mat;
-  document.documentElement.dataset.ff = ui.ff || ''; b.dataset.mo = ui.mo || ''; if (EDGE) { b.dataset.edge = EDGE; b.dataset.lay = 'edge'; b.classList.toggle('eh', !!st.eh); }
+  document.documentElement.dataset.ff = ui.ff || ''; b.dataset.mo = ui.mo || ''; b.dataset.t3 = st.t3 === false ? '' : '1';
+  if (EDGE) { b.dataset.edge = EDGE; b.dataset.lay = 'edge'; b.classList.toggle('eh', !!st.eh); }
   if (st.acc) b.style.setProperty('--acc', st.acc); else if (ui.accent) b.style.setProperty('--acc', ui.accent); else b.style.removeProperty('--acc');
 }
 let saveT = null;
@@ -204,6 +205,7 @@ function drawStyle() {
   <div><div class="sl">طريقة العرض</div><div class="seg">${[['grid', 'شبكة'], ['list', 'قائمة'], ['dock', 'شريط Dock']].map(([k, n]) => `<button data-klay="${k}" class="${st.lay === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
   <div><div class="seg"><button data-knm="1" class="${st.nm ? 'on' : ''}">الأسماء ظاهرة</button><button data-knm="0" class="${st.nm ? '' : 'on'}">بدون أسماء</button></div></div>
   ${st.matOK ? `<div><div class="sl">خلفية الحاوية (ويندوز 11)</div><div class="seg">${[['', 'عادي'], ['acrylic', 'زجاج أكريليك'], ['mica', 'ميكا']].map(([k, n]) => `<button data-kmat="${k}" class="${(st.mat || '') === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>` : ''}
+  <div><div class="sl">أيقونات 3D وحركة الميلان</div><div class="seg"><button data-kt3="1" class="${st.t3 === false ? '' : 'on'}">تشغيل</button><button data-kt3="0" class="${st.t3 === false ? 'on' : ''}">إيقاف</button></div></div>
   <div><div class="sl">شكل الحاوية</div><div class="seg">${[['', 'عادية'], ['bottom', 'شريط أسفل'], ['top', 'شريط أعلى'], ['left', 'يسار'], ['right', 'يمين']].map(([k, n]) => `<button data-kedge="${k}" class="${EDGE === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
   <div><div class="sl">إخفاء الشريط تلقائياً (يظهر لما تلمس الحافة)</div><div class="seg"><button data-keh="0" class="${st.eh ? '' : 'on'}">لا</button><button data-keh="1" class="${st.eh ? 'on' : ''}">نعم</button></div></div>
   <div class="foot"><button data-all="1">طبّق على كل الحاويات</button><button data-reset="1">إعادة الضبط</button></div>`;
@@ -218,6 +220,7 @@ $('spanel').addEventListener('click', e => {
   const a = t.closest('[data-acc]'); if (a) { st.acc = a.dataset.acc; saveStyle(); drawStyle(); return; }
   const z = t.closest('[data-ksz]'); if (z) { st.sz = z.dataset.ksz; saveStyle(); drawStyle(); return; }
   const l = t.closest('[data-klay]'); if (l) { st.lay = l.dataset.klay; saveStyle(); drawStyle(); return; }
+  const k3 = t.closest('[data-kt3]'); if (k3) { st.t3 = k3.dataset.kt3 === '1'; saveStyle(); drawStyle(); return; }
   const eh = t.closest('[data-keh]'); if (eh) { st.eh = eh.dataset.keh === '1'; saveStyle(); drawStyle(); return; }
   const eg = t.closest('[data-kedge]'); if (eg) { if (eg.dataset.kedge !== EDGE) window.api.fenceEdge(eg.dataset.kedge); return; }
   const mt = t.closest('[data-kmat]'); if (mt) { window.api.fenceMaterial && window.api.fenceMaterial(mt.dataset.kmat); return; }
@@ -285,4 +288,18 @@ if (EDGE) {
   });
   g.addEventListener('mouseout', e => { const it = e.target.closest('.it'); if (!it || it.contains(e.relatedTarget)) return; const ic = it.querySelector('.ic'); if (ic) { ic.style.setProperty('--ry', '0deg'); ic.style.setProperty('--rx', '0deg'); } });
   g.addEventListener('click', e => { if (EDGE) return; const it = e.target.closest('.it'); if (!it) return; it.classList.remove('bnc'); void it.offsetWidth; it.classList.add('bnc'); });
+})();
+
+/* ميلان ثلاثي الأبعاد للأيقونة حسب مكان الماوس عليها */
+(() => {
+  const g = $('grid');
+  const reset = el => { el.classList.remove('tl'); el.style.removeProperty('--rx'); el.style.removeProperty('--ry'); el.style.removeProperty('--sx'); el.style.removeProperty('--sy'); };
+  g.addEventListener('mousemove', e => {
+    const b = $('box'); if (EDGE || b.dataset.t3 !== '1' || b.dataset.lay === 'dock') return;
+    const it = e.target.closest('.it'); g.querySelectorAll('.it.tl').forEach(x => { if (x !== it) reset(x); });
+    if (!it) return; const ic = it.querySelector('.ic'); if (!ic) return;
+    const r = ic.getBoundingClientRect(), px = Math.max(-.7, Math.min(.7, (e.clientX - r.left) / r.width - .5)), py = Math.max(-.7, Math.min(.7, (e.clientY - r.top) / r.height - .5));
+    it.classList.add('tl'); it.style.setProperty('--rx', (-py * 34) + 'deg'); it.style.setProperty('--ry', (px * 34) + 'deg'); it.style.setProperty('--sx', (-px * 8) + 'px'); it.style.setProperty('--sy', (-py * 8 + 10) + 'px');
+  });
+  g.addEventListener('mouseleave', () => g.querySelectorAll('.it.tl').forEach(reset));
 })();

@@ -958,7 +958,7 @@ ipcMain.handle('fence:resize', (e, wd, ht, done) => {
 const FSTYLE_OK = new Set(['glass', 'midnight', 'paper', 'neon', 'aurora', 'minimal', 'sticky', 'retro', 'sunset', 'mica']);
 function cleanStyle(s) {
   s = s || {}; const n = (v, a, b, d) => { v = Number(v); return isFinite(v) ? Math.max(a, Math.min(b, Math.round(v))) : d; };
-  return { d: FSTYLE_OK.has(s.d) ? s.d : 'glass', op: n(s.op, 30, 100, 100), r: n(s.r, 0, 30, 14), sz: ['s', 'm', 'l'].includes(s.sz) ? s.sz : 'm', lay: ['grid', 'list', 'dock'].includes(s.lay) ? s.lay : 'grid', nm: s.nm !== false, ra: s.ra === true, eh: s.eh === true, acc: /^#[0-9a-fA-F]{6}$/.test(s.acc || '') ? s.acc : '' };
+  return { d: FSTYLE_OK.has(s.d) ? s.d : 'glass', op: n(s.op, 30, 100, 100), r: n(s.r, 0, 30, 14), sz: ['s', 'm', 'l'].includes(s.sz) ? s.sz : 'm', lay: ['grid', 'list', 'dock'].includes(s.lay) ? s.lay : 'grid', nm: s.nm !== false, ra: s.ra === true, eh: s.eh === true, t3: s.t3 !== false, acc: /^#[0-9a-fA-F]{6}$/.test(s.acc || '') ? s.acc : '' };
 }
 const MATS = new Set(['acrylic', 'mica', 'tabbed']);
 const EDGES = new Set(['bottom', 'top', 'left', 'right']);

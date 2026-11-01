@@ -1,5 +1,5 @@
 {
- "version": "2026-11-01 10:37",
+ "version": "2026-11-01 16:38",
  "files": [
   {
    "path": "renderer/app.js",
@@ -23,7 +23,7 @@
   },
   {
    "path": "renderer/fence.css",
-   "sha": "ce8ff08a044ee410a7fb3e8d30b83f361c7e3b1a3cf3a8f7c79c6623c1744a2c"
+   "sha": "9ec3a6d0ec5a1eccce38762b3c6f5f9d972bc34711f0afdfefc614e9a25f1347"
   },
   {
    "path": "renderer/fence.html",
@@ -31,7 +31,7 @@
   },
   {
    "path": "renderer/fence.js",
-   "sha": "37a2224819aca1617cc76bc05f6bbe98e8fb448e3f73241c58202681a78daab1"
+   "sha": "fc393ef3f1466bbe2a407b5bc85601649f85b59f691904d053be10bb58d6f278"
   },
   {
    "path": "renderer/i18n.js",
@@ -95,7 +95,7 @@
   },
   {
    "path": "main.js",
-   "sha": "ed9679fcf8f30e90b4f17834d67a3a7ca24849b7fa363a876b2e640cf0211e36"
+   "sha": "bf1f02dcd6acd43e30fd4dc5c1b1e5a4f61bddcb9f8a33572803b6f3558f3cda"
   },
   {
    "path": "preload.js",
