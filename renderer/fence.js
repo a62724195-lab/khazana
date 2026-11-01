@@ -273,3 +273,16 @@ if (EDGE) {
     if (q('[data-pclose]')) { window.api.fenceClose(); }
   });
 }
+
+/* حاويات مربعة: الأيقونة تميل ناحية الماوس (3D) وتنط لما تفتحها */
+(() => {
+  const g = $('grid');
+  g.addEventListener('mousemove', e => {
+    if (EDGE) return; const it = e.target.closest('.it'); if (!it || g.closest('#box').dataset.lay === 'dock') return;
+    const ic = it.querySelector('.ic'); if (!ic) return; const r = it.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width - .5, py = (e.clientY - r.top) / r.height - .5;
+    ic.style.setProperty('--ry', (px * 34) + 'deg'); ic.style.setProperty('--rx', (-py * 34) + 'deg');
+  });
+  g.addEventListener('mouseout', e => { const it = e.target.closest('.it'); if (!it || it.contains(e.relatedTarget)) return; const ic = it.querySelector('.ic'); if (ic) { ic.style.setProperty('--ry', '0deg'); ic.style.setProperty('--rx', '0deg'); } });
+  g.addEventListener('click', e => { if (EDGE) return; const it = e.target.closest('.it'); if (!it) return; it.classList.remove('bnc'); void it.offsetWidth; it.classList.add('bnc'); });
+})();

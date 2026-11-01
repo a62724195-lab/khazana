@@ -189,3 +189,37 @@ html:has(#box[data-edge]),body:has(#box[data-edge]){overflow:hidden}
 /* سماكة وعمق للكبسولة */
 #box[data-edge] #grid{box-shadow:0 26px 54px rgba(0,0,0,.42),0 10px 0 -4px rgba(255,255,255,.12),0 12px 0 -5px rgba(0,0,0,.18),inset 0 2px 0 rgba(255,255,255,.9),inset 0 -3px 0 rgba(255,255,255,.18),inset 0 -12px 24px rgba(255,255,255,.1),inset 0 12px 28px rgba(255,255,255,.18),0 0 0 1px rgba(0,0,0,.2)}
 #box[data-edge] .it:hover::after{opacity:.9;transform:scaleX(1.2)}
+
+/* ===== الحاويات المربعة: زجاج لامع جديد + أيقونات ثلاثية الأبعاد ===== */
+#box[data-d=glass]:not([data-edge]){--hd:linear-gradient(rgba(255,255,255,.2),rgba(255,255,255,.03))}
+#box[data-d=glass]:not([data-edge]) #bgl{background:radial-gradient(130% 70% at 50% -12%,rgba(255,255,255,.5),rgba(255,255,255,0) 58%),linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.05)),color-mix(in srgb,var(--acc) 20%,rgba(16,20,32,.5));border:1.5px solid rgba(255,255,255,.5);box-shadow:inset 0 2px 0 rgba(255,255,255,.85),inset 0 -3px 0 rgba(255,255,255,.16),inset 0 0 34px rgba(255,255,255,.14),inset 0 -26px 40px color-mix(in srgb,var(--acc) 18%,transparent);backdrop-filter:blur(24px) saturate(1.7)}
+#box[data-d=glass]:not([data-edge]) #bgl::before{content:"";position:absolute;inset:3px 10px auto 10px;height:30%;border-radius:calc(var(--r) - 3px) calc(var(--r) - 3px) 50% 50%/calc(var(--r) - 3px) calc(var(--r) - 3px) 22px 22px;background:linear-gradient(rgba(255,255,255,.32),rgba(255,255,255,0));pointer-events:none}
+#box[data-d=glass]:not([data-edge]) #bgl::after{content:"";position:absolute;inset:auto 16% -1px 16%;height:2px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--acc) 75%,#fff),transparent);filter:blur(1px)}
+#box[data-d=glass]:not([data-edge]) #head{border-bottom:1px solid rgba(255,255,255,.2);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 1px 0 color-mix(in srgb,var(--acc) 50%,transparent)}
+#box[data-d=glass]:not([data-edge]) button{box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 2px 5px rgba(0,0,0,.2);background:linear-gradient(rgba(255,255,255,.22),rgba(255,255,255,.08))}
+#box[data-d=glass]:not([data-edge]) button:hover{background:linear-gradient(rgba(255,255,255,.4),rgba(255,255,255,.16))}
+#box[data-d=glass]:not([data-edge]) button.on{background:linear-gradient(color-mix(in srgb,var(--acc) 70%,#fff),var(--acc))}
+#box[data-d=glass]:not([data-edge]) .it:hover{background:linear-gradient(rgba(255,255,255,.22),rgba(255,255,255,.06));box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
+/* أيقونات 3D حسب النوع */
+#box:not([data-edge]):not([data-d=retro]) .it{--c1:#5aa2ff;--c2:#2457d8;--c3:#14388f;perspective:520px}
+#box:not([data-edge]) .it[data-k=game]{--c1:#c084fc;--c2:#7c3aed;--c3:#4c1d95}
+#box:not([data-edge]) .it[data-k=doc],#box:not([data-edge]) .it[data-k=other]{--c1:#ffb066;--c2:#f06a1a;--c3:#a63d05}
+#box:not([data-edge]) .it[data-k=pdf]{--c1:#ff8a8a;--c2:#e11d48;--c3:#8f0f2e}
+#box:not([data-edge]) .it[data-k=link]{--c1:#5eead4;--c2:#0d9488;--c3:#0b5f58}
+#box:not([data-edge]) .it[data-k=image]{--c1:#f9a8d4;--c2:#db2777;--c3:#8b1252}
+#box:not([data-edge]) .it[data-k=note]{--c1:#fff08a;--c2:#f2b705;--c3:#a67700}
+#box:not([data-edge]) .it[data-k=video]{--c1:#fda4af;--c2:#be123c;--c3:#7f0d28}
+#box:not([data-edge]) .it[data-k=audio]{--c1:#a5b4fc;--c2:#4f46e5;--c3:#2b2790}
+#box:not([data-edge]) .it[data-k=archive],#box:not([data-edge]) .it[data-k=folder],#box:not([data-edge]) .it.room{--c1:#ffd86b;--c2:#f0a000;--c3:#9a6200}
+#box:not([data-edge]):not([data-d=retro]) .it .ic{border-radius:24%;position:relative;transform:perspective(520px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .18s ease-out,box-shadow .2s}
+#box:not([data-edge]):not([data-d=retro]) .it .ic:not(:has(img)){background:radial-gradient(90% 70% at 30% 12%,rgba(255,255,255,.55),rgba(255,255,255,0) 60%),linear-gradient(165deg,var(--c1) 0%,var(--c2) 52%,var(--c3) 100%);color:#fff;font-size:calc(var(--ic)*.5);box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 -4px 8px rgba(0,0,0,.32) inset,0 2px 0 var(--c3),0 3px 0 rgba(0,0,0,.22),0 8px 12px rgba(0,0,0,.38);text-shadow:0 2px 3px rgba(0,0,0,.45),0 -1px 0 rgba(255,255,255,.35)}
+#box:not([data-edge]):not([data-d=retro]) .it[data-k=note] .ic:not(:has(img)){color:#5a4300;text-shadow:0 1px 0 rgba(255,255,255,.7)}
+#box:not([data-edge]):not([data-d=retro]) .it .ic:not(:has(img))::after{content:"";position:absolute;inset:1px 2px 54% 2px;border-radius:24% 24% 60% 60%/30% 30% 70% 70%;background:linear-gradient(rgba(255,255,255,.7),rgba(255,255,255,.05));pointer-events:none}
+#box:not([data-edge]):not([data-d=retro]) .it .ic img{border-radius:22%;filter:drop-shadow(0 3px 0 rgba(0,0,0,.16)) drop-shadow(0 8px 8px rgba(0,0,0,.4))}
+#box:not([data-edge]):not([data-d=retro]) .it .ic img.full{border:3px solid #fff;box-shadow:0 7px 12px rgba(0,0,0,.4);filter:none}
+#box:not([data-edge]):not([data-d=retro]) .it:hover .ic{box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 -4px 8px rgba(0,0,0,.32) inset,0 2px 0 var(--c3),0 14px 20px rgba(0,0,0,.45)}
+#box:not([data-edge]) .it:hover{transform:translateY(-3px)}
+#box:not([data-edge]) .it:active .ic{transform:perspective(520px) scale(.9) translateY(2px)}
+#box:not([data-edge]) .it.bnc .ic{animation:bnc2 .5s ease}
+@keyframes bnc2{0%,100%{translate:0 0}35%{translate:0 -14px}65%{translate:0 -3px}}
+#box:not([data-edge]) .it.ctl{--c1:#fff}
