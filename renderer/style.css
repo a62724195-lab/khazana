@@ -239,7 +239,7 @@ dialog.wide{width:min(720px,95vw)}
 #out.v-list .tile:hover{transform:translateX(-2px)}
 @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
 @keyframes fadein{from{opacity:0}to{opacity:1}}
-#out.enter .tile,#out.enter .room{animation:pop .34s cubic-bezier(.2,.8,.3,1) both;animation-delay:calc(var(--i,0)*22ms)}
+#out.enter .tile,#out.enter .room{animation:tilein .42s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*28ms)}
 dialog[open]{animation:pop .22s cubic-bezier(.2,.8,.3,1)}
 dialog[open]::backdrop{animation:fadein .2s}
 .menu:not([hidden]){animation:pop .16s ease-out}
@@ -561,10 +561,6 @@ body.tdview .layout,body.tdview .searchbox,body.tdview .addwrap:not(#moreWrap),b
 @keyframes bdin{from{opacity:0}to{opacity:1}}
 @keyframes starpop{0%{transform:scale(1)}40%{transform:scale(1.45) rotate(-12deg)}100%{transform:scale(1)}}
 #td,#cv,#nt,#zk{animation:viewin .32s cubic-bezier(.2,.8,.2,1) both}
-.tile{animation:tilein .42s cubic-bezier(.2,.8,.2,1) backwards}
-.tile:nth-child(2){animation-delay:.03s}.tile:nth-child(3){animation-delay:.06s}.tile:nth-child(4){animation-delay:.09s}
-.tile:nth-child(5){animation-delay:.12s}.tile:nth-child(6){animation-delay:.15s}.tile:nth-child(7){animation-delay:.18s}
-.tile:nth-child(8){animation-delay:.21s}.tile:nth-child(n+9){animation-delay:.24s}
 dialog[open]{animation:dlgin .26s cubic-bezier(.2,.9,.3,1.2)}
 dialog[open]::backdrop{animation:bdin .25s ease}
 button{transition:background .18s,border-color .18s,color .18s,transform .15s,box-shadow .18s}
@@ -621,8 +617,6 @@ html[data-gl="on"] .nav button.on,html[data-gl="on"] button.pri,html[data-gl="on
 
 .top::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none}
 
-#out.noanim .tile{animation:none!important}
-#out.cont .tile{animation-delay:var(--el)!important}
 
 /* ===== أقسام الشريط الجانبي بأيقونات ملوّنة ===== */
 .sic{flex:none;width:26px;height:26px;border-radius:30%;display:inline-flex;align-items:center;justify-content:center;font-size:14px;color:#fff;background:radial-gradient(90% 70% at 30% 10%,rgba(255,255,255,.5),transparent 60%),linear-gradient(165deg,color-mix(in srgb,var(--sc) 70%,#fff),var(--sc) 55%,color-mix(in srgb,var(--sc) 65%,#000));box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 4px rgba(0,0,0,.25),0 3px 6px rgba(0,0,0,.22);text-shadow:0 1px 2px rgba(0,0,0,.4)}

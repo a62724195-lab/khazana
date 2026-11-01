@@ -260,7 +260,6 @@ function animGate() {
   else { o.classList.add('cont'); o.style.setProperty('--el', -(now - animT) + 'ms'); }
 }
 function render() {
-  animGate();
   renderSide(); renderChips(); renderBulk();
   let h = '';
   const ls = secF && secF !== '__none' ? lockingSec(secF) : null;
