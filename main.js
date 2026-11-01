@@ -636,7 +636,16 @@ ipcMain.handle('update:apply', async () => {
   try {
     const { man, files, changed } = await updCheck();
     const bufs = new Map();
-    for (const f of changed) { const b = await fetchBuf(f.path); if (sha(b) !== f.sha) throw new Error('hash mismatch ' + f.path); bufs.set(f.path, b); }
+    for (const f of changed) {
+      let b = null;
+      for (let k = 0; k < 5; k++) { // جيت هب يتأخر تحديث الكاش أحياناً دقيقة: نعيد المحاولة
+        try { b = await fetchBuf(f.path); } catch (e) { if (k === 4) throw e; b = null; }
+        if (b && sha(b) === f.sha) break; b = null;
+        await new Promise(r => setTimeout(r, 1500 * (k + 1)));
+      }
+      if (!b) throw new Error('الملف لسا ما تحدّث على الخادم، جرّب بعد دقيقة (' + f.path + ')');
+      bufs.set(f.path, b);
+    }
     for (const f of files) {
       const dst = destPathU(f.path); fs.mkdirSync(path.dirname(dst), { recursive: true });
       let b = bufs.get(f.path);
