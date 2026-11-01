@@ -1,5 +1,5 @@
 {
- "version": "2026-11-01 10:22",
+ "version": "2026-11-01 10:32",
  "files": [
   {
    "path": "renderer/app.js",
@@ -23,7 +23,7 @@
   },
   {
    "path": "renderer/fence.css",
-   "sha": "2fef7cf048ba43985d9f3c5b778795af86fefe18484dc940f095dbffe0ab86db"
+   "sha": "262c902929f7d2c0468a6c7e39d8b079dc224b203ed55df197ff4f1c34595df6"
   },
   {
    "path": "renderer/fence.html",
@@ -31,7 +31,7 @@
   },
   {
    "path": "renderer/fence.js",
-   "sha": "ff5711b612b9254ab06457d7316a8c74dc27edd2d07244744b1101a532da044c"
+   "sha": "e1e4106b3eecdca78aaebd3d52a2b4a8bf7f562459e59c4059a4b13efec7fd65"
   },
   {
    "path": "renderer/i18n.js",

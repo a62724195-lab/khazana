@@ -159,3 +159,33 @@ html:has(#box[data-edge]),body:has(#box[data-edge]){overflow:hidden}
 #box>#pop.big{width:min(500px,calc(100vw - 24px))}
 #pop .pgrid{grid-template-columns:repeat(auto-fill,minmax(92px,1fr))}
 .bdg{direction:ltr;unicode-bidi:isolate}
+
+/* ===== لمسة ثلاثية الأبعاد للشريط الممتد ===== */
+#box[data-edge] #grid{perspective:620px;transform-style:preserve-3d}
+#box[data-edge] .it{transform-style:preserve-3d}
+/* ألوان حسب النوع + سماكة وانعكاس */
+#box[data-edge] .it{--c1:#5aa2ff;--c2:#2457d8;--c3:#14388f}
+#box[data-edge] .it[data-k=game]{--c1:#c084fc;--c2:#7c3aed;--c3:#4c1d95}
+#box[data-edge] .it[data-k=doc],#box[data-edge] .it[data-k=other]{--c1:#ffb066;--c2:#f06a1a;--c3:#a63d05}
+#box[data-edge] .it[data-k=pdf]{--c1:#ff8a8a;--c2:#e11d48;--c3:#8f0f2e}
+#box[data-edge] .it[data-k=link]{--c1:#5eead4;--c2:#0d9488;--c3:#0b5f58}
+#box[data-edge] .it[data-k=image]{--c1:#f9a8d4;--c2:#db2777;--c3:#8b1252}
+#box[data-edge] .it[data-k=note]{--c1:#fff08a;--c2:#f2b705;--c3:#a67700}
+#box[data-edge] .it[data-k=video]{--c1:#fda4af;--c2:#be123c;--c3:#7f0d28}
+#box[data-edge] .it[data-k=audio]{--c1:#a5b4fc;--c2:#4f46e5;--c3:#2b2790}
+#box[data-edge] .it[data-k=archive],#box[data-edge] .it[data-k=folder]{--c1:#ffd86b;--c2:#f0a000;--c3:#9a6200}
+#box[data-edge] .it.room{--c1:#ffd86b;--c2:#f0a000;--c3:#9a6200}
+#box[data-edge] .it.ctl{--c1:rgba(255,255,255,.5);--c2:rgba(255,255,255,.2);--c3:rgba(255,255,255,.1)}
+#box[data-edge] .it .ic{border-radius:24%}
+#box[data-edge] .it .ic:not(:has(img)){background:radial-gradient(90% 70% at 30% 12%,rgba(255,255,255,.55),rgba(255,255,255,0) 60%),linear-gradient(165deg,var(--c1) 0%,var(--c2) 52%,var(--c3) 100%);box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 -4px 8px rgba(0,0,0,.32) inset,0 2px 0 var(--c3),0 3px 0 rgba(0,0,0,.25),0 9px 14px rgba(0,0,0,.4);text-shadow:0 2px 3px rgba(0,0,0,.45),0 -1px 0 rgba(255,255,255,.35);font-size:calc(var(--ic)*.5);color:#fff}
+#box[data-edge] .it[data-k=note] .ic:not(:has(img)){color:#5a4300;text-shadow:0 1px 0 rgba(255,255,255,.7)}
+#box[data-edge] .it .ic:not(:has(img))::after{inset:1px 2px 54% 2px;border-radius:24% 24% 60% 60%/30% 30% 70% 70%;background:linear-gradient(rgba(255,255,255,.7),rgba(255,255,255,.05))}
+#box[data-edge] .it.ctl .ic:not(:has(img)){background:rgba(255,255,255,.2)!important;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.7),inset 0 -3px 6px rgba(0,0,0,.2),0 6px 10px rgba(0,0,0,.25)!important}
+#box[data-edge] .it .ic img{border-radius:22%;filter:drop-shadow(0 3px 0 rgba(0,0,0,.18)) drop-shadow(0 10px 10px rgba(0,0,0,.42))}
+#box[data-edge] .it .ic img.full{border:3px solid #fff;border-radius:22%;box-shadow:0 8px 14px rgba(0,0,0,.4),0 0 0 1px rgba(0,0,0,.12);filter:none}
+/* انعكاس على أرضية الزجاج */
+#box[data-edge=bottom] .it:not(.ctl) .ic{-webkit-box-reflect:below 4px linear-gradient(transparent 55%,rgba(255,255,255,.28))}
+#box[data-edge=top] .it:not(.ctl) .ic{-webkit-box-reflect:above 4px linear-gradient(rgba(255,255,255,.28),transparent 45%)}
+/* سماكة وعمق للكبسولة */
+#box[data-edge] #grid{box-shadow:0 26px 54px rgba(0,0,0,.42),0 10px 0 -4px rgba(255,255,255,.12),0 12px 0 -5px rgba(0,0,0,.18),inset 0 2px 0 rgba(255,255,255,.9),inset 0 -3px 0 rgba(255,255,255,.18),inset 0 -12px 24px rgba(255,255,255,.1),inset 0 12px 28px rgba(255,255,255,.18),0 0 0 1px rgba(0,0,0,.2)}
+#box[data-edge] .it:hover::after{opacity:.9;transform:scaleX(1.2)}

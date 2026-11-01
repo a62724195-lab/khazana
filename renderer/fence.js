@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 const sec = new URLSearchParams(location.search).get('sec');
-const KI = { app: '🧩', image: '🖼', folder: '📁', link: '🔗', note: '📝', doc: '📄', pdf: '📕', video: '🎬', audio: '🎵', archive: '🗜' };
+const KI = { game: '🎮', app: '🪟', image: '🖼', folder: '📁', link: '🔗', note: '📝', doc: '📄', pdf: '📕', video: '🎬', audio: '🎵', archive: '🗜' };
 const IMG_OK = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg']);
 const clean = n => String(n || '').replace(/(\.(exe|lnk|url|bat))?\s*[-–]\s*(اختصار|shortcut)\s*$/i, '').replace(/\.(exe|lnk|url)$/i, '').trim() || n;
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -30,7 +30,7 @@ function renderCore() {
     $('ttl').textContent = d[0] + ' ' + d[1]; $('back').hidden = true;
     if (!st.acc && ui.accent) $('box').style.setProperty('--acc', ui.accent);
     const l = smartList();
-    $('grid').innerHTML = l.length ? l.map(i => `<div class="it" ${i.color ? `style="--tc:${esc(i.color)}"` : ''} data-id="${i.id}" title="${esc((i.name || '') + (i.desc ? ' — ' + i.desc : ''))}"><div class="ic">${pv(i)}</div><div class="nm">${i.pinned ? '⭐ ' : ''}${esc(clean(i.name))}</div></div>`).join('') : '<div class="empty">ما في عناصر بعد.<br>تتعبّى لحالها وأنت تستخدم خزنة.</div>';
+    $('grid').innerHTML = l.length ? l.map(i => `<div class="it" data-k="${esc(i.kind || '')}" ${i.color ? `style="--tc:${esc(i.color)}"` : ''} data-id="${i.id}" title="${esc((i.name || '') + (i.desc ? ' — ' + i.desc : ''))}"><div class="ic">${pv(i)}</div><div class="nm">${i.pinned ? '⭐ ' : ''}${esc(clean(i.name))}</div></div>`).join('') : '<div class="empty">ما في عناصر بعد.<br>تتعبّى لحالها وأنت تستخدم خزنة.</div>';
     return;
   }
   const s = sections.find(x => x.id === cur);
@@ -43,7 +43,7 @@ function renderCore() {
   const rooms = sections.filter(x => (x.parent || '') === cur);
   const mine = items.filter(i => i.section === cur).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.lastOpened || 0) - (a.lastOpened || 0) || (b.added || 0) - (a.added || 0));
   let h = rooms.map(r => `<div class="it room" data-room="${r.id}" title="${esc(r.name)}"><div class="ic">${esc(r.emoji || '📁')}</div><div class="nm">${esc(r.name)}</div></div>`).join('');
-  h += mine.map(i => `<div class="it" ${i.color ? `style="--tc:${esc(i.color)}"` : ''} data-id="${i.id}" title=""${esc((i.name || '') + (i.desc ? ' — ' + i.desc : ''))}"><div class="ic">${pv(i)}</div><div class="nm">${i.pinned ? '⭐ ' : ''}${esc(clean(i.name))}</div></div>`).join('');
+  h += mine.map(i => `<div class="it" data-k="${esc(i.kind || '')}" ${i.color ? `style="--tc:${esc(i.color)}"` : ''} data-id="${i.id}" title=""${esc((i.name || '') + (i.desc ? ' — ' + i.desc : ''))}"><div class="ic">${pv(i)}</div><div class="nm">${i.pinned ? '⭐ ' : ''}${esc(clean(i.name))}</div></div>`).join('');
   if (!h) h = '<div class="empty">القسم فاضي.<br>اسحب ملفات وأفلتها هنا لإضافتها.</div>';
   $('grid').innerHTML = h;
 }
@@ -242,7 +242,8 @@ if (window.api.onFenceStyle) window.api.onFenceStyle(s => { st = { ...st, ...s }
     g.querySelectorAll('.it:not(.ctl)').forEach(el => {
       const r = el.getBoundingClientRect(), d = Math.abs(vert ? e.clientY - (r.top + r.height / 2) : e.clientX - (r.left + r.width / 2)), k = Math.max(0, 1 - d / (lay === 'edge' ? 150 : 120));
       const sc = 1 + (lay === 'edge' ? 0.85 : 0.75) * k * k, sh = sgn * (sc - 1) * (lay === 'edge' ? 16 : 14) * (EDGE === 'top' || EDGE === 'left' ? 1 : 1);
-      el.style.transform = vert ? `translateX(${-sh}px) scale(${sc})` : `translateY(${sh}px) scale(${sc})`; el.style.zIndex = Math.round(k * 10);
+      const sd = vert ? (e.clientY - (r.top + r.height / 2)) : (e.clientX - (r.left + r.width / 2)), tilt = lay === 'edge' ? Math.max(-1, Math.min(1, sd / 90)) * 26 * k : 0;
+      el.style.transform = vert ? `translateX(${-sh}px) scale(${sc}) rotateX(${-tilt}deg)` : `translateY(${sh}px) scale(${sc}) rotateY(${tilt}deg)`; el.style.zIndex = Math.round(k * 10);
     });
   });
   g.addEventListener('mouseleave', () => g.querySelectorAll('.it').forEach(el => { el.style.transform = ''; el.style.zIndex = ''; }));
