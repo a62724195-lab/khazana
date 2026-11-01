@@ -42,3 +42,4 @@ MIT
 
 ---
 Icons: [Lucide](https://lucide.dev) (ISC License), packed into `renderer/kzicons.woff`.
+Font: [IBM Plex Sans Arabic](https://github.com/IBM/plex) (SIL OFL 1.1).
