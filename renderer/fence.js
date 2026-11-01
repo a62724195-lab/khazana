@@ -5,13 +5,14 @@ const IMG_OK = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'
 const clean = n => String(n || '').replace(/(\.(exe|lnk|url|bat))?\s*[-–]\s*(اختصار|shortcut)\s*$/i, '').replace(/\.(exe|lnk|url)$/i, '').trim() || n;
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fileURL = p => 'file:///' + String(p).replace(/\\/g, '/').split('/').map((x, i) => i === 0 && /^[A-Za-z]:$/.test(x) ? x : encodeURIComponent(x)).join('/').replace(/^\/+/, '');
-let st = { d: 'glass', op: 100, r: 14, ra: true, t3: true, sz: 'm', lay: 'grid', nm: true, acc: '', mat: '', matOK: false };
+let st = { d: 'glass', op: 100, r: 14, ra: true, t3: true, auc: true, et: 'glass', sz: 'm', lay: 'grid', nm: true, acc: '', mat: '', matOK: false };
 const APP_R = { s: 5, r: 22, p: 30 };
 let groups = [], items = [], sections = [], ui = {}, cur = sec, sig = '', collapsed = false;
 
 function pv(i) {
   if (i.kind === 'image' && i.path && IMG_OK.has((i.ext || '').toLowerCase())) return `<img class="full" src="${esc(fileURL(i.path))}" data-fb="${esc(i.thumb || '')}" alt="">`;
   if (i.thumb) return `<img src="${esc(i.thumb)}" alt="">`;
+  if ((i.kind === 'app' || i.kind === 'game') && i.name) { const ch = [...clean(i.name).replace(/^[^\p{L}\p{N}]+/u, '')][0]; if (ch) return `<span class="lt">${esc(ch.toUpperCase())}</span>`; }
   return KI[i.kind] || '📄';
 }
 const SMART = { recent: ['🕘', 'فتحتها مؤخراً'], used: ['🔥', 'الأكثر استخداماً'], added: ['🆕', 'أضفتها حديثاً'], pinned: ['⭐', 'المثبّتة'] };
@@ -24,11 +25,16 @@ function smartList() {
   if (k === 'added') return L.sort((a, b) => (b.added || 0) - (a.added || 0)).slice(0, 18);
   return L.filter(i => i.pinned);
 }
+function applyAcc() {
+  const b = $('box'); let c = st.acc;
+  if (!c && st.auc) { const sc = (sections.find(x => x.id === sec) || {}).color; c = /^#[0-9a-fA-F]{6}$/.test(sc || '') ? sc : AUTOC[hueOf(sec) % AUTOC.length]; }
+  if (c) b.style.setProperty('--acc', c); else if (ui.accent) b.style.setProperty('--acc', ui.accent); else b.style.removeProperty('--acc');
+}
 function renderCore() {
   if (isSmart) {
     const d = SMART[sec.slice(6)] || ['🪄', 'ذكية'];
     $('ttl').textContent = d[0] + ' ' + d[1]; $('back').hidden = true;
-    if (!st.acc && ui.accent) $('box').style.setProperty('--acc', ui.accent);
+    applyAcc();
     const l = smartList();
     $('grid').innerHTML = l.length ? l.map(i => `<div class="it" data-k="${esc(i.kind || '')}" ${i.color ? `style="--tc:${esc(i.color)}"` : ''} data-id="${i.id}" title="${esc((i.name || '') + (i.desc ? ' — ' + i.desc : ''))}"><div class="ic">${pv(i)}</div><div class="nm">${i.pinned ? '⭐ ' : ''}${esc(clean(i.name))}</div></div>`).join('') : '<div class="empty">ما في عناصر بعد.<br>تتعبّى لحالها وأنت تستخدم خزنة.</div>';
     return;
@@ -39,7 +45,7 @@ function renderCore() {
   const root = sections.find(x => x.id === sec);
   $('ttl').textContent = (s.emoji || '📁') + ' ' + s.name;
   $('back').hidden = cur === sec;
-  if (!st.acc && ui.accent) $('box').style.setProperty('--acc', ui.accent);
+  applyAcc();
   const rooms = sections.filter(x => (x.parent || '') === cur);
   const mine = items.filter(i => i.section === cur).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.lastOpened || 0) - (a.lastOpened || 0) || (b.added || 0) - (a.added || 0));
   let h = rooms.map(r => `<div class="it room" data-room="${r.id}" title="${esc(r.name)}"><div class="ic">${esc(r.emoji || '📁')}</div><div class="nm">${esc(r.name)}</div></div>`).join('');
@@ -48,11 +54,20 @@ function renderCore() {
   $('grid').innerHTML = h;
 }
 const EDGE = new URLSearchParams(location.search).get('edge') || '';
+const hueOf = str => { let h = 2166136261; for (const c of String(str)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619) >>> 0; } return (h >>> 7) % 360; };
+const AUTOC = ['#2f7a5e', '#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#14b8a6', '#eab308', '#ef4444', '#06b6d4', '#84cc16'];
+let runIds = new Set();
+function decorate() {
+  document.querySelectorAll('#grid .it,#pop .it').forEach(el => { const t = el.querySelector('.lt'); if (t) el.style.setProperty('--h', hueOf(((el.querySelector('.nm') || {}).textContent) || el.dataset.id)); el.classList.toggle('run', runIds.has(el.dataset.id)); });
+  const cnt = (isSmart ? smartList() : items.filter(i => i.section === cur)).length; const bd = $('cnt'); if (bd) { bd.textContent = cnt; bd.hidden = !cnt; }
+}
+async function pollRun() { try { const a = await window.api.fenceRunning(); const n = new Set(a || []); if (n.size !== runIds.size || [...n].some(x => !runIds.has(x))) { runIds = n; decorate(); } } catch (e) {} }
+setInterval(pollRun, 5000); setTimeout(pollRun, 1500);
 const SZ_IC = { s: 32, m: 46, l: 66 };
 let popItems = [], popKind = '', popAnchor = null;
 const vertical = () => EDGE === 'left' || EDGE === 'right';
 function render() {
-  renderCore();
+  renderCore(); decorate();
   if (!EDGE) return;
   const g = $('grid'); g.querySelectorAll('.empty').forEach(e => e.remove());
   let els = [...g.querySelectorAll('.it')];
@@ -77,6 +92,7 @@ function setHTML() {
   <div class="pl">الموضع</div>${seg('pe', [['bottom', 'أسفل'], ['top', 'أعلى'], ['left', 'يسار'], ['right', 'يمين']], EDGE)}
   <div class="pl">حجم الأيقونات</div>${seg('psz', [['s', 'صغير'], ['m', 'وسط'], ['l', 'كبير']], st.sz)}
   <div class="pl">إخفاء تلقائي</div>${seg('peh', [['0', 'لا'], ['1', 'نعم']], st.eh ? 1 : 0)}
+  <div class="pl">الثيم</div>${seg('pet', ETH, st.et || 'glass')}
   <div class="pl">اللون</div><div class="acs">${ACCS.map(c => `<i data-pacc="${c}" class="${st.acc === c ? 'on' : ''}" style="background:${c}"></i>`).join('')}</div>
   <button class="pbtn" data-pnormal="1">▦ رجوع للحاوية العادية (المربعة)</button>
   <button class="pbtn red" data-pclose="1">✕ إغلاق هذي الحاوية</button>`;
@@ -96,7 +112,7 @@ function placePop(anchor) {
 }
 async function openPop(kind, anchor) {
   popKind = kind; popAnchor = anchor; const p = $('pop');
-  p.innerHTML = kind === 'more' ? `<div class="pgrid">${popItems.join('')}</div>` : setHTML(); p.hidden = false; p.classList.remove('show'); p.classList.toggle('big', kind === 'more');
+  p.innerHTML = kind === 'more' ? `<div class="pgrid">${popItems.join('')}</div>` : setHTML(); p.hidden = false; p.classList.remove('show'); p.classList.toggle('big', kind === 'more'); decorate();
   window.api.fenceIgnore && window.api.fenceIgnore(false); ign = false;
   await sizeWin(520); await new Promise(r => setTimeout(r, 90));
   if (popKind !== kind) return; placePop(anchor); void p.offsetWidth; p.classList.add('show');
@@ -184,6 +200,7 @@ const DESIGNS = [
   ['glass', 'زجاجي', 'linear-gradient(160deg,#2a3148,#10131d)', 14], ['midnight', 'ليلي', '#0d1117', 10], ['paper', 'ورقي', '#f6f1e7', 12], ['neon', 'نيون', 'radial-gradient(#1a0f3a,#07060f)', 16], ['aurora', 'شفق', 'linear-gradient(120deg,#3b2dd1,#b51fd9,#0ea5e9)', 18],
   ['minimal', 'بسيط', 'repeating-linear-gradient(45deg,#222 0 6px,#2b2b2b 6px 12px)', 14], ['sticky', 'لاصقة', 'linear-gradient(#fff6ae,#ffed7d)', 4], ['retro', 'ريترو', 'linear-gradient(#1b1b2f,#2a1b4f)', 0], ['sunset', 'غروب', 'linear-gradient(160deg,#ff7e5f,#b24592,#2b1055)', 18], ['mica', 'ميكا', 'linear-gradient(#3a3a40,#222226)', 8]
 ];
+const ETH = [['glass', 'زجاج'], ['dark', 'ليلي'], ['light', 'فاتح'], ['clear', 'شفاف'], ['color', 'ملوّن']];
 const ACCS = ['#2f7a5e', '#3b82f6', '#8b5cf6', '#ec4899', '#ef4444', '#f59e0b', '#14b8a6', '#e5e7eb'];
 function applyStyle() {
   const b = $('box'); b.dataset.d = st.d; b.dataset.sz = st.sz; b.dataset.lay = st.lay; b.dataset.nm = st.nm ? 'on' : 'off';
@@ -191,14 +208,15 @@ function applyStyle() {
   if (st.mat) b.dataset.mat = st.mat; else delete b.dataset.mat;
   document.documentElement.dataset.ff = ui.ff || ''; b.dataset.mo = ui.mo || ''; b.dataset.t3 = st.t3 === false ? '' : '1';
   if (EDGE) { b.dataset.edge = EDGE; b.dataset.lay = 'edge'; b.classList.toggle('eh', !!st.eh); }
-  if (st.acc) b.style.setProperty('--acc', st.acc); else if (ui.accent) b.style.setProperty('--acc', ui.accent); else b.style.removeProperty('--acc');
+  applyAcc(); b.dataset.et = st.et || 'glass';
 }
 let saveT = null;
 function saveStyle(all) { applyStyle(); clearTimeout(saveT); saveT = setTimeout(() => window.api.fenceStyleSet && window.api.fenceStyleSet(st, !!all), all ? 0 : 250); }
 function drawStyle() {
   const p = $('spanel');
   p.innerHTML = `<div><div class="sl">🎨 التصميم</div><div class="dg">${DESIGNS.map(d => `<button class="dsw ${st.d === d[0] ? 'on' : ''}" data-kd="${d[0]}" style="background:${d[2]}">${d[1]}</button>`).join('')}</div></div>
-  <div><div class="sl">اللون</div><div class="acs">${ACCS.map(c => `<i data-acc="${c}" class="${st.acc === c ? 'on' : ''}" style="background:${c}"></i>`).join('')}<input type="color" id="accC" value="${st.acc || '#2f7a5e'}" title="لون مخصص"><button class="sm" data-acc="" style="width:auto;height:24px;padding:0 8px;margin:0;font-size:11px">تلقائي</button></div></div>
+  <div><div class="sl">اللون</div><div class="acs">${ACCS.map(c => `<i data-acc="${c}" class="${st.acc === c ? 'on' : ''}" style="background:${c}"></i>`).join('')}<input type="color" id="accC" value="${st.acc || '#2f7a5e'}" title="لون مخصص"><button class="sm ${!st.acc && st.auc ? 'on' : ''}" data-auto="1" style="width:auto;height:24px;padding:0 8px;margin:0;font-size:11px" title="لون مختلف لكل حاوية حسب القسم">تلقائي</button><button class="sm ${!st.acc && !st.auc ? 'on' : ''}" data-acc="" style="width:auto;height:24px;padding:0 8px;margin:0;font-size:11px" title="نفس لون التطبيق">لون التطبيق</button></div></div>
+  <div><div class="sl">ثيم الشريط الممتد</div><div class="seg">${ETH.map(([k, n]) => `<button data-ket="${k}" class="${(st.et || 'glass') === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
   <div><div class="sl">الشفافية <b id="opv">${st.op}%</b></div><input type="range" id="opR" min="30" max="100" value="${st.op}"></div>
   <div><div class="sl">استدارة الزوايا <b id="rv">${st.ra ? 'تلقائي' : st.r}</b></div><input type="range" id="rR" min="0" max="30" value="${st.ra ? (APP_R[ui.rad] ?? 14) : st.r}"></div>
   <div><div class="sl">حجم الأيقونات</div><div class="seg">${[['s', 'صغير'], ['m', 'وسط'], ['l', 'كبير']].map(([k, n]) => `<button data-ksz="${k}" class="${st.sz === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
@@ -217,7 +235,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeS(); })
 $('spanel').addEventListener('click', e => {
   const t = e.target;
   const d = t.closest('[data-kd]'); if (d) { st.d = d.dataset.kd; st.r = (DESIGNS.find(x => x[0] === st.d) || [])[3] ?? st.r; st.ra = false; saveStyle(); drawStyle(); return; }
-  const a = t.closest('[data-acc]'); if (a) { st.acc = a.dataset.acc; saveStyle(); drawStyle(); return; }
+  const au = t.closest('[data-auto]'); if (au) { st.acc = ''; st.auc = true; saveStyle(); drawStyle(); return; }
+  const et = t.closest('[data-ket]'); if (et) { st.et = et.dataset.ket; saveStyle(); drawStyle(); return; }
+  const a = t.closest('[data-acc]'); if (a) { st.acc = a.dataset.acc; if (!st.acc) st.auc = false; saveStyle(); drawStyle(); return; }
   const z = t.closest('[data-ksz]'); if (z) { st.sz = z.dataset.ksz; saveStyle(); drawStyle(); return; }
   const l = t.closest('[data-klay]'); if (l) { st.lay = l.dataset.klay; saveStyle(); drawStyle(); return; }
   const k3 = t.closest('[data-kt3]'); if (k3) { st.t3 = k3.dataset.kt3 === '1'; saveStyle(); drawStyle(); return; }
@@ -226,7 +246,7 @@ $('spanel').addEventListener('click', e => {
   const mt = t.closest('[data-kmat]'); if (mt) { window.api.fenceMaterial && window.api.fenceMaterial(mt.dataset.kmat); return; }
   const n = t.closest('[data-knm]'); if (n) { st.nm = n.dataset.knm === '1'; saveStyle(); drawStyle(); return; }
   if (t.closest('[data-all]')) { saveStyle(true); const b = t.closest('[data-all]'); b.textContent = '✓ تم'; setTimeout(() => b.textContent = 'طبّق على كل الحاويات', 1200); return; }
-  if (t.closest('[data-reset]')) { st = { ...st, d: 'glass', op: 100, r: 14, ra: true, sz: 'm', lay: 'grid', nm: true, acc: '' }; saveStyle(); drawStyle(); }
+  if (t.closest('[data-reset]')) { st = { ...st, d: 'glass', op: 100, r: 14, ra: true, auc: true, et: 'glass', sz: 'm', lay: 'grid', nm: true, acc: '' }; saveStyle(); drawStyle(); }
 });
 $('spanel').addEventListener('input', e => {
   if (e.target.id === 'opR') { st.op = +e.target.value; $('opv').textContent = st.op + '%'; saveStyle(); }
@@ -271,6 +291,7 @@ if (EDGE) {
     if (q('[data-pe]')) { window.api.fenceEdge(q('[data-pe]').dataset.pe); return; }
     if (q('[data-psz]')) { st.sz = q('[data-psz]').dataset.psz; saveStyle(); render(); $('pop').innerHTML = setHTML(); return; }
     if (q('[data-peh]')) { st.eh = q('[data-peh]').dataset.peh === '1'; saveStyle(); $('pop').innerHTML = setHTML(); return; }
+    if (q('[data-pet]')) { st.et = q('[data-pet]').dataset.pet; saveStyle(); $('pop').innerHTML = setHTML(); return; }
     if (q('[data-pacc]')) { st.acc = q('[data-pacc]').dataset.pacc; saveStyle(); $('pop').innerHTML = setHTML(); return; }
     if (q('[data-pnormal]')) { window.api.fenceEdge(''); return; }
     if (q('[data-pclose]')) { window.api.fenceClose(); }

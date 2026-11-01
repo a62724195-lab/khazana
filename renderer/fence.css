@@ -257,3 +257,23 @@ html:has(#box[data-edge]),body:has(#box[data-edge]){overflow:hidden}
 #box[data-t3="1"]:not([data-edge]):not([data-lay=dock]) .it:not(:hover) .ic{transition:transform .3s ease,translate .3s,scale .3s}
 #box[data-t3="1"]:not([data-edge]) .it .ic::before{content:"";position:absolute;left:10%;right:10%;bottom:-9px;height:9px;border-radius:50%;background:radial-gradient(rgba(0,0,0,.4),transparent 70%);opacity:.55;transition:opacity .2s,transform .2s;z-index:-1;pointer-events:none}
 #box[data-t3="1"]:not([data-edge]) .it:hover .ic::before{opacity:.9;transform:translateY(5px) scaleX(.85)}
+
+/* ===== عدّاد، مؤشر تشغيل، حرف التطبيق، ثيمات الشريط ===== */
+#cnt{flex:none;min-width:22px;height:20px;padding:0 7px;border-radius:10px;background:color-mix(in srgb,var(--acc) 75%,#000);color:#fff;font-size:11px;font-weight:700;line-height:20px;text-align:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 2px 4px rgba(0,0,0,.3)}
+#cnt[hidden]{display:none}
+.it.run::before{content:"";position:absolute;bottom:-1px;left:50%;width:6px;height:6px;margin-left:-3px;border-radius:50%;background:#7CFC9A;box-shadow:0 0 6px #7CFC9A,0 0 2px #fff inset;z-index:3}
+.it{position:relative}
+#box[data-edge] .it.run::before{bottom:-5px}
+#box[data-edge=left] .it.run::before{left:-6px;bottom:auto;top:50%;margin:-3px 0 0}
+#box[data-edge=right] .it.run::before{left:auto;right:-6px;bottom:auto;top:50%;margin:-3px 0 0}
+.it .lt{font-weight:800;font-size:.95em;font-family:KZPlex,"Segoe UI",sans-serif;line-height:1}
+.it .ic:has(.lt){background:radial-gradient(90% 70% at 30% 12%,rgba(255,255,255,.5),rgba(255,255,255,0) 60%),linear-gradient(165deg,hsl(var(--h,200) 85% 68%),hsl(var(--h,200) 72% 50%) 55%,hsl(var(--h,200) 70% 32%));border-radius:24%;color:#fff}
+#box[data-t3="1"] .it .ic:has(.lt),#box[data-edge] .it .ic:has(.lt){background:radial-gradient(90% 70% at 30% 12%,rgba(255,255,255,.5),rgba(255,255,255,0) 60%),linear-gradient(165deg,hsl(var(--h,200) 85% 68%),hsl(var(--h,200) 72% 50%) 55%,hsl(var(--h,200) 70% 32%))!important}
+/* ثيمات الشريط الممتد */
+#box[data-edge][data-et=dark] #grid,#box[data-edge][data-et=dark]>#pop{background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.02)),rgba(12,14,22,.9);border-color:rgba(255,255,255,.2)}
+#box[data-edge][data-et=light] #grid,#box[data-edge][data-et=light]>#pop{background:radial-gradient(120% 140% at 50% -20%,rgba(255,255,255,.95),rgba(255,255,255,.25) 60%),rgba(235,240,250,.6);border-color:rgba(255,255,255,.95);color:#1b2233}
+#box[data-edge][data-et=light] #pop .it .nm,#box[data-edge][data-et=light] #pop .ptt,#box[data-edge][data-et=light] #pop .pl{color:#1b2233;text-shadow:none}
+#box[data-edge][data-et=light] #pop .seg button,#box[data-edge][data-et=light] #pop .pbtn{background:rgba(0,0,0,.08);color:#1b2233}#box[data-edge][data-et=light] #pop .seg button.on{background:var(--acc);color:#fff}
+#box[data-edge][data-et=clear] #grid,#box[data-edge][data-et=clear]>#pop{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.3);box-shadow:0 12px 30px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.5);backdrop-filter:blur(30px)}
+#box[data-edge][data-et=clear] #grid::before{opacity:.35}
+#box[data-edge][data-et=color] #grid,#box[data-edge][data-et=color]>#pop{background:radial-gradient(120% 140% at 50% -20%,rgba(255,255,255,.5),rgba(255,255,255,0) 55%),linear-gradient(180deg,color-mix(in srgb,var(--acc) 85%,#fff),color-mix(in srgb,var(--acc) 70%,#000));border-color:rgba(255,255,255,.6)}
