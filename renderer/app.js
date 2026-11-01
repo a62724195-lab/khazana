@@ -65,7 +65,7 @@ function applyAppearance() {
   const r = document.documentElement, st = r.style;
   if (ui.theme === 'light' || ui.theme === 'dark') r.setAttribute('data-theme', ui.theme); else r.removeAttribute('data-theme');
   const at = (k, v) => { if (v) r.setAttribute(k, v); else r.removeAttribute(k); };
-  at('data-preset', ui.preset); at('data-cs', ui.cs); at('data-dn', ui.dn); at('data-ff', ui.ff); at('data-hv', ui.hv); at('data-mo', ui.mo); at('data-rad', RADS[ui.rad] ? ui.rad : '');
+  at('data-preset', ui.preset); at('data-cs', ui.cs); at('data-dn', ui.dn); at('data-ff', ui.ff); at('data-hv', ui.hv); at('data-mo', ui.mo); at('data-gl', ui.gl); at('data-rad', RADS[ui.rad] ? ui.rad : '');
   if (RADS[ui.rad]) st.setProperty('--rad', RADS[ui.rad]); else st.removeProperty('--rad');
   if (ui.accent) { st.setProperty('--acc', ui.accent); st.setProperty('--onacc', onAcc(ui.accent)); st.setProperty('--acc2', `color-mix(in srgb, ${ui.accent} 16%, var(--card))`); }
   else ['--acc', '--onacc', '--acc2'].forEach(p => st.removeProperty(p));
@@ -280,6 +280,7 @@ $('bColor').onchange = async e => { const v = e.target.value; e.target.value = '
 $('bMove').onchange = e => { const v = e.target.value; if (v === '__' || !sel.size) return; const ids = [...sel]; exitSel(); moveItems(ids, v); };
 
 async function deleteMany(ids) {
+  if (ui.mo !== 'off') { let any = false; ids.forEach(id => { const t = document.querySelector(`.tile[data-id="${id}"]`); if (t) { t.classList.add('bye'); any = true; } }); if (any) await new Promise(r => setTimeout(r, 260)); }
   const set = new Set(ids); const removed = items.filter(i => set.has(i.id));
   items = items.filter(i => !set.has(i.id));
   groups.forEach(g => { g.ids = (g.ids || []).filter(x => !set.has(x)); });
@@ -552,7 +553,7 @@ $('out').addEventListener('click', async e => {
   if (b.dataset.act === 'open') openItem(it);
   else if (b.dataset.act === 'reveal') window.api.reveal(it.path);
   else if (b.dataset.act === 'rem') openRem(it);
-  else if (b.dataset.act === 'pin') { it.pinned = !it.pinned; await persist(); render(); toast(it.pinned ? 'تثبّت في الأعلى ⭐' : 'انلغى التثبيت'); }
+  else if (b.dataset.act === 'pin') { it.pinned = !it.pinned; await persist(); render(); { const pb = document.querySelector(`.tile[data-id="${it.id}"] [data-act="pin"]`); if (pb && it.pinned) pb.classList.add('pulse'); } toast(it.pinned ? 'تثبّت في الأعلى ⭐' : 'انلغى التثبيت'); }
   else if (b.dataset.act === 'edit') editItem(it);
   else if (b.dataset.act === 'del') deleteMany([it.id]);
 });
@@ -860,7 +861,7 @@ window.Zakker.mount($('zk'));
   sections = meta && Array.isArray(meta.sections) ? meta.sections : [];
   if (meta) { ui = { ...ui, ...(meta.ui || {}) }; views = meta.views || {}; collapsed = new Set(meta.collapsed || []); groups = Array.isArray(meta.groups) ? meta.groups : []; notes = Array.isArray(meta.notes) ? meta.notes : []; boards = Array.isArray(meta.boards) ? meta.boards : []; trash = (Array.isArray(meta.trash) ? meta.trash : []).filter(x => x && Date.now() - (x._del || 0) < 30 * 864e5); }
   applyAppearance(); window.I18N.set(ui.lang || window.I18N.auto());
-  if (window.Splash) window.Splash.ready(!ui.welcomed, lg => { ui.lang = lg; ui.welcomed = true; window.I18N.set(lg); render(); persist(); }, ui.lang);
+  if (window.Splash) window.Splash.ready(!ui.welcomed, lg => { ui.lang = lg; ui.welcomed = true; window.I18N.set(lg); render(); persist(); if (!ui.toured) { ui.toured = true; persist(); setTimeout(() => window.Tour && window.Tour.show(), 1300); } }, ui.lang);
   items = rest.map(x => newItem(x)); normalizeSections();
   render(); playEnter(); checkMissing().then(() => { if (missing.size && missing.size <= 300) relocate([...missing], null, true); }); loadPlay().then(render);
   if (ui.startToday !== false) showView('td');
@@ -1203,6 +1204,7 @@ const PREFS = [
     { t: 'تغبيش الخلفية', d: 'يخلي الصورة ناعمة.', c: { rg: 'wb', min: 0, max: 24, step: 2, def: 0, u: 'px' } },
     { t: 'تعتيم الخلفية', d: 'يحسّن قراءة النص فوق الصورة.', c: { rg: 'wd', min: 0, max: 80, step: 5, def: 0, u: '%' } },
     { t: 'حركة الماوس على البطاقة', d: 'وش يصير لما تمرّر الماوس.', c: { sg: 'hv', o: [['', 'عادي'], ['lift', 'ارتفاع'], ['glow', 'توهّج'], ['zoom', 'تكبير'], ['tilt', 'ميلان'], ['none', 'بدون']] } },
+    { t: 'الواجهة الزجاجية', d: 'الشريط والبطاقات والنوافذ شفافة مع تغبيش (تظهر أحلى مع خلفية).', c: { sg: 'gl', o: [['', 'عادي'], ['on', 'زجاجي']] } },
     { t: 'الحركات', d: 'سلسة أو نطّاطة أو بدون حركات (للأجهزة الضعيفة).', c: { sg: 'mo', o: [['off', 'بدون'], ['', 'عادي'], ['lively', 'نطّاط']] } },
     { t: 'مفاجأة', d: 'ثيم ولون وستايل عشوائي. جرّب أكثر من مرة!', c: { fn: 'rand', l: '🎲 عشوائي' } },
     { t: 'رجّع الافتراضي', d: 'يرجّع كل التصميم لأصله (بياناتك ما تتأثر).', c: { fn: 'dreset', l: 'إعادة ضبط' } }
@@ -1290,7 +1292,7 @@ $('prefsPane').addEventListener('click', async e => {
   else if (pf.dataset.pf === 'sync') window.Zakker.openSync();
   else if (pf.dataset.pf === 'github') window.api.openUrl('https://github.com/a62724195-lab/khazana');
 });
-const DKEYS = ['preset', 'accent', 'rad', 'cs', 'dn', 'tw', 'ff', 'fs', 'wp', 'wimg', 'wb', 'wd', 'hv', 'mo'];
+const DKEYS = ['preset', 'accent', 'rad', 'cs', 'dn', 'tw', 'ff', 'fs', 'wp', 'wimg', 'wb', 'wd', 'hv', 'mo', 'gl'];
 function randomLook() {
   const pick = a => a[Math.floor(Math.random() * a.length)];
   ui.preset = pick(PRESETS)[0]; ui.accent = Math.random() < .6 ? pick(SWATCHES.slice(1)) : ''; ui.rad = pick(['', 's', 'r', 'p']); ui.cs = pick(['', 'flat', 'outline', 'shadow', 'grad', 'glass', 'neo', 'bar']);

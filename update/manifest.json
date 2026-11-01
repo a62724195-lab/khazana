@@ -1,9 +1,9 @@
 {
- "version": "2026-11-01 09:49",
+ "version": "2026-11-01 09:56",
  "files": [
   {
    "path": "renderer/app.js",
-   "sha": "1aa74654534f01c6f98fd997f91fefee5c0aad971ea70cea8236b6db132a096f"
+   "sha": "85c8c21ecebc6668e113cea0bcaefea89be8f8f49141858cba8b28f4e0657491"
   },
   {
    "path": "renderer/canvas.js",
@@ -35,11 +35,11 @@
   },
   {
    "path": "renderer/i18n.js",
-   "sha": "fc46a08481f1ab8de5ea6a4f1e896fcf1df5b900a17300c0ac1f19071cddb084"
+   "sha": "866c279fc8f2f48ab5e0cff65bf9d5f1fe7129941cdbca5929513422d7a40a92"
   },
   {
    "path": "renderer/index.html",
-   "sha": "dfa0673f2bded286ebab235537537940db8b1133a6b08ce217c875698b9ad319"
+   "sha": "3d0ec88383fdd17195a968f737bc403b76a4b27231e650f918f62e6a6b9680d8"
   },
   {
    "path": "renderer/kzf-Bold.woff",
@@ -62,6 +62,10 @@
    "sha": "c80c34dd4c68ad7ba851125489754210ebe79ac2490a52b1df6126c1fef31fdd"
   },
   {
+   "path": "renderer/polish.js",
+   "sha": "a3fb587d7acc378986e50cc162cd783b120f906a4032344703a0d772508f2bb6"
+  },
+  {
    "path": "renderer/quick.css",
    "sha": "1a26f04483636e6514899764666778d0b799fa135ba06d6b124a322f41827ca8"
   },
@@ -79,7 +83,7 @@
   },
   {
    "path": "renderer/style.css",
-   "sha": "24241e031105d3af19a1df06b3f70280ed2dc7a3a9486fa29ea1b089c24b43e6"
+   "sha": "9b086989fdd5c8f9e542c378193dd1a59af45c4ad46b40cf4c404c2b9c673fbc"
   },
   {
    "path": "renderer/zakker.css",
@@ -99,11 +103,11 @@
   },
   {
    "path": "assets/icon.ico",
-   "sha": "a47795f320c7a81fe9ce39b3c2fd23c8c1690652ff36fe55d7bb34bbfdce9a21"
+   "sha": "008172774f3042ff4ad8d8280494b7669506304807c828e24c8a945f3105beae"
   },
   {
    "path": "assets/icon.png",
-   "sha": "1aca6f501c996ae630f1b6cc835ca0117f7f4a57efa83e7fb1c2c9888d706e47"
+   "sha": "9f0ea081b00b30a69493144f4afe224fb4c32cc1f304dcb95a35bb40dda341ab"
   }
  ]
 }

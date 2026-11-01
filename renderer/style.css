@@ -261,7 +261,7 @@ html:root[data-preset="neon"] button.pri{box-shadow:0 0 14px color-mix(in srgb,v
 html:root[data-preset="glass"]{color-scheme:dark;--bg:rgba(18,22,40,.55);--card:rgba(255,255,255,.09);--ink:#fff;--mute:#b8bfd8;--line:rgba(255,255,255,.18);--acc:#8be9fd;--acc2:rgba(139,233,253,.16);--onacc:#06202a;--warn:#ffd166;--warn2:rgba(255,209,102,.15);--bad:#ff8fa3;--bad2:rgba(255,143,163,.15)}
 html:root[data-preset="glass"] body{background:linear-gradient(135deg,#1b2a52 0%,#4a2c6d 55%,#12485a 100%) fixed}
 html:root[data-preset="glass"] .tile,html:root[data-preset="glass"] .searchbox,html:root[data-preset="glass"] .room,html:root[data-preset="glass"] .chip,html:root[data-preset="glass"] .hero{backdrop-filter:blur(14px) saturate(1.3);-webkit-backdrop-filter:blur(14px) saturate(1.3)}
-html:root[data-preset="glass"] .top{backdrop-filter:blur(16px)}
+html:root[data-preset="glass"] .top::before{backdrop-filter:blur(16px)}
 html:root[data-preset="glass"] dialog,html:root[data-preset="glass"] .menu{background:rgba(24,28,48,.92)}
 
 /* ===== v6: نافذة ضيقة (جوار الشاشة / نص الشاشة) ===== */
@@ -475,7 +475,8 @@ html[data-mo="off"] *,html[data-mo="off"] *::before,html[data-mo="off"] *::after
 #wall::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,var(--wd,0))}
 html:not([data-wall]) #wall{display:none}
 html[data-wall] body{background:transparent!important}
-html[data-wall] .top{background:color-mix(in srgb,var(--bg) 55%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+html[data-wall] .top{background:color-mix(in srgb,var(--bg) 55%,transparent)}
+html[data-wall] .top::before{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 html[data-wall] .tile,html[data-wall] .room,html[data-wall] .searchbox,html[data-wall] .chip{background:color-mix(in srgb,var(--card) 80%,transparent)}
 /* صفحة التصميم */
 .dz{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
@@ -591,3 +592,31 @@ input:focus,textarea:focus,select:focus{box-shadow:0 0 0 3px color-mix(in srgb,v
 .tile .acts{flex-wrap:wrap}
 .tile .acts .open{min-width:70px}
 .tile .acts .mini{flex-wrap:wrap}
+
+/* ===== رسومات الحالات الفارغة ===== */
+.eart{display:block;margin:0 auto 10px;width:130px;height:auto;color:var(--acc)}
+.eart .bl{fill:var(--acc2,rgba(127,127,127,.12))}.eart .cd{fill:var(--card);stroke:var(--acc);stroke-width:2}
+.eart .sh{fill:rgba(127,127,127,.18)}.eart .sp{stroke:var(--acc);stroke-width:2;stroke-linecap:round;fill:none}.eart .dt{fill:var(--acc);opacity:.5}
+.eart .gl{animation:float 3.6s ease-in-out infinite}.eart .sp{animation:fadein 1.2s ease infinite alternate}
+.empty,.nempty{text-align:center}
+.zk-mut .eart{width:90px}
+/* حركة النجمة والحذف */
+.pulse{animation:starpop .5s ease}
+.tile.bye{animation:none;transition:transform .25s ease,opacity .25s ease;transform:scale(.82);opacity:0;pointer-events:none}
+/* جولة الترحيب */
+#tour{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(5,8,20,.6);backdrop-filter:blur(8px);animation:bdin .3s ease;transition:opacity .35s}
+#tour.out{opacity:0}
+#tour .tbox{width:min(440px,92vw);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:22px;padding:22px 22px 18px;text-align:center;animation:dlgin .35s cubic-bezier(.2,.9,.3,1.2);box-shadow:0 24px 60px rgba(0,0,0,.35)}
+#tour h2{margin:6px 0 6px;font-size:21px}#tour p{margin:0 0 14px;color:var(--mute);line-height:1.8;font-size:14px}
+#tour .tart .eart{width:150px}
+.tdots{display:flex;justify-content:center;gap:6px;margin-bottom:14px}.tdots i{width:8px;height:8px;border-radius:9px;background:var(--line);transition:all .25s}.tdots i.on{width:22px;background:var(--acc)}
+.tlooks{display:flex;gap:10px;justify-content:center;margin-bottom:14px}.tlooks button{width:38px;height:38px;border-radius:50%;padding:0;background:var(--c);border:3px solid transparent;box-shadow:0 0 0 1px var(--line)}.tlooks button.on{border-color:var(--ink)}
+.tbtn{display:flex;gap:8px;justify-content:space-between}.tbtn .tnext{background:var(--acc);color:var(--onacc);border-color:var(--acc);padding:8px 26px;font-weight:600}
+/* الواجهة الزجاجية */
+html[data-gl="on"] .tile,html[data-gl="on"] .room,html[data-gl="on"] .searchbox,html[data-gl="on"] .chip,html[data-gl="on"] #side,html[data-gl="on"] .zk-card,html[data-gl="on"] #td section,html[data-gl="on"] .nlist{background:color-mix(in srgb,var(--card) 58%,transparent)!important;backdrop-filter:blur(16px) saturate(1.4);-webkit-backdrop-filter:blur(16px) saturate(1.4)}
+html[data-gl="on"] .nav,html[data-gl="on"] dialog,html[data-gl="on"] .menu,html[data-gl="on"] #updBar{background:color-mix(in srgb,var(--card) 62%,transparent)!important;backdrop-filter:blur(22px) saturate(1.5);-webkit-backdrop-filter:blur(22px) saturate(1.5)}
+html[data-gl="on"] button{background:color-mix(in srgb,var(--card) 50%,transparent)}
+html[data-gl="on"] .nav button,html[data-gl="on"] .nav button:hover{background:transparent}
+html[data-gl="on"] .nav button.on,html[data-gl="on"] button.pri,html[data-gl="on"] .tile .acts .open{background:var(--acc)}
+
+.top::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none}
