@@ -1,5 +1,5 @@
 {
- "version": "2026-11-01 09:56",
+ "version": "2026-11-01 10:05",
  "files": [
   {
    "path": "renderer/app.js",
@@ -79,11 +79,11 @@
   },
   {
    "path": "renderer/splash.js",
-   "sha": "3d89ab82c162aea6531b8636be0df35c336d6e87e75ec3fdc6c84e1317a17109"
+   "sha": "66522ea1995bb89477956cf48275f35db5d9719ab6ba4c0836895eb2dcb7f36f"
   },
   {
    "path": "renderer/style.css",
-   "sha": "9b086989fdd5c8f9e542c378193dd1a59af45c4ad46b40cf4c404c2b9c673fbc"
+   "sha": "86f86e92f93444223f0f2d98cd0a566488533b636f2ed630390b53efb68acacc"
   },
   {
    "path": "renderer/zakker.css",
