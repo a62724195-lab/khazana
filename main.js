@@ -889,6 +889,10 @@ let raised = false;
 const fk = () => profName() === 'default' ? 'fences' : 'fences:' + profName();
 const getFenceCfg = () => getSet()[fk()] || {};
 function saveFenceCfg(sec, patch) { const f = getFenceCfg(); f[sec] = { ...(f[sec] || {}), ...patch }; setSet(fk(), f); }
+function edgeBounds(edge, T, wa) {
+  const side = edge === 'left' || edge === 'right';
+  return { w: side ? T : wa.width, h: side ? wa.height : T, x: edge === 'right' ? wa.x + wa.width - T : wa.x, y: edge === 'bottom' ? wa.y + wa.height - T : wa.y };
+}
 function openFence(sec) {
   if (fences.has(sec)) { fences.get(sec).showInactive(); return; }
   const wa = require('electron').screen.getPrimaryDisplay().workArea;
@@ -896,7 +900,7 @@ function openFence(sec) {
   const b = { x: cfg.x ?? (wa.x + 40 + n * 30), y: cfg.y ?? (wa.y + 60 + n * 30), w: cfg.w || 340, h: cfg.h || 300 };
   const full = b.h;
   const edge = EDGES.has(cfg.edge) ? cfg.edge : '';
-  if (edge) { const T = 240; b.w = (edge === 'left' || edge === 'right') ? T : wa.width; b.h = (edge === 'left' || edge === 'right') ? wa.height : T; b.x = edge === 'right' ? wa.x + wa.width - T : wa.x; b.y = edge === 'bottom' ? wa.y + wa.height - T : wa.y; }
+  if (edge) Object.assign(b, edgeBounds(edge, 240, wa));
   const mat = !edge && MATS.has(cfg.mat) && matOK() ? cfg.mat : '';
   const w = new BrowserWindow({
     x: b.x, y: b.y, width: b.w, height: cfg.collapsed && !edge ? 40 : b.h, minWidth: edge ? 60 : 180, minHeight: edge ? 60 : 40,
@@ -964,6 +968,11 @@ ipcMain.handle('fence:edge', (e, edge) => {
   const w = BrowserWindow.fromWebContents(e.sender); if (!w || !w._sec) return false;
   const sec = w._sec; saveFenceCfg(sec, { edge: EDGES.has(edge) ? edge : '' });
   closeFence(sec, false); setTimeout(() => openFence(sec), 200); return true;
+});
+ipcMain.handle('fence:edgesize', (e, T) => {
+  const w = BrowserWindow.fromWebContents(e.sender); if (!w || !w._edge || w.isDestroyed()) return false;
+  T = Math.max(200, Math.min(700, Math.round(Number(T) || 240))); const b = edgeBounds(w._edge, T, require('electron').screen.getPrimaryDisplay().workArea);
+  w.setBounds({ x: b.x, y: b.y, width: b.w, height: b.h }); return true;
 });
 ipcMain.handle('fence:ignore', (e, on) => { const w = BrowserWindow.fromWebContents(e.sender); if (w && w._edge && !w.isDestroyed()) w.setIgnoreMouseEvents(!!on, { forward: true }); return true; });
 ipcMain.handle('fence:material', (e, mat) => {

@@ -49,26 +49,62 @@ function renderCore() {
 }
 const EDGE = new URLSearchParams(location.search).get('edge') || '';
 const SZ_IC = { s: 32, m: 46, l: 66 };
-function fitEdge() {
-  const g = $('grid'), vert = EDGE === 'left' || EDGE === 'right', n = g.querySelectorAll('.it').length;
-  if (!n) return;
-  const avail = (vert ? window.innerHeight : window.innerWidth) - 30 - 40 - 16, gap = 10, pad = 14;
-  let ic = Math.floor((avail - 6) / n) - gap - pad;
-  ic = Math.max(22, Math.min(SZ_IC[st.sz] || 46, ic));
-  $('box').style.setProperty('--ic', ic + 'px');
-  g.classList.toggle('scr', (ic + gap + pad) * n > avail);
-}
-window.addEventListener('resize', () => EDGE && fitEdge());
+let popItems = [], popKind = '', popAnchor = null;
+const vertical = () => EDGE === 'left' || EDGE === 'right';
 function render() {
   renderCore();
   if (!EDGE) return;
-  const g = $('grid'); let h = '';
-  if (!isSmart && cur !== sec) h += '<div class="it ctl" data-back="1" title="رجوع"><div class="ic">←</div></div>';
-  g.insertAdjacentHTML('afterbegin', h);
-  g.querySelectorAll('.empty').forEach(e => e.remove());
-  g.insertAdjacentHTML('beforeend', '<i class="sep"></i><div class="it ctl" data-ctl="normal" title="رجوع للحاوية العادية"><div class="ic">🎨</div></div><div class="it ctl" data-ctl="close" title="إغلاق"><div class="ic">✕</div></div>');
-  fitEdge();
+  const g = $('grid'); g.querySelectorAll('.empty').forEach(e => e.remove());
+  let els = [...g.querySelectorAll('.it')];
+  const hasBack = !isSmart && cur !== sec;
+  const sz = SZ_IC[st.sz] || 46, slot = sz + 24, avail = (vertical() ? window.innerHeight : window.innerWidth) - 30 - 36 - 20;
+  const capacity = Math.max(3, Math.floor(avail / slot) - 2 - (hasBack ? 1 : 0));
+  let rest = [];
+  if (els.length > capacity) { const keep = capacity - 1; rest = els.slice(keep); rest.forEach(e => e.remove()); }
+  popItems = rest.map(e => e.outerHTML);
+  if (hasBack) g.insertAdjacentHTML('afterbegin', '<div class="it ctl" data-back="1" title="رجوع"><div class="ic">←</div></div>');
+  let h = '';
+  if (rest.length) h += `<div class="it ctl more" data-ctl="more" title="${rest.length} ${'عنصر إضافي'}"><div class="ic">▦</div><b class="bdg">+${rest.length}</b></div>`;
+  h += '<i class="sep"></i><div class="it ctl" data-ctl="set" title="إعدادات الشريط"><div class="ic">⚙</div></div>';
+  g.insertAdjacentHTML('beforeend', h);
+  $('box').style.setProperty('--ic', sz + 'px');
+  if (popKind === 'more') { if (rest.length) $('pop').innerHTML = `<div class="pgrid">${popItems.join('')}</div>`; else closePop(); }
 }
+async function sizeWin(T) { try { if (window.api.fenceEdgeSize) await window.api.fenceEdgeSize(T); } catch (e) {} }
+function setHTML() {
+  const seg = (k, arr, cur2) => `<div class="seg">${arr.map(([v, n]) => `<button data-${k}="${v}" class="${String(cur2) === String(v) ? 'on' : ''}">${n}</button>`).join('')}</div>`;
+  return `<div class="ptt">⚙ إعدادات الشريط</div>
+  <div class="pl">الموضع</div>${seg('pe', [['bottom', 'أسفل'], ['top', 'أعلى'], ['left', 'يسار'], ['right', 'يمين']], EDGE)}
+  <div class="pl">حجم الأيقونات</div>${seg('psz', [['s', 'صغير'], ['m', 'وسط'], ['l', 'كبير']], st.sz)}
+  <div class="pl">إخفاء تلقائي</div>${seg('peh', [['0', 'لا'], ['1', 'نعم']], st.eh ? 1 : 0)}
+  <div class="pl">اللون</div><div class="acs">${ACCS.map(c => `<i data-pacc="${c}" class="${st.acc === c ? 'on' : ''}" style="background:${c}"></i>`).join('')}</div>
+  <button class="pbtn" data-pnormal="1">▦ رجوع للحاوية العادية (المربعة)</button>
+  <button class="pbtn red" data-pclose="1">✕ إغلاق هذي الحاوية</button>`;
+}
+function placePop(anchor) {
+  const p = $('pop'), g = $('grid'), gr = g.getBoundingClientRect(), a = anchor.getBoundingClientRect(), W = window.innerWidth, H = window.innerHeight;
+  p.style.cssText = ''; p.style.display = 'block';
+  if (EDGE === 'bottom') { p.style.bottom = (H - gr.top + 14) + 'px'; p.style.maxHeight = (gr.top - 26) + 'px'; }
+  else if (EDGE === 'top') { p.style.top = (gr.bottom + 14) + 'px'; p.style.maxHeight = (H - gr.bottom - 26) + 'px'; }
+  else if (EDGE === 'left') { p.style.left = (gr.right + 14) + 'px'; p.style.maxWidth = (W - gr.right - 26) + 'px'; }
+  else { p.style.right = (W - gr.left + 14) + 'px'; p.style.maxWidth = (gr.left - 26) + 'px'; }
+  if (vertical()) { p.style.maxHeight = (H - 24) + 'px'; } else { p.style.maxWidth = Math.min(620, W - 24) + 'px'; }
+  const pw = p.offsetWidth, ph = p.offsetHeight;
+  if (vertical()) p.style.top = Math.max(12, Math.min(H - ph - 12, a.top + a.height / 2 - ph / 2)) + 'px';
+  else p.style.left = Math.max(12, Math.min(W - pw - 12, a.left + a.width / 2 - pw / 2)) + 'px';
+  p.style.transformOrigin = EDGE === 'bottom' ? 'bottom center' : EDGE === 'top' ? 'top center' : EDGE === 'left' ? 'left center' : 'right center';
+}
+async function openPop(kind, anchor) {
+  popKind = kind; popAnchor = anchor; const p = $('pop');
+  p.innerHTML = kind === 'more' ? `<div class="pgrid">${popItems.join('')}</div>` : setHTML(); p.hidden = false; p.classList.remove('show'); p.classList.toggle('big', kind === 'more');
+  window.api.fenceIgnore && window.api.fenceIgnore(false); ign = false;
+  await sizeWin(520); await new Promise(r => setTimeout(r, 90));
+  if (popKind !== kind) return; placePop(anchor); void p.offsetWidth; p.classList.add('show');
+}
+function closePop() {
+  if (!popKind) return; popKind = ''; const p = $('pop'); p.classList.remove('show'); p.hidden = true; p.style.display = ''; sizeWin(240);
+}
+let ign = true;
 async function load() {
   try {
     const r = await window.api.load(); const list = r.items || [];
@@ -81,8 +117,8 @@ async function load() {
     render();
   } catch (e) {}
 }
-$('grid').addEventListener('click', async e => {
-  if (EDGE) { const c = e.target.closest('[data-ctl],[data-back]'); if (c) { if (c.dataset.back) $('back').onclick(); else if (c.dataset.ctl === 'close') window.api.fenceClose(); else window.api.fenceEdge(''); return; } const it0 = e.target.closest('.it'); if (it0) { it0.classList.remove('bnc'); void it0.offsetWidth; it0.classList.add('bnc'); } }
+const onGridClick = async e => {
+  if (EDGE) { const c = e.target.closest('[data-ctl],[data-back]'); if (c && !c.closest('#pop')) { if (c.dataset.back) $('back').onclick(); else if (c.dataset.ctl === 'more' || c.dataset.ctl === 'set') { if (popKind === c.dataset.ctl) closePop(); else openPop(c.dataset.ctl, c); } return; } const it0 = e.target.closest('.it'); if (it0 && !it0.closest('#pop')) { it0.classList.remove('bnc'); void it0.offsetWidth; it0.classList.add('bnc'); } }
   const r = e.target.closest('[data-room]'); if (r) { cur = r.dataset.room; render(); return; }
   const el = e.target.closest('[data-id]'); if (!el) return;
   const it = items.find(x => x.id === el.dataset.id); if (!it) return;
@@ -92,7 +128,9 @@ $('grid').addEventListener('click', async e => {
   else if (it.path) res = await window.api.open(it.path);
   else res = { ok: false, error: 'no_path' };
   if (!res.ok) { el.classList.add('miss'); el.title = 'ما قدرت أفتحه (الملف مو بمكانه؟)'; }
-});
+  if (EDGE && el.closest('#pop')) closePop();
+};
+$('grid').addEventListener('click', onGridClick); $('pop').addEventListener('click', onGridClick);
 document.addEventListener('error', e => {
   const t = e.target;
   if (t && t.tagName === 'IMG' && t.dataset && t.dataset.fb !== undefined && !t.dataset.done) { t.dataset.done = 1; if (t.dataset.fb) { t.src = t.dataset.fb; t.className = ''; } else t.replaceWith(document.createTextNode('🖼')); }
@@ -212,15 +250,25 @@ if (window.api.onFenceStyle) window.api.onFenceStyle(s => { st = { ...st, ...s }
 
 /* الشريط الممتد: النافذة شفافة وتمرّر النقرات لسطح المكتب إلا فوق الشريط نفسه */
 if (EDGE) {
-  const g = $('grid'); let ign = true, hideT = null;
+  const g = $('grid'); let hideT = null;
   const setIgn = v => { if (v !== ign) { ign = v; window.api.fenceIgnore && window.api.fenceIgnore(v); } };
   const hide = on => { g.classList.toggle('hid', on); };
-  setTimeout(() => { if (st.eh) hide(true); }, 2500);
+  setTimeout(() => { if (st.eh && !popKind) hide(true); }, 2500);
   document.addEventListener('mousemove', e => {
     const r = g.getBoundingClientRect(), m = 8;
     const over = e.clientX >= r.left - m && e.clientX <= r.right + m && e.clientY >= r.top - m && e.clientY <= r.bottom + m;
-    setIgn(!over && $('spanel').hidden);
-    if (st.eh) { if (over) { clearTimeout(hideT); hide(false); } else if (!hideT && !g.classList.contains('hid')) hideT = setTimeout(() => { hideT = null; hide(true); }, 900); }
+    setIgn(!over && !popKind);
+    if (st.eh && !popKind) { if (over) { clearTimeout(hideT); hideT = null; hide(false); } else if (!hideT && !g.classList.contains('hid')) hideT = setTimeout(() => { hideT = null; hide(true); }, 900); }
   });
-  document.addEventListener('mouseleave', () => { if (st.eh) hideT = setTimeout(() => { hideT = null; hide(true); }, 600); });
+  document.addEventListener('mousedown', e => { if (popKind && !e.target.closest('#pop,[data-ctl]')) closePop(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePop(); });
+  $('pop').addEventListener('click', e => {
+    const t = e.target, q = a => t.closest(a);
+    if (q('[data-pe]')) { window.api.fenceEdge(q('[data-pe]').dataset.pe); return; }
+    if (q('[data-psz]')) { st.sz = q('[data-psz]').dataset.psz; saveStyle(); render(); $('pop').innerHTML = setHTML(); return; }
+    if (q('[data-peh]')) { st.eh = q('[data-peh]').dataset.peh === '1'; saveStyle(); $('pop').innerHTML = setHTML(); return; }
+    if (q('[data-pacc]')) { st.acc = q('[data-pacc]').dataset.pacc; saveStyle(); $('pop').innerHTML = setHTML(); return; }
+    if (q('[data-pnormal]')) { window.api.fenceEdge(''); return; }
+    if (q('[data-pclose]')) { window.api.fenceClose(); }
+  });
 }

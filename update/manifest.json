@@ -1,5 +1,5 @@
 {
- "version": "2026-11-01 10:17",
+ "version": "2026-11-01 10:22",
  "files": [
   {
    "path": "renderer/app.js",
@@ -23,15 +23,15 @@
   },
   {
    "path": "renderer/fence.css",
-   "sha": "612717f169a6089b087c5dff937f27528e518135bbfcd928401feb7e2dccb651"
+   "sha": "2fef7cf048ba43985d9f3c5b778795af86fefe18484dc940f095dbffe0ab86db"
   },
   {
    "path": "renderer/fence.html",
-   "sha": "b3e5364357771d1c72dfaed7cb2fb7e81384a4076e3cf39781d20fc006f0ddab"
+   "sha": "0c9e793b21f5388bb627b9f10b22e9f8c36f09954c51a05247bb0eb2383d2410"
   },
   {
    "path": "renderer/fence.js",
-   "sha": "5b286f4749f85f5369fb91a61698334d1245dd8294893e19d07efd3527ebd98f"
+   "sha": "ff5711b612b9254ab06457d7316a8c74dc27edd2d07244744b1101a532da044c"
   },
   {
    "path": "renderer/i18n.js",
@@ -95,11 +95,11 @@
   },
   {
    "path": "main.js",
-   "sha": "dea169c712c26b43695cf085d2aed972063e4551def253646a51e41d8f1d72e4"
+   "sha": "ed9679fcf8f30e90b4f17834d67a3a7ca24849b7fa363a876b2e640cf0211e36"
   },
   {
    "path": "preload.js",
-   "sha": "c8b7c8400f449956490e09289f301c6e576abc992ef5423e7057828528efc73d"
+   "sha": "491edec0b5b279a522e5aa581475ae3f872a844af9a9a4a4e4f1c7ca373c84ed"
   },
   {
    "path": "assets/icon.ico",
