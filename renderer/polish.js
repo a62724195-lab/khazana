@@ -52,4 +52,19 @@
     draw(); document.body.appendChild(d);
   }
   window.Tour = { show };
+
+  /* ميلان 3D لبطاقات الخزنة مع الماوس */
+  const out = document.getElementById('out');
+  if (out) {
+    const reset = t => ['--rx', '--ry', '--px', '--py', '--gx', '--gy'].forEach(k => t.style.removeProperty(k));
+    out.addEventListener('mousemove', e => {
+      if (document.documentElement.dataset.mo === 'off') return;
+      const t = e.target.closest('.tile'); out.querySelectorAll('.tile.tl').forEach(x => { if (x !== t) { x.classList.remove('tl'); reset(x); } });
+      if (!t || t.classList.contains('sel')) return;
+      const r = t.getBoundingClientRect(), px = (e.clientX - r.left) / r.width - .5, py = (e.clientY - r.top) / r.height - .5;
+      t.classList.add('tl'); t.style.setProperty('--ry', (px * 9) + 'deg'); t.style.setProperty('--rx', (-py * 9) + 'deg');
+      t.style.setProperty('--px', (px * 10) + 'px'); t.style.setProperty('--py', (py * 8) + 'px'); t.style.setProperty('--gx', (px + .5) * 100 + '%'); t.style.setProperty('--gy', (py + .5) * 100 + '%');
+    });
+    out.addEventListener('mouseleave', () => out.querySelectorAll('.tile.tl').forEach(x => { x.classList.remove('tl'); reset(x); }));
+  }
 })();

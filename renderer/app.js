@@ -59,6 +59,22 @@ const PRESETS = [['', 'الأساسي', '#f6f5f1', '#ffffff', '#2f6f5e'], ['nigh
   ['ocean', 'محيط', '#0a1a24', '#11293a', '#38bdf8'], ['forest', 'غابة', '#0f1a14', '#17261d', '#4ade80'], ['mocha', 'موكا', '#1b1410', '#281f19', '#d89b6a'], ['midnight', 'منتصف الليل', '#000000', '#0c0c0e', '#a78bfa'], ['retro', 'ريترو تيرمنال', '#020a02', '#061506', '#5dff7a'],
   ['sunset', 'غروب', '#fff3e8', '#fffaf5', '#ea580c'], ['rose', 'وردي', '#fdeef2', '#fff8fa', '#db2777'], ['lavender', 'لافندر', '#f1edfb', '#faf8ff', '#7c3aed'], ['mint', 'نعناع', '#e9f8f1', '#f7fffb', '#0f9d6e'], ['sky', 'سماء', '#eaf4ff', '#f9fcff', '#2563eb']];
 const WALLS = { g1: 'linear-gradient(135deg,#1b2a52,#4a2c6d 55%,#12485a)', g2: 'linear-gradient(135deg,#ff9a8b,#ff6a88 50%,#ff99ac)', g3: 'linear-gradient(135deg,#0f2027,#203a43,#2c5364)', g4: 'linear-gradient(135deg,#f6d365,#fda085)', g5: 'linear-gradient(135deg,#84fab0,#8fd3f4)', g6: 'linear-gradient(135deg,#a18cd1,#fbc2eb)', g7: 'radial-gradient(circle at 20% 20%,#3a1c71,#d76d77 50%,#ffaf7b)', g8: 'linear-gradient(160deg,#000,#1a1a2e 60%,#16213e)', g9: 'linear-gradient(135deg,#134e5e,#71b280)', g10: 'linear-gradient(135deg,#232526,#414345)' };
+Object.assign(WALLS, {
+  m1: 'radial-gradient(60% 55% at 22% 28%,#c81e1e,transparent),radial-gradient(50% 60% at 85% 72%,#7a1212,transparent),radial-gradient(40% 40% at 62% 8%,rgba(37,99,235,.55),transparent),linear-gradient(#070304,#070304)',
+  m2: 'radial-gradient(60% 60% at 15% 20%,#7c3aed,transparent),radial-gradient(55% 55% at 85% 30%,#06b6d4,transparent),radial-gradient(60% 60% at 50% 95%,#db2777,transparent),linear-gradient(#0b1020,#0b1020)',
+  m3: 'radial-gradient(60% 60% at 20% 80%,#0ea5e9,transparent),radial-gradient(55% 55% at 80% 20%,#14b8a6,transparent),radial-gradient(50% 50% at 50% 50%,#1d4ed8,transparent),linear-gradient(#06141f,#06141f)',
+  m4: 'radial-gradient(60% 60% at 80% 85%,#f97316,transparent),radial-gradient(55% 55% at 20% 20%,#ec4899,transparent),radial-gradient(50% 50% at 60% 40%,#a855f7,transparent),linear-gradient(#1a0b1c,#1a0b1c)',
+  m5: 'radial-gradient(60% 60% at 25% 75%,#16a34a,transparent),radial-gradient(55% 55% at 80% 25%,#0f766e,transparent),radial-gradient(50% 50% at 55% 55%,#65a30d,transparent),linear-gradient(#07130c,#07130c)',
+  m6: 'radial-gradient(60% 60% at 20% 25%,#f9a8d4,transparent),radial-gradient(55% 55% at 85% 35%,#c4b5fd,transparent),radial-gradient(60% 60% at 50% 95%,#fde68a,transparent),linear-gradient(#fdf2f8,#fdf2f8)',
+  m7: 'radial-gradient(60% 60% at 25% 30%,#f5c26b,transparent),radial-gradient(55% 55% at 85% 80%,#b45309,transparent),radial-gradient(50% 50% at 55% 55%,#7c2d12,transparent),linear-gradient(#140c06,#140c06)',
+  m8: 'radial-gradient(60% 60% at 15% 85%,#ff00c8,transparent),radial-gradient(55% 55% at 85% 15%,#00f0ff,transparent),radial-gradient(50% 50% at 55% 50%,#4c1d95,transparent),linear-gradient(#05040f,#05040f)'
+});
+const THEMES = [
+  ['سبايدر', { preset: 'midnight', accent: '#e11d48', wp: 'm1', wd: 12 }], ['شفق', { preset: 'night', accent: '#8be9fd', wp: 'm2', wd: 12 }],
+  ['محيط', { preset: 'ocean', accent: '#38bdf8', wp: 'm3', wd: 10 }], ['غروب', { preset: 'night', accent: '#fb923c', wp: 'm4', wd: 14 }],
+  ['غابة', { preset: 'forest', accent: '#4ade80', wp: 'm5', wd: 10 }], ['سكّر', { preset: 'rose', accent: '#db2777', wp: 'm6', wd: 0 }],
+  ['ذهبي', { preset: 'mocha', accent: '#f5c26b', wp: 'm7', wd: 10 }], ['نيون', { preset: 'neon', accent: '#00f0ff', wp: 'm8', wd: 14 }]
+];
 const RADS = { s: '3px', r: '22px', p: '30px' };
 const onAcc = h => { const m = /^#?([0-9a-f]{6})$/i.exec(h || ''); if (!m) return '#fff'; const n = parseInt(m[1], 16); return (0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) > 165 ? '#10151a' : '#fff'; };
 function applyAppearance() {
@@ -156,13 +172,15 @@ function headHTML() {
     + (ks.length ? `<label class="inc"><input type="checkbox" id="incSub" ${incSub ? 'checked' : ''}> مع محتوى الغرف</label>` : '') + '</div>';
   return h;
 }
+const SECPAL = ['#2f7a5e', '#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#14b8a6', '#eab308', '#ef4444', '#06b6d4', '#84cc16'];
+function secCol(s) { if (/^#[0-9a-fA-F]{6}$/.test(s.color || '')) return s.color; let h = 2166136261; for (const c of String(s.name || s.id)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619) >>> 0; } return SECPAL[(h >>> 7) % SECPAL.length]; }
 function renderSide() {
   const own = {}; visItems().forEach(i => { const k = i.section || ''; own[k] = (own[k] || 0) + 1; });
   let h = `<div class="sitem ${secF === '' ? 'on' : ''}" data-sec="">🗄 <span class="sn">الكل</span><span class="sc">${visItems().length}</span></div>`;
   const walk = (pid, d, seen) => kids(pid).forEach(s => {
     if (seen.has(s.id)) return;
     const hasK = kids(s.id).length > 0, open = !collapsed.has(s.id);
-    h += `<div class="sitem ${secF === s.id ? 'on' : ''}" data-sec="${s.id}" style="padding-inline-start:${8 + d * 14}px"><span class="tog" ${hasK ? `data-tog="${s.id}"` : ''}>${hasK ? (open ? '▾' : '▸') : ''}</span>${s.color ? `<i class="dot" style="background:${esc(s.color)}"></i>` : ''}${esc(s.emoji || '📁')} <span class="sn" title="${esc(s.name)}">${esc(s.name)}</span>${s.lock ? `<span class="lk">${unlocked.has(s.id) ? '🔓' : '🔒'}</span>` : ''}<span class="sc">${isLocked(s.id) ? '' : (hasK ? secTotal(s.id) : (own[s.id] || 0))}</span><span class="sact"><button data-sfence="${s.id}" title="حاوية على سطح المكتب">🪟</button><button data-sedit="${s.id}" title="تعديل / نقل">✏</button><button data-sdel="${s.id}" title="حذف القسم">🗑</button></span></div>`;
+    h += `<div class="sitem ${secF === s.id ? 'on' : ''}" data-sec="${s.id}" style="padding-inline-start:${8 + d * 14}px"><span class="tog" ${hasK ? `data-tog="${s.id}"` : ''}>${hasK ? (open ? '▾' : '▸') : ''}</span><span class="sic" style="--sc:${esc(secCol(s))}">${esc(s.emoji || '📁')}</span> <span class="sn" title="${esc(s.name)}">${esc(s.name)}</span>${s.lock ? `<span class="lk">${unlocked.has(s.id) ? '🔓' : '🔒'}</span>` : ''}<span class="sc">${isLocked(s.id) ? '' : (hasK ? secTotal(s.id) : (own[s.id] || 0))}</span><span class="sact"><button data-sfence="${s.id}" title="حاوية على سطح المكتب">🪟</button><button data-sedit="${s.id}" title="تعديل / نقل">✏</button><button data-sdel="${s.id}" title="حذف القسم">🗑</button></span></div>`;
     if (hasK && open) walk(s.id, d + 1, new Set([...seen, s.id]));
   });
   walk('', 0, new Set());
@@ -202,7 +220,7 @@ const fmtDur = s => { const m = Math.round(s / 60); return m < 60 ? m + ' د' : 
 async function loadPlay() { try { if (window.api.playGet) play = await window.api.playGet() || {}; } catch (e) {} }
 function tileHTML(i, why) {
   const miss = missing.has(i.id); const sn = secName(i.section);
-  return `<div class="tile ${sel.has(i.id) ? 'sel' : ''} ${miss ? 'miss' : ''} ${i.color ? 'hc' : ''}" ${i.color ? `style="--tc:${esc(i.color)}"` : ''} data-id="${i.id}" draggable="true">
+  return `<div class="tile ${sel.has(i.id) ? 'sel' : ''} ${miss ? 'miss' : ''} ${i.color ? 'hc' : ''}" ${i.color ? `style="--tc:${esc(i.color)}"` : ''} data-id="${i.id}" data-k="${esc(i.kind || '')}" draggable="true">
     <div class="chk">✓</div>
     <div class="pre">${previewHTML(i)}</div>
     <div class="body">
@@ -1201,6 +1219,7 @@ const PREFS = [
     { t: 'إظهار التصنيف والوسوم', d: 'الشارات الصغيرة على البطاقة.', c: { tg: 'showTags' } }
   ] },
   { id: 'design', ico: '🖌', t: 'التصميم', rows: [
+    { t: 'ثيمات جاهزة', d: 'خلفية وألوان وزجاج بضغطة وحدة.', col: 1, c: { thm: 1 } },
     { t: 'الثيمات', d: 'اختر شكل التطبيق الكامل.', col: 1, c: { pre: 1 } },
     { t: 'لون التطبيق', d: 'اختر من الألوان أو اصنع لونك من القوس الملوّن.', col: 1, c: { sw: 1, cu: 1 } },
     { t: 'زوايا البطاقات', d: 'حادة أو دائرية أو كبسولة.', c: { sg: 'rad', o: [['', 'عادي'], ['s', 'حادة'], ['r', 'دائرية'], ['p', 'كبسولة']] } },
@@ -1267,6 +1286,7 @@ function prefsCtl(c) {
   if (c.sel) return `<select data-ps="${c.sel}">${c.o.map(([v, l]) => `<option value="${v}" ${prefsVal(c.sel) === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
   if (c.tg) return `<label class="tgl"><input type="checkbox" data-pt="${c.tg}" ${(c.def ? ui[c.tg] !== false : ui[c.tg]) ? 'checked' : ''}><i></i></label>`;
   if (c.sw) return `<div class="swatches">${SWATCHES.map(x => `<button type="button" class="sw ${x ? '' : 'def'} ${(ui.accent || '') === x ? 'on' : ''}" data-pc="${x}" style="${x ? 'background:' + x : ''}"></button>`).join('')}${c.cu ? `<span class="sw cust ${ui.accent && !SWATCHES.includes(ui.accent) ? 'on' : ''}" title="لون مخصّص"><input type="color" data-pcc value="${/^#[0-9a-f]{6}$/i.test(ui.accent || '') ? ui.accent : '#2f6f5e'}"></span>` : ''}</div>`;
+  if (c.thm) return `<div class="pgal tgal">${THEMES.map(([n, o], k) => `<button type="button" class="tcard" data-th="${k}"><span class="tv" style="background:${WALLS[o.wp]}"><b style="background:${o.accent}"></b><i></i><i></i></span>${esc(n)}</button>`).join('')}</div>`;
   if (c.pre) return `<div class="pgal">${PRESETS.map(([k, n, b, cd, a]) => `<button type="button" class="pcard ${(ui.preset || '') === k ? 'on' : ''}" data-pp="${k}"><span class="pv" style="background:${b}"><i style="background:${cd}"></i><i style="background:${cd}"></i><b style="background:${a}"></b></span>${esc(n)}</button>`).join('')}</div>`;
   if (c.sg) return `<div class="seg2">${c.o.map(([v, l]) => `<button type="button" class="${dval(c.sg) === v ? 'on' : ''}" data-sg="${c.sg}" data-v="${v}">${esc(l)}</button>`).join('')}</div>`;
   if (c.rg) { const v = +ui[c.rg] || c.def; return `<div class="rg"><input type="range" data-rg="${c.rg}" min="${c.min}" max="${c.max}" step="${c.step}" value="${v}"><output>${v}${c.u}</output></div>`; }
@@ -1287,6 +1307,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('prefs'
 $('prefsNav').addEventListener('click', e => { const b = e.target.closest('[data-ptab]'); if (!b) return; prefsTab = b.dataset.ptab; drawPrefs(); });
 $('prefsPane').addEventListener('click', async e => {
   const sw = e.target.closest('[data-pc]'); if (sw) { ui.accent = sw.dataset.pc; applyAppearance(); await persist(); drawPrefs(); return; }
+  const th = e.target.closest('[data-th]'); if (th) { const o = THEMES[+th.dataset.th][1]; DKEYS.forEach(k => delete ui[k]); Object.assign(ui, o, { cs: 'glass', gl: 'on', rad: 'r', wb: 0 }); applyAppearance(); await persist(); drawPrefs(); toast('🎨 ' + THEMES[+th.dataset.th][0]); return; }
   const pp = e.target.closest('[data-pp]'); if (pp) { ui.preset = pp.dataset.pp; applyAppearance(); await persist(); drawPrefs(); return; }
   const sg = e.target.closest('[data-sg]'); if (sg) { ui[sg.dataset.sg] = sg.dataset.v; applyAppearance(); await persist(); drawPrefs(); return; }
   const wp = e.target.closest('[data-wp]'); if (wp) { ui.wp = wp.dataset.wp; applyAppearance(); await persist(); drawPrefs(); return; }
