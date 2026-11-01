@@ -233,7 +233,16 @@ function sortItems(list) {
 function lockHTML(s) {
   return `<div class="lockscr"><div class="lbig">🔒</div><b>«${esc(s.name)}» مقفل</b><div class="hint">اكتب كلمة السر لعرض محتواه</div><div class="lrow"><input id="lkPass" type="password" class="f" autocomplete="off" placeholder="كلمة السر"><button class="pri" id="lkGo">فتح</button></div><div id="lkErr" class="lkerr"></div></div>`;
 }
+let animSig = '', animT = 0;
+function animGate() {
+  const o = $('out'), sig = [secF, catF, laterF, !!result, sortBy, ui.view || ''].join('|'), now = Date.now();
+  o.classList.remove('noanim', 'cont');
+  if (sig !== animSig) { animSig = sig; animT = now; }
+  else if (now - animT > 700) o.classList.add('noanim');
+  else { o.classList.add('cont'); o.style.setProperty('--el', -(now - animT) + 'ms'); }
+}
 function render() {
+  animGate();
   renderSide(); renderChips(); renderBulk();
   let h = '';
   const ls = secF && secF !== '__none' ? lockingSec(secF) : null;

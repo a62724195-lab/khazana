@@ -620,3 +620,6 @@ html[data-gl="on"] .nav button,html[data-gl="on"] .nav button:hover{background:t
 html[data-gl="on"] .nav button.on,html[data-gl="on"] button.pri,html[data-gl="on"] .tile .acts .open{background:var(--acc)}
 
 .top::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none}
+
+#out.noanim .tile{animation:none!important}
+#out.cont .tile{animation-delay:var(--el)!important}
