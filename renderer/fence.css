@@ -77,3 +77,22 @@ button.on{background:var(--acc)}
 #spanel input[type=range]{width:100%;accent-color:var(--acc)}
 #spanel .foot{display:flex;gap:6px}#spanel .foot button{flex:1;width:auto;height:30px;margin:0;font-size:12px;background:rgba(255,255,255,.1)}
 #box.col #spanel{display:none}
+
+/* ===== لمسات: ظهور بحركة، Dock، زجاج النظام، خط التطبيق ===== */
+@keyframes fin{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes iin{from{opacity:0;transform:translateY(12px) scale(.9)}to{opacity:1;transform:none}}
+#box{animation:fin .38s cubic-bezier(.2,.8,.2,1) both}
+#grid.anim .it{animation:iin .4s cubic-bezier(.2,.9,.3,1.2) both}
+#grid.anim .it:nth-child(2){animation-delay:.04s}#grid.anim .it:nth-child(3){animation-delay:.08s}#grid.anim .it:nth-child(4){animation-delay:.12s}#grid.anim .it:nth-child(5){animation-delay:.16s}#grid.anim .it:nth-child(6){animation-delay:.2s}#grid.anim .it:nth-child(n+7){animation-delay:.24s}
+#box[data-lay=dock] #grid{padding-top:40px;overflow-y:visible}
+#box[data-lay=dock] .it:hover{transform:none;background:transparent}
+#box[data-lay=dock] .it{transition:transform .1s ease-out}
+#box[data-mat] #bgl{background:rgba(14,18,28,.16);border:0;box-shadow:none;border-radius:0;backdrop-filter:none}
+#box[data-mat]{border-radius:0}
+#box[data-mat][data-d=paper] #bgl{background:rgba(255,255,255,.25)}
+#box[data-mo=off] *{animation:none!important;transition:none!important}
+html[data-ff="tahoma"] body{font-family:KZIcons,Tahoma,"Segoe UI",sans-serif}
+html[data-ff="serif"] body{font-family:KZIcons,"Sakkal Majalla","Traditional Arabic",Georgia,serif}
+html[data-ff="soft"] body{font-family:KZIcons,Dubai,"Segoe UI Variable","Trebuchet MS",Calibri,sans-serif}
+html[data-ff="mono"] body{font-family:KZIcons,Consolas,"Cascadia Mono","Courier New",monospace}
+html[data-ff="hand"] body{font-family:KZIcons,"Segoe Print","Comic Sans MS","Segoe UI",sans-serif}

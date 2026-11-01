@@ -895,13 +895,15 @@ function openFence(sec) {
   const n = fences.size, cfg = getFenceCfg()[sec] || {};
   const b = { x: cfg.x ?? (wa.x + 40 + n * 30), y: cfg.y ?? (wa.y + 60 + n * 30), w: cfg.w || 340, h: cfg.h || 300 };
   const full = b.h;
+  const mat = MATS.has(cfg.mat) && matOK() ? cfg.mat : '';
   const w = new BrowserWindow({
     x: b.x, y: b.y, width: b.w, height: cfg.collapsed ? 40 : b.h, minWidth: 180, minHeight: 40,
-    frame: false, transparent: true, resizable: false, skipTaskbar: true, hasShadow: false, show: false,
+    frame: false, resizable: false, skipTaskbar: true, show: false,
+    ...(mat ? { transparent: false, backgroundColor: '#00000000', backgroundMaterial: mat, hasShadow: true } : { transparent: true, hasShadow: false }),
     minimizable: false, maximizable: false, fullscreenable: false, title: 'حاوية خزنة',
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: false }
   });
-  w._sec = sec; w._full = full; w._collapsed = !!cfg.collapsed;
+  w._sec = sec; w._mat = mat; w._full = full; w._collapsed = !!cfg.collapsed;
   w.loadFile(uiFile('fence.html'), { query: { sec, col: cfg.collapsed ? '1' : '0' } });
   w.once('ready-to-show', () => w.showInactive());
   w.on('moved', () => { const r = w.getBounds(); saveFenceCfg(sec, { x: r.x, y: r.y }); });
@@ -950,9 +952,16 @@ ipcMain.handle('fence:resize', (e, wd, ht, done) => {
 const FSTYLE_OK = new Set(['glass', 'midnight', 'paper', 'neon', 'aurora', 'minimal', 'sticky', 'retro', 'sunset', 'mica']);
 function cleanStyle(s) {
   s = s || {}; const n = (v, a, b, d) => { v = Number(v); return isFinite(v) ? Math.max(a, Math.min(b, Math.round(v))) : d; };
-  return { d: FSTYLE_OK.has(s.d) ? s.d : 'glass', op: n(s.op, 30, 100, 100), r: n(s.r, 0, 30, 14), sz: ['s', 'm', 'l'].includes(s.sz) ? s.sz : 'm', lay: ['grid', 'list', 'dock'].includes(s.lay) ? s.lay : 'grid', nm: s.nm !== false, acc: /^#[0-9a-fA-F]{6}$/.test(s.acc || '') ? s.acc : '' };
+  return { d: FSTYLE_OK.has(s.d) ? s.d : 'glass', op: n(s.op, 30, 100, 100), r: n(s.r, 0, 30, 14), sz: ['s', 'm', 'l'].includes(s.sz) ? s.sz : 'm', lay: ['grid', 'list', 'dock'].includes(s.lay) ? s.lay : 'grid', nm: s.nm !== false, ra: s.ra === true, acc: /^#[0-9a-fA-F]{6}$/.test(s.acc || '') ? s.acc : '' };
 }
-ipcMain.handle('fence:style:get', e => { const w = BrowserWindow.fromWebContents(e.sender); const st = w && w._sec ? (getFenceCfg()[w._sec] || {}).style : null; return st ? cleanStyle(st) : null; });
+const MATS = new Set(['acrylic', 'mica', 'tabbed']);
+const matOK = () => { try { return process.platform === 'win32' && parseInt(String(require('os').release()).split('.')[2], 10) >= 22621; } catch (e) { return false; } };
+ipcMain.handle('fence:style:get', e => { const w = BrowserWindow.fromWebContents(e.sender); if (!w || !w._sec) return null; const c = getFenceCfg()[w._sec] || {}; return { ...(c.style ? cleanStyle(c.style) : {}), mat: w._mat || '', matOK: matOK() }; });
+ipcMain.handle('fence:material', (e, mat) => {
+  const w = BrowserWindow.fromWebContents(e.sender); if (!w || !w._sec || !matOK()) return false;
+  const sec = w._sec; saveFenceCfg(sec, { mat: MATS.has(mat) ? mat : '' });
+  closeFence(sec, false); setTimeout(() => openFence(sec), 200); return true;
+});
 ipcMain.handle('fence:style:set', (e, st, all) => {
   const w = BrowserWindow.fromWebContents(e.sender); if (!w || !w._sec) return false; const c = cleanStyle(st);
   saveFenceCfg(w._sec, { style: c });

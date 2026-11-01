@@ -5,7 +5,8 @@ const IMG_OK = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'
 const clean = n => String(n || '').replace(/(\.(exe|lnk|url|bat))?\s*[-–]\s*(اختصار|shortcut)\s*$/i, '').replace(/\.(exe|lnk|url)$/i, '').trim() || n;
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fileURL = p => 'file:///' + String(p).replace(/\\/g, '/').split('/').map((x, i) => i === 0 && /^[A-Za-z]:$/.test(x) ? x : encodeURIComponent(x)).join('/').replace(/^\/+/, '');
-let st = { d: 'glass', op: 100, r: 14, sz: 'm', lay: 'grid', nm: true, acc: '' };
+let st = { d: 'glass', op: 100, r: 14, ra: true, sz: 'm', lay: 'grid', nm: true, acc: '', mat: '', matOK: false };
+const APP_R = { s: 5, r: 22, p: 30 };
 let groups = [], items = [], sections = [], ui = {}, cur = sec, sig = '', collapsed = false;
 
 function pv(i) {
@@ -75,7 +76,8 @@ document.addEventListener('error', e => {
 }, true);
 $('back').onclick = () => { const s = sections.find(x => x.id === cur); cur = s && s.parent && sections.some(x => x.id === s.parent) && cur !== sec ? s.parent : sec; render(); };
 $('cls').onclick = () => window.api.fenceClose();
-function setCol(on) { if (on) { $('gpanel').hidden = true; } collapsed = on; $('box').classList.toggle('col', on); $('col').textContent = on ? '▸' : '▾'; window.api.fenceCollapse(on); }
+function replayAnim() { const g = $('grid'); g.classList.remove('anim'); void g.offsetWidth; g.classList.add('anim'); setTimeout(() => g.classList.remove('anim'), 900); }
+function setCol(on) { if (!on) replayAnim(); if (on) { $('gpanel').hidden = true; } collapsed = on; $('box').classList.toggle('col', on); $('col').textContent = on ? '▸' : '▾'; window.api.fenceCollapse(on); }
 $('col').onclick = () => setCol(!collapsed);
 $('head').ondblclick = e => { if (!e.target.closest('button')) setCol(!collapsed); };
 // تغيير الحجم (النوافذ الشفافة في ويندوز ما تدعم السحب من الحافة)
@@ -86,7 +88,7 @@ $('grip').onmousedown = e => {
   document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
 };
 if (new URLSearchParams(location.search).get('col') === '1') { collapsed = true; $('box').classList.add('col'); $('col').textContent = '▸'; }
-load(); setInterval(load, 2500); window.addEventListener('focus', load);
+load(); replayAnim(); setInterval(load, 2500); window.addEventListener('focus', load);
 
 // سحب وإفلات ملفات لإضافتها للقسم الحالي
 let dragN = 0;
@@ -124,7 +126,9 @@ const DESIGNS = [
 const ACCS = ['#2f7a5e', '#3b82f6', '#8b5cf6', '#ec4899', '#ef4444', '#f59e0b', '#14b8a6', '#e5e7eb'];
 function applyStyle() {
   const b = $('box'); b.dataset.d = st.d; b.dataset.sz = st.sz; b.dataset.lay = st.lay; b.dataset.nm = st.nm ? 'on' : 'off';
-  b.style.setProperty('--op', st.op / 100); b.style.setProperty('--r', st.r + 'px');
+  b.style.setProperty('--op', st.op / 100); b.style.setProperty('--r', (st.mat ? 0 : (st.ra ? (APP_R[ui.rad] ?? 14) : st.r)) + 'px');
+  if (st.mat) b.dataset.mat = st.mat; else delete b.dataset.mat;
+  document.documentElement.dataset.ff = ui.ff || ''; b.dataset.mo = ui.mo || '';
   if (st.acc) b.style.setProperty('--acc', st.acc); else if (ui.accent) b.style.setProperty('--acc', ui.accent); else b.style.removeProperty('--acc');
 }
 let saveT = null;
@@ -134,10 +138,11 @@ function drawStyle() {
   p.innerHTML = `<div><div class="sl">🎨 التصميم</div><div class="dg">${DESIGNS.map(d => `<button class="dsw ${st.d === d[0] ? 'on' : ''}" data-kd="${d[0]}" style="background:${d[2]}">${d[1]}</button>`).join('')}</div></div>
   <div><div class="sl">اللون</div><div class="acs">${ACCS.map(c => `<i data-acc="${c}" class="${st.acc === c ? 'on' : ''}" style="background:${c}"></i>`).join('')}<input type="color" id="accC" value="${st.acc || '#2f7a5e'}" title="لون مخصص"><button class="sm" data-acc="" style="width:auto;height:24px;padding:0 8px;margin:0;font-size:11px">تلقائي</button></div></div>
   <div><div class="sl">الشفافية <b id="opv">${st.op}%</b></div><input type="range" id="opR" min="30" max="100" value="${st.op}"></div>
-  <div><div class="sl">استدارة الزوايا <b id="rv">${st.r}</b></div><input type="range" id="rR" min="0" max="30" value="${st.r}"></div>
+  <div><div class="sl">استدارة الزوايا <b id="rv">${st.ra ? 'تلقائي' : st.r}</b></div><input type="range" id="rR" min="0" max="30" value="${st.ra ? (APP_R[ui.rad] ?? 14) : st.r}"></div>
   <div><div class="sl">حجم الأيقونات</div><div class="seg">${[['s', 'صغير'], ['m', 'وسط'], ['l', 'كبير']].map(([k, n]) => `<button data-ksz="${k}" class="${st.sz === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
   <div><div class="sl">طريقة العرض</div><div class="seg">${[['grid', 'شبكة'], ['list', 'قائمة'], ['dock', 'شريط Dock']].map(([k, n]) => `<button data-klay="${k}" class="${st.lay === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
   <div><div class="seg"><button data-knm="1" class="${st.nm ? 'on' : ''}">الأسماء ظاهرة</button><button data-knm="0" class="${st.nm ? '' : 'on'}">بدون أسماء</button></div></div>
+  ${st.matOK ? `<div><div class="sl">خلفية الحاوية (ويندوز 11)</div><div class="seg">${[['', 'عادي'], ['acrylic', 'زجاج أكريليك'], ['mica', 'ميكا']].map(([k, n]) => `<button data-kmat="${k}" class="${(st.mat || '') === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>` : ''}
   <div class="foot"><button data-all="1">طبّق على كل الحاويات</button><button data-reset="1">إعادة الضبط</button></div>`;
 }
 const closeS = () => { $('spanel').hidden = true; $('sty').classList.remove('on'); };
@@ -146,18 +151,32 @@ document.addEventListener('mousedown', e => { if (!$('spanel').hidden && !e.targ
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeS(); });
 $('spanel').addEventListener('click', e => {
   const t = e.target;
-  const d = t.closest('[data-kd]'); if (d) { st.d = d.dataset.kd; st.r = (DESIGNS.find(x => x[0] === st.d) || [])[3] ?? st.r; saveStyle(); drawStyle(); return; }
+  const d = t.closest('[data-kd]'); if (d) { st.d = d.dataset.kd; st.r = (DESIGNS.find(x => x[0] === st.d) || [])[3] ?? st.r; st.ra = false; saveStyle(); drawStyle(); return; }
   const a = t.closest('[data-acc]'); if (a) { st.acc = a.dataset.acc; saveStyle(); drawStyle(); return; }
   const z = t.closest('[data-ksz]'); if (z) { st.sz = z.dataset.ksz; saveStyle(); drawStyle(); return; }
   const l = t.closest('[data-klay]'); if (l) { st.lay = l.dataset.klay; saveStyle(); drawStyle(); return; }
+  const mt = t.closest('[data-kmat]'); if (mt) { window.api.fenceMaterial && window.api.fenceMaterial(mt.dataset.kmat); return; }
   const n = t.closest('[data-knm]'); if (n) { st.nm = n.dataset.knm === '1'; saveStyle(); drawStyle(); return; }
   if (t.closest('[data-all]')) { saveStyle(true); const b = t.closest('[data-all]'); b.textContent = '✓ تم'; setTimeout(() => b.textContent = 'طبّق على كل الحاويات', 1200); return; }
-  if (t.closest('[data-reset]')) { st = { d: 'glass', op: 100, r: 14, sz: 'm', lay: 'grid', nm: true, acc: '' }; saveStyle(); drawStyle(); }
+  if (t.closest('[data-reset]')) { st = { ...st, d: 'glass', op: 100, r: 14, ra: true, sz: 'm', lay: 'grid', nm: true, acc: '' }; saveStyle(); drawStyle(); }
 });
 $('spanel').addEventListener('input', e => {
   if (e.target.id === 'opR') { st.op = +e.target.value; $('opv').textContent = st.op + '%'; saveStyle(); }
-  else if (e.target.id === 'rR') { st.r = +e.target.value; $('rv').textContent = st.r; saveStyle(); }
+  else if (e.target.id === 'rR') { st.ra = false; st.r = +e.target.value; $('rv').textContent = st.r; saveStyle(); }
   else if (e.target.id === 'accC') { st.acc = e.target.value; saveStyle(); }
 });
 (async () => { try { const s = window.api.fenceStyleGet && await window.api.fenceStyleGet(); if (s) st = { ...st, ...s }; } catch (e) {} applyStyle(); })();
 if (window.api.onFenceStyle) window.api.onFenceStyle(s => { st = { ...st, ...s }; applyStyle(); if (!$('spanel').hidden) drawStyle(); });
+
+/* Dock: الأيقونة تكبر والمجاورة لها تكبر معها */
+(() => {
+  const g = $('grid');
+  g.addEventListener('mousemove', e => {
+    if ($('box').dataset.lay !== 'dock') return;
+    g.querySelectorAll('.it').forEach(el => {
+      const r = el.getBoundingClientRect(), d = Math.abs(e.clientX - (r.left + r.width / 2)), k = Math.max(0, 1 - d / 120);
+      const sc = 1 + 0.75 * k * k; el.style.transform = `translateY(${-(sc - 1) * 14}px) scale(${sc})`; el.style.zIndex = Math.round(k * 10);
+    });
+  });
+  g.addEventListener('mouseleave', () => g.querySelectorAll('.it').forEach(el => { el.style.transform = ''; el.style.zIndex = ''; }));
+})();
