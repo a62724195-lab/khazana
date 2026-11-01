@@ -895,18 +895,20 @@ function openFence(sec) {
   const n = fences.size, cfg = getFenceCfg()[sec] || {};
   const b = { x: cfg.x ?? (wa.x + 40 + n * 30), y: cfg.y ?? (wa.y + 60 + n * 30), w: cfg.w || 340, h: cfg.h || 300 };
   const full = b.h;
-  const mat = MATS.has(cfg.mat) && matOK() ? cfg.mat : '';
+  const edge = EDGES.has(cfg.edge) ? cfg.edge : '';
+  if (edge) { const T = 240; b.w = (edge === 'left' || edge === 'right') ? T : wa.width; b.h = (edge === 'left' || edge === 'right') ? wa.height : T; b.x = edge === 'right' ? wa.x + wa.width - T : wa.x; b.y = edge === 'bottom' ? wa.y + wa.height - T : wa.y; }
+  const mat = !edge && MATS.has(cfg.mat) && matOK() ? cfg.mat : '';
   const w = new BrowserWindow({
-    x: b.x, y: b.y, width: b.w, height: cfg.collapsed ? 40 : b.h, minWidth: 180, minHeight: 40,
+    x: b.x, y: b.y, width: b.w, height: cfg.collapsed && !edge ? 40 : b.h, minWidth: edge ? 60 : 180, minHeight: edge ? 60 : 40,
     frame: false, resizable: false, skipTaskbar: true, show: false,
     ...(mat ? { transparent: false, backgroundColor: '#00000000', backgroundMaterial: mat, hasShadow: true } : { transparent: true, hasShadow: false }),
     minimizable: false, maximizable: false, fullscreenable: false, title: 'حاوية خزنة',
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: false }
   });
-  w._sec = sec; w._mat = mat; w._full = full; w._collapsed = !!cfg.collapsed;
-  w.loadFile(uiFile('fence.html'), { query: { sec, col: cfg.collapsed ? '1' : '0' } });
+  w._sec = sec; w._mat = mat; w._edge = edge; w._full = full; w._collapsed = !edge && !!cfg.collapsed;
+  if (edge) { w.setAlwaysOnTop(true, 'floating'); w.setIgnoreMouseEvents(true, { forward: true }); } w.loadFile(uiFile('fence.html'), { query: { sec, col: cfg.collapsed && !edge ? '1' : '0', edge } });
   w.once('ready-to-show', () => w.showInactive());
-  w.on('moved', () => { const r = w.getBounds(); saveFenceCfg(sec, { x: r.x, y: r.y }); });
+  w.on('moved', () => { if (w._edge) return; const r = w.getBounds(); saveFenceCfg(sec, { x: r.x, y: r.y }); });
   w.on('blur', () => setTimeout(() => { if (raised && ![...fences.values()].some(x => !x.isDestroyed() && x.isFocused())) lowerFences(); }, 150));
   w.on('closed', () => { fences.delete(sec); });
   w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
@@ -920,8 +922,8 @@ function closeFence(sec, forget = true) {
   if (w && !w.isDestroyed()) w.destroy();
   fences.delete(sec);
 }
-function raiseFences() { raised = true; fences.forEach(w => { if (!w.isDestroyed()) { w.setAlwaysOnTop(true, 'floating'); w.show(); } }); const f = [...fences.values()][0]; if (f && !f.isDestroyed()) f.focus(); }
-function lowerFences() { raised = false; fences.forEach(w => { if (!w.isDestroyed()) w.setAlwaysOnTop(false); }); }
+function raiseFences() { raised = true; fences.forEach(w => { if (!w.isDestroyed() && !w._edge) { w.setAlwaysOnTop(true, 'floating'); w.show(); } }); const f = [...fences.values()][0]; if (f && !f.isDestroyed()) f.focus(); }
+function lowerFences() { raised = false; fences.forEach(w => { if (!w.isDestroyed() && !w._edge) w.setAlwaysOnTop(false); }); }
 function toggleFences() {
   if (!fences.size) { restoreFences(true); return; }
   if (raised) lowerFences(); else raiseFences();
@@ -952,11 +954,18 @@ ipcMain.handle('fence:resize', (e, wd, ht, done) => {
 const FSTYLE_OK = new Set(['glass', 'midnight', 'paper', 'neon', 'aurora', 'minimal', 'sticky', 'retro', 'sunset', 'mica']);
 function cleanStyle(s) {
   s = s || {}; const n = (v, a, b, d) => { v = Number(v); return isFinite(v) ? Math.max(a, Math.min(b, Math.round(v))) : d; };
-  return { d: FSTYLE_OK.has(s.d) ? s.d : 'glass', op: n(s.op, 30, 100, 100), r: n(s.r, 0, 30, 14), sz: ['s', 'm', 'l'].includes(s.sz) ? s.sz : 'm', lay: ['grid', 'list', 'dock'].includes(s.lay) ? s.lay : 'grid', nm: s.nm !== false, ra: s.ra === true, acc: /^#[0-9a-fA-F]{6}$/.test(s.acc || '') ? s.acc : '' };
+  return { d: FSTYLE_OK.has(s.d) ? s.d : 'glass', op: n(s.op, 30, 100, 100), r: n(s.r, 0, 30, 14), sz: ['s', 'm', 'l'].includes(s.sz) ? s.sz : 'm', lay: ['grid', 'list', 'dock'].includes(s.lay) ? s.lay : 'grid', nm: s.nm !== false, ra: s.ra === true, eh: s.eh === true, acc: /^#[0-9a-fA-F]{6}$/.test(s.acc || '') ? s.acc : '' };
 }
 const MATS = new Set(['acrylic', 'mica', 'tabbed']);
+const EDGES = new Set(['bottom', 'top', 'left', 'right']);
 const matOK = () => { try { return process.platform === 'win32' && parseInt(String(require('os').release()).split('.')[2], 10) >= 22621; } catch (e) { return false; } };
-ipcMain.handle('fence:style:get', e => { const w = BrowserWindow.fromWebContents(e.sender); if (!w || !w._sec) return null; const c = getFenceCfg()[w._sec] || {}; return { ...(c.style ? cleanStyle(c.style) : {}), mat: w._mat || '', matOK: matOK() }; });
+ipcMain.handle('fence:style:get', e => { const w = BrowserWindow.fromWebContents(e.sender); if (!w || !w._sec) return null; const c = getFenceCfg()[w._sec] || {}; return { ...(c.style ? cleanStyle(c.style) : {}), mat: w._mat || '', matOK: matOK(), edge: w._edge || '' }; });
+ipcMain.handle('fence:edge', (e, edge) => {
+  const w = BrowserWindow.fromWebContents(e.sender); if (!w || !w._sec) return false;
+  const sec = w._sec; saveFenceCfg(sec, { edge: EDGES.has(edge) ? edge : '' });
+  closeFence(sec, false); setTimeout(() => openFence(sec), 200); return true;
+});
+ipcMain.handle('fence:ignore', (e, on) => { const w = BrowserWindow.fromWebContents(e.sender); if (w && w._edge && !w.isDestroyed()) w.setIgnoreMouseEvents(!!on, { forward: true }); return true; });
 ipcMain.handle('fence:material', (e, mat) => {
   const w = BrowserWindow.fromWebContents(e.sender); if (!w || !w._sec || !matOK()) return false;
   const sec = w._sec; saveFenceCfg(sec, { mat: MATS.has(mat) ? mat : '' });

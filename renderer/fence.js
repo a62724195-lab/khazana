@@ -24,7 +24,7 @@ function smartList() {
   if (k === 'added') return L.sort((a, b) => (b.added || 0) - (a.added || 0)).slice(0, 18);
   return L.filter(i => i.pinned);
 }
-function render() {
+function renderCore() {
   if (isSmart) {
     const d = SMART[sec.slice(6)] || ['🪄', 'ذكية'];
     $('ttl').textContent = d[0] + ' ' + d[1]; $('back').hidden = true;
@@ -47,6 +47,16 @@ function render() {
   if (!h) h = '<div class="empty">القسم فاضي.<br>اسحب ملفات وأفلتها هنا لإضافتها.</div>';
   $('grid').innerHTML = h;
 }
+const EDGE = new URLSearchParams(location.search).get('edge') || '';
+function render() {
+  renderCore();
+  if (!EDGE) return;
+  const g = $('grid'); let h = '';
+  if (!isSmart && cur !== sec) h += '<div class="it ctl" data-back="1" title="رجوع"><div class="ic">←</div></div>';
+  g.insertAdjacentHTML('afterbegin', h);
+  g.querySelectorAll('.empty').forEach(e => e.remove());
+  g.insertAdjacentHTML('beforeend', '<i class="sep"></i><div class="it ctl" data-ctl="normal" title="رجوع للحاوية العادية"><div class="ic">🎨</div></div><div class="it ctl" data-ctl="close" title="إغلاق"><div class="ic">✕</div></div>');
+}
 async function load() {
   try {
     const r = await window.api.load(); const list = r.items || [];
@@ -60,6 +70,7 @@ async function load() {
   } catch (e) {}
 }
 $('grid').addEventListener('click', async e => {
+  if (EDGE) { const c = e.target.closest('[data-ctl],[data-back]'); if (c) { if (c.dataset.back) $('back').onclick(); else if (c.dataset.ctl === 'close') window.api.fenceClose(); else window.api.fenceEdge(''); return; } const it0 = e.target.closest('.it'); if (it0) { it0.classList.remove('bnc'); void it0.offsetWidth; it0.classList.add('bnc'); } }
   const r = e.target.closest('[data-room]'); if (r) { cur = r.dataset.room; render(); return; }
   const el = e.target.closest('[data-id]'); if (!el) return;
   const it = items.find(x => x.id === el.dataset.id); if (!it) return;
@@ -128,7 +139,7 @@ function applyStyle() {
   const b = $('box'); b.dataset.d = st.d; b.dataset.sz = st.sz; b.dataset.lay = st.lay; b.dataset.nm = st.nm ? 'on' : 'off';
   b.style.setProperty('--op', st.op / 100); b.style.setProperty('--r', (st.mat ? 0 : (st.ra ? (APP_R[ui.rad] ?? 14) : st.r)) + 'px');
   if (st.mat) b.dataset.mat = st.mat; else delete b.dataset.mat;
-  document.documentElement.dataset.ff = ui.ff || ''; b.dataset.mo = ui.mo || '';
+  document.documentElement.dataset.ff = ui.ff || ''; b.dataset.mo = ui.mo || ''; if (EDGE) { b.dataset.edge = EDGE; b.dataset.lay = 'edge'; b.classList.toggle('eh', !!st.eh); }
   if (st.acc) b.style.setProperty('--acc', st.acc); else if (ui.accent) b.style.setProperty('--acc', ui.accent); else b.style.removeProperty('--acc');
 }
 let saveT = null;
@@ -143,6 +154,8 @@ function drawStyle() {
   <div><div class="sl">طريقة العرض</div><div class="seg">${[['grid', 'شبكة'], ['list', 'قائمة'], ['dock', 'شريط Dock']].map(([k, n]) => `<button data-klay="${k}" class="${st.lay === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
   <div><div class="seg"><button data-knm="1" class="${st.nm ? 'on' : ''}">الأسماء ظاهرة</button><button data-knm="0" class="${st.nm ? '' : 'on'}">بدون أسماء</button></div></div>
   ${st.matOK ? `<div><div class="sl">خلفية الحاوية (ويندوز 11)</div><div class="seg">${[['', 'عادي'], ['acrylic', 'زجاج أكريليك'], ['mica', 'ميكا']].map(([k, n]) => `<button data-kmat="${k}" class="${(st.mat || '') === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>` : ''}
+  <div><div class="sl">شكل الحاوية</div><div class="seg">${[['', 'عادية'], ['bottom', 'شريط أسفل'], ['top', 'شريط أعلى'], ['left', 'يسار'], ['right', 'يمين']].map(([k, n]) => `<button data-kedge="${k}" class="${EDGE === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
+  <div><div class="sl">إخفاء الشريط تلقائياً (يظهر لما تلمس الحافة)</div><div class="seg"><button data-keh="0" class="${st.eh ? '' : 'on'}">لا</button><button data-keh="1" class="${st.eh ? 'on' : ''}">نعم</button></div></div>
   <div class="foot"><button data-all="1">طبّق على كل الحاويات</button><button data-reset="1">إعادة الضبط</button></div>`;
 }
 const closeS = () => { $('spanel').hidden = true; $('sty').classList.remove('on'); };
@@ -155,6 +168,8 @@ $('spanel').addEventListener('click', e => {
   const a = t.closest('[data-acc]'); if (a) { st.acc = a.dataset.acc; saveStyle(); drawStyle(); return; }
   const z = t.closest('[data-ksz]'); if (z) { st.sz = z.dataset.ksz; saveStyle(); drawStyle(); return; }
   const l = t.closest('[data-klay]'); if (l) { st.lay = l.dataset.klay; saveStyle(); drawStyle(); return; }
+  const eh = t.closest('[data-keh]'); if (eh) { st.eh = eh.dataset.keh === '1'; saveStyle(); drawStyle(); return; }
+  const eg = t.closest('[data-kedge]'); if (eg) { if (eg.dataset.kedge !== EDGE) window.api.fenceEdge(eg.dataset.kedge); return; }
   const mt = t.closest('[data-kmat]'); if (mt) { window.api.fenceMaterial && window.api.fenceMaterial(mt.dataset.kmat); return; }
   const n = t.closest('[data-knm]'); if (n) { st.nm = n.dataset.knm === '1'; saveStyle(); drawStyle(); return; }
   if (t.closest('[data-all]')) { saveStyle(true); const b = t.closest('[data-all]'); b.textContent = '✓ تم'; setTimeout(() => b.textContent = 'طبّق على كل الحاويات', 1200); return; }
@@ -172,11 +187,28 @@ if (window.api.onFenceStyle) window.api.onFenceStyle(s => { st = { ...st, ...s }
 (() => {
   const g = $('grid');
   g.addEventListener('mousemove', e => {
-    if ($('box').dataset.lay !== 'dock') return;
-    g.querySelectorAll('.it').forEach(el => {
-      const r = el.getBoundingClientRect(), d = Math.abs(e.clientX - (r.left + r.width / 2)), k = Math.max(0, 1 - d / 120);
-      const sc = 1 + 0.75 * k * k; el.style.transform = `translateY(${-(sc - 1) * 14}px) scale(${sc})`; el.style.zIndex = Math.round(k * 10);
+    const lay = $('box').dataset.lay; if (lay !== 'dock' && lay !== 'edge') return;
+    const vert = EDGE === 'left' || EDGE === 'right', sgn = EDGE === 'top' ? 1 : EDGE === 'left' ? 1 : -1;
+    g.querySelectorAll('.it:not(.ctl)').forEach(el => {
+      const r = el.getBoundingClientRect(), d = Math.abs(vert ? e.clientY - (r.top + r.height / 2) : e.clientX - (r.left + r.width / 2)), k = Math.max(0, 1 - d / (lay === 'edge' ? 150 : 120));
+      const sc = 1 + (lay === 'edge' ? 0.85 : 0.75) * k * k, sh = sgn * (sc - 1) * (lay === 'edge' ? 16 : 14) * (EDGE === 'top' || EDGE === 'left' ? 1 : 1);
+      el.style.transform = vert ? `translateX(${-sh}px) scale(${sc})` : `translateY(${sh}px) scale(${sc})`; el.style.zIndex = Math.round(k * 10);
     });
   });
   g.addEventListener('mouseleave', () => g.querySelectorAll('.it').forEach(el => { el.style.transform = ''; el.style.zIndex = ''; }));
 })();
+
+/* الشريط الممتد: النافذة شفافة وتمرّر النقرات لسطح المكتب إلا فوق الشريط نفسه */
+if (EDGE) {
+  const g = $('grid'); let ign = true, hideT = null;
+  const setIgn = v => { if (v !== ign) { ign = v; window.api.fenceIgnore && window.api.fenceIgnore(v); } };
+  const hide = on => { g.classList.toggle('hid', on); };
+  setTimeout(() => { if (st.eh) hide(true); }, 2500);
+  document.addEventListener('mousemove', e => {
+    const r = g.getBoundingClientRect(), m = 8;
+    const over = e.clientX >= r.left - m && e.clientX <= r.right + m && e.clientY >= r.top - m && e.clientY <= r.bottom + m;
+    setIgn(!over && $('spanel').hidden);
+    if (st.eh) { if (over) { clearTimeout(hideT); hide(false); } else if (!hideT && !g.classList.contains('hid')) hideT = setTimeout(() => { hideT = null; hide(true); }, 900); }
+  });
+  document.addEventListener('mouseleave', () => { if (st.eh) hideT = setTimeout(() => { hideT = null; hide(true); }, 600); });
+}
