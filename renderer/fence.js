@@ -48,6 +48,17 @@ function renderCore() {
   $('grid').innerHTML = h;
 }
 const EDGE = new URLSearchParams(location.search).get('edge') || '';
+const SZ_IC = { s: 32, m: 46, l: 66 };
+function fitEdge() {
+  const g = $('grid'), vert = EDGE === 'left' || EDGE === 'right', n = g.querySelectorAll('.it').length;
+  if (!n) return;
+  const avail = (vert ? window.innerHeight : window.innerWidth) - 30 - 40 - 16, gap = 10, pad = 14;
+  let ic = Math.floor((avail - 6) / n) - gap - pad;
+  ic = Math.max(22, Math.min(SZ_IC[st.sz] || 46, ic));
+  $('box').style.setProperty('--ic', ic + 'px');
+  g.classList.toggle('scr', (ic + gap + pad) * n > avail);
+}
+window.addEventListener('resize', () => EDGE && fitEdge());
 function render() {
   renderCore();
   if (!EDGE) return;
@@ -56,6 +67,7 @@ function render() {
   g.insertAdjacentHTML('afterbegin', h);
   g.querySelectorAll('.empty').forEach(e => e.remove());
   g.insertAdjacentHTML('beforeend', '<i class="sep"></i><div class="it ctl" data-ctl="normal" title="رجوع للحاوية العادية"><div class="ic">🎨</div></div><div class="it ctl" data-ctl="close" title="إغلاق"><div class="ic">✕</div></div>');
+  fitEdge();
 }
 async function load() {
   try {
