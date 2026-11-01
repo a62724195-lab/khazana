@@ -25,6 +25,7 @@ function smartList() {
   if (k === 'added') return L.sort((a, b) => (b.added || 0) - (a.added || 0)).slice(0, 18);
   return L.filter(i => i.pinned);
 }
+let orderMap = {};
 function applyAcc() {
   const b = $('box'); let c = st.acc;
   if (!c && st.auc) { const sc = (sections.find(x => x.id === sec) || {}).color; c = /^#[0-9a-fA-F]{6}$/.test(sc || '') ? sc : AUTOC[hueOf(sec) % AUTOC.length]; }
@@ -48,8 +49,9 @@ function renderCore() {
   applyAcc();
   const rooms = sections.filter(x => (x.parent || '') === cur);
   const mine = items.filter(i => i.section === cur).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.lastOpened || 0) - (a.lastOpened || 0) || (b.added || 0) - (a.added || 0));
+  { const ord = orderMap[cur]; if (Array.isArray(ord) && ord.length) { const ix = new Map(ord.map((id, k) => [id, k])); mine.sort((a, b) => (ix.has(a.id) ? ix.get(a.id) : 1e6) - (ix.has(b.id) ? ix.get(b.id) : 1e6)); } }
   let h = rooms.map(r => `<div class="it room" data-room="${r.id}" title="${esc(r.name)}"><div class="ic">${esc(r.emoji || '📁')}</div><div class="nm">${esc(r.name)}</div></div>`).join('');
-  h += mine.map(i => `<div class="it" data-k="${esc(i.kind || '')}" ${i.color ? `style="--tc:${esc(i.color)}"` : ''} data-id="${i.id}" title=""${esc((i.name || '') + (i.desc ? ' — ' + i.desc : ''))}"><div class="ic">${pv(i)}</div><div class="nm">${i.pinned ? '⭐ ' : ''}${esc(clean(i.name))}</div></div>`).join('');
+  h += mine.map(i => `<div class="it" data-k="${esc(i.kind || '')}" ${i.color ? `style="--tc:${esc(i.color)}"` : ''} data-id="${i.id}" title="${esc((i.name || '') + (i.desc ? ' — ' + i.desc : ''))}" draggable="true"><div class="ic">${pv(i)}</div><div class="nm">${i.pinned ? '⭐ ' : ''}${esc(clean(i.name))}</div></div>`).join('');
   if (!h) h = '<div class="empty">القسم فاضي.<br>اسحب ملفات وأفلتها هنا لإضافتها.</div>';
   $('grid').innerHTML = h;
 }
@@ -108,11 +110,25 @@ function placePop(anchor) {
   const pw = p.offsetWidth, ph = p.offsetHeight;
   if (vertical()) p.style.top = Math.max(12, Math.min(H - ph - 12, a.top + a.height / 2 - ph / 2)) + 'px';
   else p.style.left = Math.max(12, Math.min(W - pw - 12, a.left + a.width / 2 - pw / 2)) + 'px';
-  p.style.transformOrigin = EDGE === 'bottom' ? 'bottom center' : EDGE === 'top' ? 'top center' : EDGE === 'left' ? 'left center' : 'right center';
+  const ax = a.left + a.width / 2 - p.offsetLeft, ay = a.top + a.height / 2 - p.offsetTop; p.style.transformOrigin = vertical() ? (EDGE === 'left' ? '0 ' : '100% ') + ay + 'px' : ax + 'px ' + (EDGE === 'bottom' ? '100%' : '0');
 }
-async function openPop(kind, anchor) {
+let popRoom = '', popRoot = '';
+function roomHTML(rid) {
+  const rooms = sections.filter(x => (x.parent || '') === rid), ord = orderMap[rid];
+  let mine = items.filter(i => i.section === rid && i.kind !== '_group').sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.lastOpened || 0) - (a.lastOpened || 0));
+  if (Array.isArray(ord) && ord.length) { const ix = new Map(ord.map((id, k) => [id, k])); mine.sort((a, b) => (ix.has(a.id) ? ix.get(a.id) : 1e6) - (ix.has(b.id) ? ix.get(b.id) : 1e6)); }
+  const s = sections.find(x => x.id === rid) || { name: '' };
+  let h = `<div class="rtt">${rid !== popRoot ? '<button class="rbk" data-rback="1" title="رجوع">←</button>' : ''}<span>${esc(s.emoji || '📁')} ${esc(s.name)}</span></div><div class="pgrid">`;
+  h += rooms.map(r => `<div class="it room" data-room="${r.id}" title="${esc(r.name)}"><div class="ic">${esc(r.emoji || '📁')}</div><div class="nm">${esc(r.name)}</div></div>`).join('');
+  h += mine.map(i => `<div class="it" data-k="${esc(i.kind || '')}" data-id="${i.id}" title="${esc(i.name || '')}"><div class="ic">${pv(i)}</div><div class="nm">${esc(clean(i.name))}</div></div>`).join('');
+  if (!rooms.length && !mine.length) h += '<div class="empty" style="grid-column:1/-1">القسم فاضي</div>';
+  return h + '</div>';
+}
+function drawRoomPop() { $('pop').innerHTML = roomHTML(popRoom); decorate(); placePop(popAnchor); }
+async function openPop(kind, anchor, rid) {
   popKind = kind; popAnchor = anchor; const p = $('pop');
-  p.innerHTML = kind === 'more' ? `<div class="pgrid">${popItems.join('')}</div>` : setHTML(); p.hidden = false; p.classList.remove('show'); p.classList.toggle('big', kind === 'more'); decorate();
+  if (kind === 'room') { popRoot = popRoom = rid; }
+  p.innerHTML = kind === 'room' ? roomHTML(popRoom) : kind === 'more' ? `<div class="pgrid">${popItems.join('')}</div>` : setHTML(); p.hidden = false; p.classList.remove('show'); p.classList.toggle('big', kind === 'more' || kind === 'room'); decorate();
   window.api.fenceIgnore && window.api.fenceIgnore(false); ign = false;
   await sizeWin(520); await new Promise(r => setTimeout(r, 90));
   if (popKind !== kind) return; placePop(anchor); void p.offsetWidth; p.classList.add('show');
@@ -135,7 +151,7 @@ async function load() {
 }
 const onGridClick = async e => {
   if (EDGE) { const c = e.target.closest('[data-ctl],[data-back]'); if (c && !c.closest('#pop')) { if (c.dataset.back) $('back').onclick(); else if (c.dataset.ctl === 'more' || c.dataset.ctl === 'set') { if (popKind === c.dataset.ctl) closePop(); else openPop(c.dataset.ctl, c); } return; } const it0 = e.target.closest('.it'); if (it0 && !it0.closest('#pop')) { it0.classList.remove('bnc'); void it0.offsetWidth; it0.classList.add('bnc'); } }
-  const r = e.target.closest('[data-room]'); if (r) { cur = r.dataset.room; render(); return; }
+  const r = e.target.closest('[data-room]'); if (r) { if (EDGE) { if (r.closest('#pop')) { popRoom = r.dataset.room; drawRoomPop(); } else openPop('room', r, r.dataset.room); return; } cur = r.dataset.room; render(); return; }
   const el = e.target.closest('[data-id]'); if (!el) return;
   const it = items.find(x => x.id === el.dataset.id); if (!it) return;
   if (await window.api.extOpen(it.id, it.kind === 'note')) return;
@@ -165,6 +181,7 @@ $('grip').onmousedown = e => {
   document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
 };
 if (new URLSearchParams(location.search).get('col') === '1') { collapsed = true; $('box').classList.add('col'); $('col').textContent = '▸'; }
+(async () => { try { orderMap = (window.api.fenceOrderGet && await window.api.fenceOrderGet()) || {}; render(); } catch (e) {} })();
 load(); replayAnim(); setInterval(load, 2500); window.addEventListener('focus', load);
 
 // سحب وإفلات ملفات لإضافتها للقسم الحالي
@@ -288,6 +305,7 @@ if (EDGE) {
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closePop(); });
   $('pop').addEventListener('click', e => {
     const t = e.target, q = a => t.closest(a);
+    if (q('[data-rback]')) { const s = sections.find(x => x.id === popRoom); popRoom = s && s.parent ? s.parent : popRoot; drawRoomPop(); return; }
     if (q('[data-pe]')) { window.api.fenceEdge(q('[data-pe]').dataset.pe); return; }
     if (q('[data-psz]')) { st.sz = q('[data-psz]').dataset.psz; saveStyle(); render(); $('pop').innerHTML = setHTML(); return; }
     if (q('[data-peh]')) { st.eh = q('[data-peh]').dataset.peh === '1'; saveStyle(); $('pop').innerHTML = setHTML(); return; }
@@ -323,4 +341,22 @@ if (EDGE) {
     it.classList.add('tl'); it.style.setProperty('--rx', (-py * 34) + 'deg'); it.style.setProperty('--ry', (px * 34) + 'deg'); it.style.setProperty('--sx', (-px * 8) + 'px'); it.style.setProperty('--sy', (-py * 8 + 10) + 'px');
   });
   g.addEventListener('mouseleave', () => g.querySelectorAll('.it.tl').forEach(reset));
+})();
+
+/* سحب الأيقونات لإعادة ترتيبها (مع حركة انسياب) */
+(() => {
+  const g = $('grid'); let drag = null;
+  const flip = (els, before) => els.forEach(el => { const b = before.get(el); if (!b) return; const a = el.getBoundingClientRect(), dx = b.left - a.left, dy = b.top - a.top; if (dx || dy) el.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 240, easing: 'cubic-bezier(.2,.9,.3,1.2)' }); });
+  g.addEventListener('dragstart', e => { const it = e.target.closest('.it[data-id]'); if (!it || isSmart || EDGE) { return; } drag = it; it.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/kz-order', it.dataset.id); } catch (er) {} });
+  g.addEventListener('dragover', e => {
+    if (!drag) return; e.preventDefault();
+    const over = e.target.closest('.it[data-id]'); if (!over || over === drag) return;
+    const els = [...g.querySelectorAll('.it')], before = new Map(els.map(x => [x, x.getBoundingClientRect()]));
+    const r = over.getBoundingClientRect(), after = (document.documentElement.dir === 'rtl' ? e.clientX < r.left + r.width / 2 : e.clientX > r.left + r.width / 2);
+    if (g.dataset.lay === 'list') { const a2 = e.clientY > r.top + r.height / 2; g.insertBefore(drag, a2 ? over.nextSibling : over); } else g.insertBefore(drag, after ? over.nextSibling : over);
+    flip(els, before);
+  });
+  const done = async () => { if (!drag) return; drag.classList.remove('dragging'); drag = null; const ids = [...g.querySelectorAll('.it[data-id]')].map(x => x.dataset.id); orderMap[cur] = ids; try { await window.api.fenceOrderSet(cur, ids); } catch (e) {} };
+  g.addEventListener('drop', e => { if (drag) { e.preventDefault(); done(); } });
+  g.addEventListener('dragend', done);
 })();

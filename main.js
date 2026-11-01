@@ -974,6 +974,12 @@ const MATS = new Set(['acrylic', 'mica', 'tabbed']);
 const EDGES = new Set(['bottom', 'top', 'left', 'right']);
 const matOK = () => { try { return process.platform === 'win32' && parseInt(String(require('os').release()).split('.')[2], 10) >= 22621; } catch (e) { return false; } };
 ipcMain.handle('fence:style:get', e => { const w = BrowserWindow.fromWebContents(e.sender); if (!w || !w._sec) return null; const c = getFenceCfg()[w._sec] || {}; return { ...(c.style ? cleanStyle(c.style) : {}), mat: w._mat || '', matOK: matOK(), edge: w._edge || '' }; });
+ipcMain.handle('fence:order:get', e => { const w = BrowserWindow.fromWebContents(e.sender); return w && w._sec ? ((getFenceCfg()[w._sec] || {}).order || {}) : {}; });
+ipcMain.handle('fence:order:set', (e, room, ids) => {
+  const w = BrowserWindow.fromWebContents(e.sender); if (!w || !w._sec || typeof room !== 'string' || !Array.isArray(ids)) return false;
+  const c = getFenceCfg()[w._sec] || {}; const o = { ...(c.order || {}) }; o[room.slice(0, 80)] = ids.filter(x => typeof x === 'string').slice(0, 800).map(x => x.slice(0, 80));
+  saveFenceCfg(w._sec, { order: o }); return true;
+});
 ipcMain.handle('fence:edge', (e, edge) => {
   const w = BrowserWindow.fromWebContents(e.sender); if (!w || !w._sec) return false;
   const sec = w._sec; saveFenceCfg(sec, { edge: EDGES.has(edge) ? edge : '' });

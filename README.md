@@ -19,6 +19,7 @@ A free, open-source Windows desktop vault (Electron) for any file, program, imag
 - الحاويات العادية: أيقونات 3D ملوّنة بميلان حسب الماوس وزجاج جديد لامع / Regular fences: 3D tilting icons and a new glossy glass design
 - الحاويات: عدّاد، مؤشر تشغيل، لون تلقائي لكل حاوية، حرف ملوّن للبرامج بلا أيقونة، ثيمات للشريط / Fences: counter, running dot, per-fence color, letter tiles, bar themes
 - بطاقات 3D بميلان، أقسام بأيقونات ملوّنة، وثيمات جاهزة بخلفيات / 3D tilting cards, colored section icons, ready-made wallpaper themes
+- الحاويات: سحب الأيقونات لإعادة الترتيب بحركة، ومجلدات منبثقة من الشريط الممتد / Fences: drag to reorder with motion, pop-out folders from the edge bar
 - ملفات شخصية (خزنة لكل غرض)، نسخ احتياطي يومي تلقائي، إضافة من الحافظة (Ctrl+Alt+V)، مراقبة مجلد التنزيلات
 - حاويات سطح المكتب بـ 10 تصاميم (زجاجي، نيون، ورقي، Dock…) وألوان وشفافية وأحجام قابلة للتخصيص / Desktop fences with 10 designs and full customization
 - تخصيص كامل للتطبيق: 15 ثيم، ألوان ولون مخصّص، زوايا، ستايلات بطاقات، خطوط، خلفيات (تدرّج أو صورتك)، حركات وزر عشوائي / Full app personalization: 15 themes, custom accent, corners, card styles, fonts, wallpapers, motion and a random button
