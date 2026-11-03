@@ -912,8 +912,24 @@ function edgeBounds(edge, T, wa) {
   const side = edge === 'left' || edge === 'right';
   return { w: side ? T : wa.width, h: side ? wa.height : T, x: edge === 'right' ? wa.x + wa.width - T : wa.x, y: edge === 'bottom' ? wa.y + wa.height - T : wa.y };
 }
+// تثبيت الحاوية فوق سطح المكتب وتحت كل النوافذ (ويندوز فقط، عبر SetWindowPos)
+const PIN_PS = `param([long]$h)
+Add-Type -Namespace K -Name U -MemberDefinition '[DllImport("user32.dll")] public static extern IntPtr FindWindow(string c,string t);[DllImport("user32.dll")] public static extern IntPtr FindWindowEx(IntPtr p,IntPtr a,string c,string t);[DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h,IntPtr a,int x,int y,int w,int hh,uint f);'
+$host_ = [K.U]::FindWindow('Progman',$null); $w = [IntPtr]::Zero
+while ($true) { $w = [K.U]::FindWindowEx([IntPtr]::Zero,$w,'WorkerW',$null); if ($w -eq [IntPtr]::Zero) { break }; if ([K.U]::FindWindowEx($w,[IntPtr]::Zero,'SHELLDLL_DefView',$null) -ne [IntPtr]::Zero) { $host_ = $w; break } }
+if ($host_ -ne [IntPtr]::Zero) { [void][K.U]::SetWindowPos([IntPtr]$h,$host_,0,0,0,0,0x13) }`;
+let pinFile = '';
+function pinToDesktop(w) {
+  if (process.platform !== 'win32' || !w || w.isDestroyed() || w._edge || raised) return;
+  try {
+    if (!pinFile) { pinFile = path.join(app.getPath('temp'), 'khazana-pin.ps1'); fs.writeFileSync(pinFile, PIN_PS, 'utf8'); }
+    const hwnd = w.getNativeWindowHandle().readUInt32LE(0);
+    require('child_process').execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', pinFile, String(hwnd)], { windowsHide: true }, () => {});
+  } catch (e) {}
+}
+function pinAll() { fences.forEach(w => pinToDesktop(w)); }
 function openFence(sec) {
-  if (fences.has(sec)) { fences.get(sec).showInactive(); return; }
+  if (fences.has(sec)) { const o = fences.get(sec); o.showInactive(); setTimeout(() => pinToDesktop(o), 250); return; }
   const wa = require('electron').screen.getPrimaryDisplay().workArea;
   const n = fences.size, cfg = getFenceCfg()[sec] || {};
   const WSZ = { clock: [250, 170], cal: [300, 270], quote: [320, 160] }, wk = sec.startsWith('widget:') ? (WSZ[sec.slice(7)] || [280, 180]) : null;
@@ -931,7 +947,7 @@ function openFence(sec) {
   });
   w._sec = sec; w._mat = mat; w._edge = edge; w._full = full; w._collapsed = !edge && !!cfg.collapsed;
   if (edge) { w.setAlwaysOnTop(true, 'floating'); w.setIgnoreMouseEvents(true, { forward: true }); } w.loadFile(uiFile('fence.html'), { query: { sec, col: cfg.collapsed && !edge ? '1' : '0', edge } });
-  w.once('ready-to-show', () => w.showInactive());
+  w.once('ready-to-show', () => { w.showInactive(); setTimeout(() => pinToDesktop(w), 250); });
   w.on('moved', () => { if (w._edge) return; const r = w.getBounds(); saveFenceCfg(sec, { x: r.x, y: r.y }); });
   w.on('blur', () => setTimeout(() => { if (raised && ![...fences.values()].some(x => !x.isDestroyed() && x.isFocused())) lowerFences(); }, 150));
   w.on('closed', () => { fences.delete(sec); });
@@ -947,7 +963,7 @@ function closeFence(sec, forget = true) {
   fences.delete(sec);
 }
 function raiseFences() { raised = true; fences.forEach(w => { if (!w.isDestroyed() && !w._edge) { w.setAlwaysOnTop(true, 'floating'); w.show(); } }); const f = [...fences.values()][0]; if (f && !f.isDestroyed()) f.focus(); }
-function lowerFences() { raised = false; fences.forEach(w => { if (!w.isDestroyed() && !w._edge) w.setAlwaysOnTop(false); }); }
+function lowerFences() { raised = false; fences.forEach(w => { if (!w.isDestroyed() && !w._edge) w.setAlwaysOnTop(false); }); setTimeout(pinAll, 200); }
 let edgeHid = false;
 function toggleFences() {
   if (!fences.size) { restoreFences(true); return; }
