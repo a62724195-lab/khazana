@@ -628,7 +628,7 @@ function placeMenu(m, btn) {
   m.classList.add('fx'); const r = btn.getBoundingClientRect(), rtl = getComputedStyle(document.body).direction === 'rtl', railW = document.querySelector('.nav') && getComputedStyle(document.querySelector('.nav')).position === 'fixed' ? document.querySelector('.nav').getBoundingClientRect().width : 0;
   const w = Math.min(m.offsetWidth || 230, innerWidth - railW - 16), minX = rtl ? 8 : railW + 8, maxX = rtl ? innerWidth - railW - 8 - w : innerWidth - 8 - w;
   let x = rtl ? r.left : r.right - w; x = Math.max(minX, Math.min(maxX, x));
-  m.style.left = x + 'px'; m.style.top = (r.bottom + 6) + 'px'; m.style.maxHeight = (innerHeight - r.bottom - 16) + 'px';
+  m.style.setProperty('left', x + 'px', 'important'); m.style.setProperty('right', 'auto', 'important'); m.style.setProperty('top', (r.bottom + 6) + 'px', 'important'); m.style.maxHeight = (innerHeight - r.bottom - 16) + 'px';
 }
 document.addEventListener('click', closeMenus);
 $('addMenu').addEventListener('click', async e => {
