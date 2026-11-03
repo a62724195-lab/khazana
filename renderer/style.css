@@ -698,3 +698,5 @@ html[data-theme=dark] .wclock,html[data-preset=night] .wclock,html[data-preset=m
 .searchbox input{font-size:15px}
 #addBtn{border-radius:99px;padding:9px 20px;box-shadow:0 6px 16px color-mix(in srgb,var(--acc) 45%,transparent)}
 #moreBtn{border-radius:99px}
+
+.menu.fx{position:fixed;inset-inline-end:auto!important;inset-inline-start:auto!important;right:auto;z-index:60;overflow-y:auto;max-width:calc(100vw - 16px)}
