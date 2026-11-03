@@ -16,7 +16,7 @@ function pv(i) {
   return KI[i.kind] || '📄';
 }
 const SMART = { recent: ['🕘', 'فتحتها مؤخراً'], used: ['🔥', 'الأكثر استخداماً'], added: ['🆕', 'أضفتها حديثاً'], pinned: ['⭐', 'المثبّتة'] };
-const isSmart = sec.startsWith('smart:');
+const isSmart = sec.startsWith('smart:'), isWidget = sec.startsWith('widget:');
 const lockedSec = id => { let g = 0; while (id && g++ < 30) { const s = sections.find(x => x.id === id); if (!s) return false; if (s.lock) return true; id = s.parent || ''; } return false; };
 function smartList() {
   const k = sec.slice(6), L = items.filter(i => !lockedSec(i.section) && i.kind !== '_group');
@@ -31,7 +31,20 @@ function applyAcc() {
   if (!c && st.auc) { const sc = (sections.find(x => x.id === sec) || {}).color; c = /^#[0-9a-fA-F]{6}$/.test(sc || '') ? sc : AUTOC[hueOf(sec) % AUTOC.length]; }
   if (c) b.style.setProperty('--acc', c); else if (ui.accent) b.style.setProperty('--acc', ui.accent); else b.style.removeProperty('--acc');
 }
+const WQ = ['خطوة صغيرة كل يوم أفضل من خطة كبيرة تنتظر.', 'رتّب مكانك اليوم، يوفّر عليك ساعة بكرة.', 'ركّز على شي واحد الحين، والباقي يتنظّر.', 'اللي تكتبه ما تنساه.', 'استراحة خمس دقايق تصلّح ساعة تعب.', 'البداية دايماً أصعب من الباقي.', 'اشتغل بهدوء، النتيجة تتكلم.'];
+function widgetHTML(k) {
+  const ar = (ui.lang || 'ar') !== 'en', loc = ar ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', now = new Date();
+  if (k === 'clock') return `<div class="wf wclock"><b>${now.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', hour12: false })}</b><span>${now.toLocaleDateString(loc, { weekday: 'long' })}</span><small>${now.toLocaleDateString(loc, { day: 'numeric', month: 'long' })}</small></div>`;
+  if (k === 'cal') {
+    const y = now.getFullYear(), m = now.getMonth(), first = new Date(y, m, 1).getDay(), dim = new Date(y, m + 1, 0).getDate();
+    const hd = (ar ? ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'] : ['S', 'M', 'T', 'W', 'T', 'F', 'S']).map(x => `<i class="h">${x}</i>`).join('');
+    let c = ''; for (let i = 0; i < first; i++) c += '<i></i>'; for (let d = 1; d <= dim; d++) c += `<i class="${d === now.getDate() ? 'today' : ''}">${d}</i>`;
+    return `<div class="wf wcal"><div class="wch">${now.toLocaleDateString(loc, { month: 'long', year: 'numeric' })}</div><div class="wcg">${hd}${c}</div></div>`;
+  }
+  return `<div class="wf wquote"><p>${WQ[Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 864e5) % WQ.length]}</p></div>`;
+}
 function renderCore() {
+  if (isWidget) { const k = sec.slice(7); $('box').dataset.wg = k; $('ttl').textContent = ''; $('back').hidden = true; $('grid').innerHTML = widgetHTML(k); return; }
   if (isSmart) {
     const d = SMART[sec.slice(6)] || ['🪄', 'ذكية'];
     $('ttl').textContent = d[0] + ' ' + d[1]; $('back').hidden = true;
@@ -360,3 +373,6 @@ if (EDGE) {
   g.addEventListener('drop', e => { if (drag) { e.preventDefault(); done(); } });
   g.addEventListener('dragend', done);
 })();
+
+if (isWidget) { setInterval(() => { try { $('grid').innerHTML = widgetHTML(sec.slice(7)); } catch (e) {} }, 5000); }
+if (window.api.onFenceCol) window.api.onFenceCol(on => { if (!EDGE && !isWidget) setCol(on); });

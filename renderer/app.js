@@ -657,6 +657,8 @@ $('moreMenu').addEventListener('click', async e => {
   else if (a === 'profiles') openProfiles();
   else if (a === 'watch') { if (!window.api.watchChoose) return toast('حدّث resources أيضاً'); const d = await window.api.watchChoose(); if (d) toast('أراقب الآن: ' + d + ' (إشعار لكل ملف جديد)'); }
   else if (a === 'palette') openPalette();
+  else if (a.startsWith('widget-')) { const on = await window.api.fenceToggle('widget:' + a.slice(7)); toast(on ? 'انفتح الودجت 🪟' : 'انقفل الودجت'); }
+  else if (a.startsWith('fences-')) { if (window.api.fencesAll) { await window.api.fencesAll(a.slice(7)); toast('تم'); } }
   else if (a.startsWith('smart-')) { if (!window.api.fenceToggle) return toast('حدّث resources أيضاً'); const on = await window.api.fenceToggle('smart:' + a.slice(6)); toast(on ? 'انفتحت الحاوية الذكية 🪟 (تتحدث لحالها)' : 'انقفلت الحاوية'); }
   else if (a === 'bk-open') { if (!window.api.backupOpen) return toast('حدّث resources أيضاً'); await window.api.backupOpen(); }
   else if (a === 'bk-choose') { const d = await window.api.backupChoose(); if (d) toast('النسخ التلقائية صارت في: ' + d); }

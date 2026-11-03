@@ -1,9 +1,9 @@
 {
- "version": "2026-11-03 05:30",
+ "version": "2026-11-03 05:32",
  "files": [
   {
    "path": "renderer/app.js",
-   "sha": "06a06d571e1604e2c3f170efb3625486ba4a8650dea84c8d5ef8676855ba700a"
+   "sha": "25900b7cd0d01b6778c054309122942b5ce98a5a0db55be3fd01a492f99234e8"
   },
   {
    "path": "renderer/canvas.js",
@@ -23,7 +23,7 @@
   },
   {
    "path": "renderer/fence.css",
-   "sha": "a89f405df6d4bc80cd4455b2fe37f9a07122c7189eab6ecf5f361a9eb6e80957"
+   "sha": "63bcd26fc4132b428133d127f64cd39e1e9fa248286295517a58ab8bad311853"
   },
   {
    "path": "renderer/fence.html",
@@ -31,7 +31,7 @@
   },
   {
    "path": "renderer/fence.js",
-   "sha": "06f5ff895de721aeb7b0f3f7b3ffada832c3c3a084ffd911ab12ed73e0c9f48f"
+   "sha": "f4984ad11a6bedd5b3d5e86168bb9e5c99129d4776379feb90cb211cdf801d5d"
   },
   {
    "path": "renderer/i18n.js",
@@ -39,7 +39,7 @@
   },
   {
    "path": "renderer/index.html",
-   "sha": "f22299c5d2e889e68ff3f6e56b3f44be544aff0b85831f8c33706452e924dfe0"
+   "sha": "2b330c1a44c4d0a0df9fcb25fc2a519502c8324d4c40020a861d89bfe6a19ada"
   },
   {
    "path": "renderer/kzf-Bold.woff",
@@ -99,11 +99,11 @@
   },
   {
    "path": "main.js",
-   "sha": "938eb07fb45c19dd5c5a0471892942385d3ce906bf44826d956f1b7d32cd22a9"
+   "sha": "defd00c6b0d64d9b2b0067c744bbe28a23ab83c7c6e031f61015e3c3e28a2d69"
   },
   {
    "path": "preload.js",
-   "sha": "9e93e5b339716ad6b58133bf7e97b2483c2d8846b4d32ca94c76eea405854944"
+   "sha": "f8c617c29bf8ac2957ac16ed6b2063c4309c29f61ed76eaec588c7044b2784f7"
   },
   {
    "path": "assets/icon.ico",

@@ -916,7 +916,8 @@ function openFence(sec) {
   if (fences.has(sec)) { fences.get(sec).showInactive(); return; }
   const wa = require('electron').screen.getPrimaryDisplay().workArea;
   const n = fences.size, cfg = getFenceCfg()[sec] || {};
-  const b = { x: cfg.x ?? (wa.x + 40 + n * 30), y: cfg.y ?? (wa.y + 60 + n * 30), w: cfg.w || 340, h: cfg.h || 300 };
+  const WSZ = { clock: [250, 170], cal: [300, 270], quote: [320, 160] }, wk = sec.startsWith('widget:') ? (WSZ[sec.slice(7)] || [280, 180]) : null;
+  const b = { x: cfg.x ?? (wa.x + 40 + n * 30), y: cfg.y ?? (wa.y + 60 + n * 30), w: cfg.w || (wk ? wk[0] : 340), h: cfg.h || (wk ? wk[1] : 300) };
   const full = b.h;
   const edge = EDGES.has(cfg.edge) ? cfg.edge : '';
   if (edge) Object.assign(b, edgeBounds(edge, 240, wa));
@@ -947,8 +948,10 @@ function closeFence(sec, forget = true) {
 }
 function raiseFences() { raised = true; fences.forEach(w => { if (!w.isDestroyed() && !w._edge) { w.setAlwaysOnTop(true, 'floating'); w.show(); } }); const f = [...fences.values()][0]; if (f && !f.isDestroyed()) f.focus(); }
 function lowerFences() { raised = false; fences.forEach(w => { if (!w.isDestroyed() && !w._edge) w.setAlwaysOnTop(false); }); }
+let edgeHid = false;
 function toggleFences() {
   if (!fences.size) { restoreFences(true); return; }
+  edgeHid = !edgeHid; fences.forEach(w => { if (w._edge && !w.isDestroyed()) { if (edgeHid) w.hide(); else w.showInactive(); } });
   if (raised) lowerFences(); else raiseFences();
 }
 function restoreFences(force) {
@@ -983,6 +986,12 @@ const MATS = new Set(['acrylic', 'mica', 'tabbed']);
 const EDGES = new Set(['bottom', 'top', 'left', 'right']);
 const matOK = () => { try { return process.platform === 'win32' && parseInt(String(require('os').release()).split('.')[2], 10) >= 22621; } catch (e) { return false; } };
 ipcMain.handle('fence:style:get', e => { const w = BrowserWindow.fromWebContents(e.sender); if (!w || !w._sec) return null; const c = getFenceCfg()[w._sec] || {}; return { ...(c.style ? cleanStyle(c.style) : {}), mat: w._mat || '', matOK: matOK(), edge: w._edge || '' }; });
+ipcMain.handle('fence:all', (e, act) => {
+  if (act === 'collapse' || act === 'expand') fences.forEach(w => { if (!w.isDestroyed() && !w._edge) { try { w.webContents.send('fence:col', act === 'collapse'); } catch (er) {} } });
+  else if (act === 'close') [...fences.keys()].forEach(s => closeFence(s));
+  else if (act === 'open') { const v = readJSON(vaultFile(), { items: [] }); const meta = (v.items || []).find(x => x && x.kind === '_meta') || {}; (meta.sections || []).filter(s => s && !s.parent && !s.lock).slice(0, 8).forEach(s => openFence(s.id)); }
+  return fences.size;
+});
 ipcMain.handle('fence:order:get', e => { const w = BrowserWindow.fromWebContents(e.sender); return w && w._sec ? ((getFenceCfg()[w._sec] || {}).order || {}) : {}; });
 ipcMain.handle('fence:order:set', (e, room, ids) => {
   const w = BrowserWindow.fromWebContents(e.sender); if (!w || !w._sec || typeof room !== 'string' || !Array.isArray(ids)) return false;
