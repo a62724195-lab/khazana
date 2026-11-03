@@ -666,6 +666,7 @@ $('moreMenu').addEventListener('click', async e => {
   else if (a.startsWith('widget-')) { const on = await window.api.fenceToggle('widget:' + a.slice(7)); toast(on ? 'انفتح الودجت 🪟' : 'انقفل الودجت'); }
   else if (a.startsWith('fences-')) { if (window.api.fencesAll) { await window.api.fencesAll(a.slice(7)); toast('تم'); } }
   else if (a.startsWith('smart-')) { if (!window.api.fenceToggle) return toast('حدّث resources أيضاً'); const on = await window.api.fenceToggle('smart:' + a.slice(6)); toast(on ? 'انفتحت الحاوية الذكية 🪟 (تتحدث لحالها)' : 'انقفلت الحاوية'); }
+  else if (a === 'bk-restore') openRestore();
   else if (a === 'bk-open') { if (!window.api.backupOpen) return toast('حدّث resources أيضاً'); await window.api.backupOpen(); }
   else if (a === 'bk-choose') { const d = await window.api.backupChoose(); if (d) toast('النسخ التلقائية صارت في: ' + d); }
   else if (a === 'export') { const ok = await window.api.exportBackup(); if (ok) toast('تم حفظ النسخة الاحتياطية'); }
@@ -911,7 +912,7 @@ window.Notes.mount($('nt'), {
   url: u => window.api.openUrl(u), toast: m => toast(m), confirm: m => Promise.resolve(window.confirm(m)),
   importVault: list => { let c = 0; list.forEach(i => { notes.unshift({ id: 'n' + uid(), title: i.name || '', body: i.desc || '', color: i.color || '', pinned: !!i.pinned, tags: i.tags || '', links: [], created: i.added || Date.now(), updated: Date.now() }); i._imp = true; c++; }); persist(); return c; }
 });
-window.Zakker.init({ platform: 'desktop', onDocs: () => { if (notesMerge) notesMerge(); }, onRing: () => { try { window.api.alertUser(); } catch (e) {} }, onChange: s => { $('navBadge').textContent = s.overdue || ''; } });
+window.Zakker.init({ platform: 'desktop', onDocs: () => { if (notesMerge) notesMerge(); }, onRing: () => { try { window.api.alertUser(); } catch (e) {} }, onChange: s => { $('navBadge').textContent = s.overdue || ''; pushFeed(); } });
 window.Zakker.mount($('zk'));
 
 /* ---------- البداية ---------- */
@@ -1161,6 +1162,28 @@ function openTrash() {
 }
 
 /* ---------- 👤 الملفات الشخصية ---------- */
+function pushFeed() {
+  try {
+    if (!window.api.fenceFeedSet || !window.Zakker || !window.Zakker.list) return;
+    const l = window.Zakker.list().filter(r => !r.done && r.when).sort((a, b) => a.when - b.when).slice(0, 30).map(r => ({ id: r.id, title: String(r.title || '').slice(0, 140), when: r.when }));
+    const k = JSON.stringify(l); if (k === pushFeed.k) return; pushFeed.k = k; window.api.fenceFeedSet(l);
+  } catch (e) {}
+}
+if (window.api.onFenceDone) window.api.onFenceDone(id => { try { window.Zakker.doneById(id); } catch (e) {} });
+setTimeout(pushFeed, 1500);
+async function openRestore() {
+  if (!window.api.backupList) return toast('حدّث التطبيق أول');
+  const dlg = $('bkDlg'), list = await window.api.backupList(), ar = (ui.lang || 'ar') !== 'en';
+  const fmt = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+  $('bkList').innerHTML = list.length ? list.map(b => `<div class="grow"><button class="grun" data-bk="${esc(b.name)}" data-c="${b.count}" data-d="${esc(b.day)}">${b.kind === 'backup' ? '🗓' : '🛟'} ${esc(b.day)} · ${b.count} ${ar ? 'عنصر' : 'items'} · ${fmt(b.size)}${b.kind === 'backup' ? '' : (ar ? ' (قبل استرجاع)' : ' (pre-restore)')}</button></div>`).join('') : `<p class="hint">${ar ? 'ما فيه نسخ تلقائية بعد. تنحفظ نسخة كل يوم مرة وحدة.' : 'No automatic backups yet.'}</p>`;
+  $('bkList').onclick = async e => {
+    const b = e.target.closest('[data-bk]'); if (!b) return;
+    if (!confirm((ar ? 'أسترجع نسخة ' : 'Restore backup of ') + b.dataset.d + ' (' + b.dataset.c + ')؟\n' + (ar ? 'بتنحفظ نسخة من خزنتك الحالية قبل الاسترجاع.' : 'Your current vault is saved first.'))) return;
+    const ok = await window.api.backupRestore(b.dataset.bk); if (!ok) return toast(ar ? 'ما قدرت أسترجع النسخة' : 'Restore failed');
+    dlg.close(); toast(ar ? 'تم الاسترجاع، أعيد التحميل…' : 'Restored, reloading…'); setTimeout(() => location.reload(), 900);
+  };
+  $('bkClose').onclick = () => dlg.close(); dlg.showModal();
+}
 async function openProfiles() {
   if (!window.api.profileList) return toast('حدّث resources أيضاً');
   const dlg = $('profDlg'); const r = await window.api.profileList();

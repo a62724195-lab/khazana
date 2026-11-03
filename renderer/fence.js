@@ -32,7 +32,16 @@ function applyAcc() {
   if (c) b.style.setProperty('--acc', c); else if (ui.accent) b.style.setProperty('--acc', ui.accent); else b.style.removeProperty('--acc');
 }
 const WQ = ['خطوة صغيرة كل يوم أفضل من خطة كبيرة تنتظر.', 'رتّب مكانك اليوم، يوفّر عليك ساعة بكرة.', 'ركّز على شي واحد الحين، والباقي يتنظّر.', 'اللي تكتبه ما تنساه.', 'استراحة خمس دقايق تصلّح ساعة تعب.', 'البداية دايماً أصعب من الباقي.', 'اشتغل بهدوء، النتيجة تتكلم.'];
+let FEED = [];
+function todoHTML() {
+  const ar = (ui.lang || 'ar') !== 'en', end = new Date(); end.setHours(23, 59, 59, 999);
+  const l = FEED.filter(r => r.when <= end.getTime()).slice(0, 12), loc = ar ? 'ar-SA-u-nu-latn' : 'en-US';
+  const row = r => { const late = r.when < Date.now(); return `<button class="tdr${late ? ' late' : ''}" data-td="${String(r.id).replace(/"/g, '')}"><i></i><span>${String(r.title).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</span><small>${new Date(r.when).toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', hour12: false })}</small></button>`; };
+  return `<div class="wf wtodo"><div class="wth">${ar ? 'مهام اليوم' : "Today's tasks"} <b>${l.length}</b></div><div class="wtl">${l.length ? l.map(row).join('') : `<p class="wte">${ar ? 'ما عندك مهام اليوم 🎉' : 'Nothing due today 🎉'}</p>`}</div></div>`;
+}
 function widgetHTML(k) {
+  if (k === 'todo') return todoHTML();
+  if (k === 'pad') return `<div class="wf wpad"><textarea id="padTx" spellcheck="false" placeholder="${(ui.lang || 'ar') !== 'en' ? 'اكتب ملاحظتك هنا…' : 'Write a note…'}"></textarea></div>`;
   const ar = (ui.lang || 'ar') !== 'en', loc = ar ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', now = new Date();
   if (k === 'clock') return `<div class="wf wclock"><b>${now.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', hour12: false })}</b><span>${now.toLocaleDateString(loc, { weekday: 'long' })}</span><small>${now.toLocaleDateString(loc, { day: 'numeric', month: 'long' })}</small></div>`;
   if (k === 'cal') {
@@ -44,7 +53,7 @@ function widgetHTML(k) {
   return `<div class="wf wquote"><p>${WQ[Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 864e5) % WQ.length]}</p></div>`;
 }
 function renderCore() {
-  if (isWidget) { const k = sec.slice(7); $('box').dataset.wg = k; $('ttl').textContent = ''; $('back').hidden = true; $('grid').innerHTML = widgetHTML(k); return; }
+  if (isWidget) { const k = sec.slice(7); $('box').dataset.wg = k; $('ttl').textContent = ''; $('back').hidden = true; if (k === 'pad' && $('padTx')) return; $('grid').innerHTML = widgetHTML(k); return; }
   if (isSmart) {
     const d = SMART[sec.slice(6)] || ['🪄', 'ذكية'];
     $('ttl').textContent = d[0] + ' ' + d[1]; $('back').hidden = true;
@@ -374,5 +383,18 @@ if (EDGE) {
   g.addEventListener('dragend', done);
 })();
 
-if (isWidget) { setInterval(() => { try { $('grid').innerHTML = widgetHTML(sec.slice(7)); } catch (e) {} }, 5000); }
+if (isWidget) {
+  const wk = sec.slice(7);
+  if (wk === 'pad') {
+    let t; const tx = () => $('padTx');
+    window.api.padGet(sec).then(v => { if (tx()) tx().value = v || ''; }).catch(() => {});
+    $('grid').addEventListener('input', e => { if (e.target.id !== 'padTx') return; clearTimeout(t); t = setTimeout(() => window.api.padSet(sec, e.target.value), 500); });
+    window.addEventListener('beforeunload', () => { try { window.api.padSet(sec, tx().value); } catch (e) {} });
+  } else if (wk === 'todo') {
+    window.api.fenceFeedGet().then(l => { FEED = l || []; $('grid').innerHTML = todoHTML(); }).catch(() => {});
+    if (window.api.onFenceFeed) window.api.onFenceFeed(l => { FEED = l || []; $('grid').innerHTML = todoHTML(); });
+    $('grid').addEventListener('click', e => { const b = e.target.closest('[data-td]'); if (!b) return; b.classList.add('ok'); const id = b.dataset.td; setTimeout(() => window.api.fenceDone(id), 380); });
+    setInterval(() => { try { $('grid').innerHTML = todoHTML(); } catch (e) {} }, 60000);
+  } else setInterval(() => { try { $('grid').innerHTML = widgetHTML(wk); } catch (e) {} }, 5000);
+}
 if (window.api.onFenceCol) window.api.onFenceCol(on => { if (!EDGE && !isWidget) setCol(on); });

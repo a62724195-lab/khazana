@@ -47,6 +47,8 @@
       <button class="adv" data-more="stats">📊 إحصائيات خزنتي</button>
       <button class="adv" data-more="widget-clock">🕘 ودجت: ساعة</button>
       <button class="adv" data-more="widget-cal">📅 ودجت: تقويم</button>
+      <button class="adv" data-more="widget-pad">📝 حاوية: ملاحظات سريعة</button>
+      <button class="adv" data-more="widget-todo">✅ حاوية: مهام اليوم</button>
       <button class="adv" data-more="widget-quote">❝ ودجت: عبارة اليوم</button>
       <button class="adv" data-more="fences-open">🪟 فتح حاويات كل الأقسام</button>
       <button class="adv" data-more="fences-collapse">▾ طيّ كل الحاويات</button>
@@ -56,6 +58,7 @@
       <button class="adv" data-more="smart-used">🪟 حاوية ذكية: الأكثر استخداماً</button>
       <button class="adv" data-more="smart-added">🪟 حاوية ذكية: أضفتها حديثاً</button>
       <button class="adv" data-more="smart-pinned">🪟 حاوية ذكية: المثبّتة ⭐</button>
+      <button class="adv" data-more="bk-restore">♻️ استرجاع من نسخة احتياطية</button>
       <button class="adv" data-more="bk-open">📂 فتح مجلد النسخ التلقائية</button>
       <button class="adv" data-more="bk-choose">📁 تغيير مجلد النسخ التلقائية</button>
       <button class="adv" data-more="fill">✨ عبّي الأوصاف الناقصة</button>
@@ -191,6 +194,13 @@
   <b>🗑 سلة المحذوفات</b> <span class="hint">(تبقى 30 يوم ثم تُمسح)</span>
   <div id="trashBody"></div>
   <div class="drow"><button type="button" id="trashEmpty" class="sm danger">إفراغ السلة</button><button type="button" id="trashClose" class="sm">إغلاق</button></div>
+</dialog>
+
+<dialog id="bkDlg">
+  <b>♻️ استرجاع من نسخة احتياطية</b>
+  <p class="hint">اختر نسخة لاسترجاعها. قبل الاسترجاع يحفظ التطبيق نسخة من خزنتك الحالية تلقائياً، فما يضيع منك شي.</p>
+  <div id="bkList"></div>
+  <div class="drow"><span></span><button type="button" id="bkClose" class="sm">إغلاق</button></div>
 </dialog>
 
 <dialog id="profDlg">

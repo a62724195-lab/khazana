@@ -747,6 +747,27 @@ function autoBackup() {
   } catch (e) { return null; }
 }
 ipcMain.handle('backup:now', () => { const s = getSet(); const was = s.autoBackup; const f = autoBackup(); return f || (was === false ? 'off' : null); });
+ipcMain.handle('backup:list', () => {
+  try {
+    const dir = backupDir(), p = profName(), tag = p === 'default' ? '' : p + '-';
+    const re = new RegExp('^khazana-(backup|before-restore)-' + tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(\\d{4}-\\d\\d-\\d\\d)(?:[-_T0-9]*)\\.json$');
+    return fs.readdirSync(dir).map(n => { const m = re.exec(n); if (!m) return null; const f = path.join(dir, n), st = fs.statSync(f); let c = 0; try { const d = JSON.parse(fs.readFileSync(f, 'utf8').replace(/^\uFEFF/, '')); c = (Array.isArray(d) ? d : (d.items || [])).filter(x => x && x.kind !== '_meta').length; } catch (e) {} return { name: n, day: m[2], kind: m[1], size: st.size, mtime: st.mtimeMs, count: c }; }).filter(Boolean).sort((a, b) => b.mtime - a.mtime);
+  } catch (e) { return []; }
+});
+ipcMain.handle('backup:restore', (_e, name) => {
+  try {
+    const dir = backupDir(), f = path.join(dir, path.basename(String(name || '')));
+    if (path.dirname(f) !== path.resolve(dir) && path.dirname(f) !== dir) return false;
+    if (!fs.existsSync(f)) return false;
+    const d = JSON.parse(fs.readFileSync(f, 'utf8').replace(/^\uFEFF/, ''));
+    if (!(Array.isArray(d) || Array.isArray(d.items))) return false;
+    const p = profName(), tag = p === 'default' ? '' : p + '-', now = new Date(), pad = n => String(n).padStart(2, '0');
+    const stamp = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) + '-' + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+    if (fs.existsSync(vaultFile())) fs.copyFileSync(vaultFile(), path.join(dir, 'khazana-before-restore-' + tag + stamp + '.json'));
+    writeJSON(vaultFile(), Array.isArray(d) ? { items: d } : d);
+    return true;
+  } catch (e) { return false; }
+});
 ipcMain.handle('backup:open', async () => { const d = backupDir(); fs.mkdirSync(d, { recursive: true }); await shell.openPath(d); return d; });
 ipcMain.handle('backup:choose', async () => {
   const r = await dialog.showOpenDialog(win, { properties: ['openDirectory', 'createDirectory'] });
@@ -932,7 +953,7 @@ function openFence(sec) {
   if (fences.has(sec)) { const o = fences.get(sec); o.showInactive(); setTimeout(() => pinToDesktop(o), 250); return; }
   const wa = require('electron').screen.getPrimaryDisplay().workArea;
   const n = fences.size, cfg = getFenceCfg()[sec] || {};
-  const WSZ = { clock: [250, 170], cal: [300, 270], quote: [320, 160] }, wk = sec.startsWith('widget:') ? (WSZ[sec.slice(7)] || [280, 180]) : null;
+  const WSZ = { clock: [250, 170], cal: [300, 270], quote: [320, 160], pad: [300, 270], todo: [320, 330] }, wk = sec.startsWith('widget:') ? (WSZ[sec.slice(7)] || [280, 180]) : null;
   const b = { x: cfg.x ?? (wa.x + 40 + n * 30), y: cfg.y ?? (wa.y + 60 + n * 30), w: cfg.w || (wk ? wk[0] : 340), h: cfg.h || (wk ? wk[1] : 300) };
   const full = b.h;
   const edge = EDGES.has(cfg.edge) ? cfg.edge : '';
@@ -1002,6 +1023,13 @@ const MATS = new Set(['acrylic', 'mica', 'tabbed']);
 const EDGES = new Set(['bottom', 'top', 'left', 'right']);
 const matOK = () => { try { return process.platform === 'win32' && parseInt(String(require('os').release()).split('.')[2], 10) >= 22621; } catch (e) { return false; } };
 ipcMain.handle('fence:style:get', e => { const w = BrowserWindow.fromWebContents(e.sender); if (!w || !w._sec) return null; const c = getFenceCfg()[w._sec] || {}; return { ...(c.style ? cleanStyle(c.style) : {}), mat: w._mat || '', matOK: matOK(), edge: w._edge || '' }; });
+const feedFile = () => path.join(dataDir(), 'fence-feed.json'), padFile = () => path.join(dataDir(), 'fence-pads.json');
+let feed = null;
+ipcMain.handle('fence:feed:set', (_e, list) => { feed = Array.isArray(list) ? list.slice(0, 40) : []; try { fs.writeFileSync(feedFile(), JSON.stringify(feed)); } catch (e) {} fences.forEach(w => { try { if (!w.isDestroyed()) w.webContents.send('fence:feed', feed); } catch (e) {} }); return true; });
+ipcMain.handle('fence:feed:get', () => { if (!feed) feed = readJSON(feedFile(), []); return feed; });
+ipcMain.handle('fence:done', (_e, id) => { try { if (win && !win.isDestroyed()) win.webContents.send('fence:done', String(id)); } catch (e) {} return true; });
+ipcMain.handle('fence:pad:get', (_e, id) => String((readJSON(padFile(), {}))[String(id)] || ''));
+ipcMain.handle('fence:pad:set', (_e, id, txt) => { const d = readJSON(padFile(), {}); d[String(id)] = String(txt || '').slice(0, 20000); writeJSON(padFile(), d); return true; });
 ipcMain.handle('fence:all', (e, act) => {
   if (act === 'collapse' || act === 'expand') fences.forEach(w => { if (!w.isDestroyed() && !w._edge) { try { w.webContents.send('fence:col', act === 'collapse'); } catch (er) {} } });
   else if (act === 'close') [...fences.keys()].forEach(s => closeFence(s));

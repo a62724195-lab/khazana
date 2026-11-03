@@ -52,3 +52,5 @@ Icons: [Lucide](https://lucide.dev) (ISC License), packed into `renderer/kzicons
 Font: [IBM Plex Sans Arabic](https://github.com/IBM/plex) (SIL OFL 1.1).
 
 - ودجت للحاويات (ساعة / تقويم / عبارة اليوم) + أوامر جماعية للحاويات (فتح/طيّ/توسيع/إغلاق الكل)، وCtrl+Alt+D يخفي/يظهر الأشرطة الممتدة أيضاً.
+
+- استرجاع من النسخ الاحتياطية التلقائية (مع حفظ نسخة من الحالية قبل الاسترجاع)، وحاويات: ملاحظات سريعة + مهام اليوم.
