@@ -95,7 +95,7 @@ function applyAppearance() {
 const scopeKey = () => secF || 'all';
 const curView = () => views[scopeKey()] || ui.view || 'big';
 function applyView() {
-  const o = $('out'); o.classList.remove('v-big', 'v-small', 'v-list'); o.classList.add('v-' + curView());
+  const o = $('out'); o.classList.remove('v-big', 'v-small', 'v-list', 'v-gal'); o.classList.add('v-' + curView());
   o.classList.toggle('nodesc', !ui.showDesc); o.classList.toggle('notags', !ui.showTags);
   document.querySelectorAll('#viewSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === curView()));
 }
@@ -842,7 +842,32 @@ function showView(v) {
 $('navVault').onclick = () => showView('vault'); $('navZk').onclick = () => showView('zk'); $('navNt').onclick = () => showView('nt'); $('navTd').onclick = () => showView('td'); $('navCv').onclick = () => showView('cv');
 window.Canvas.mount($('cv'), { get: () => boards, save: () => persist(), items: () => visItems(), notes: () => window.Notes.list(), open: id => { const it = items.find(i => i.id === id); if (it) { showView('vault'); openItem(it); } }, openNote: id => { showView('nt'); window.Notes.select(id); }, confirm: m => Promise.resolve(window.confirm(m)) });
 /* ---------- صفحة اليوم ---------- */
+const QUOTES = {
+  ar: ['خطوة صغيرة كل يوم أفضل من خطة كبيرة تنتظر.', 'رتّب مكانك اليوم، يوفّر عليك ساعة بكرة.', 'ركّز على شي واحد الحين، والباقي يتنظّر.', 'اللي تكتبه ما تنساه.', 'استراحة خمس دقايق تصلّح ساعة تعب.', 'البداية دايماً أصعب من الباقي.', 'اشتغل بهدوء، النتيجة تتكلم.'],
+  en: ['A small step every day beats a big plan that waits.', 'Tidy up today, save an hour tomorrow.', 'Focus on one thing now; the rest can wait.', 'What you write down, you keep.', 'A five-minute break fixes an hour of tiredness.', 'Starting is always the hardest part.', 'Work quietly; let the results talk.']
+};
+function ringSVG(p, c) { const r = 24, L = 2 * Math.PI * r; return `<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="${r}" class="rb"/><circle cx="30" cy="30" r="${r}" class="rf" style="stroke:${c};stroke-dasharray:${(L * Math.max(.04, Math.min(1, p))).toFixed(1)} ${L.toFixed(1)}"/></svg>`; }
+function todayWidgets(ar, now, rems) {
+  const loc = ar ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', tm = now.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', hour12: false });
+  const y = now.getFullYear(), m = now.getMonth(), first = new Date(y, m, 1).getDay(), dim = new Date(y, m + 1, 0).getDate();
+  const dayHas = new Set(); (window.Zakker.list ? window.Zakker.list() : []).forEach(r => { if (r.when && !r.done) { const d = new Date(r.when); if (d.getFullYear() === y && d.getMonth() === m) dayHas.add(d.getDate()); } });
+  const hd = (ar ? ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'] : ['S', 'M', 'T', 'W', 'T', 'F', 'S']).map(x => `<i class="h">${x}</i>`).join('');
+  let cells = ''; for (let k = 0; k < first; k++) cells += '<i></i>'; for (let d = 1; d <= dim; d++) cells += `<i class="${d === now.getDate() ? 'today' : ''} ${dayHas.has(d) ? 'has' : ''}">${d}</i>`;
+  const nN = window.Notes.count ? window.Notes.count() : 0, nI = visItems().length, T = (ar ? ['عنصر', 'ملاحظة', 'تذكير'] : ['items', 'notes', 'reminders']);
+  const q = QUOTES[ar ? 'ar' : 'en'], doy = Math.floor((now - new Date(y, 0, 0)) / 864e5);
+  return `<div class="wgs">
+    <div class="wg wclock"><b id="wkT">${tm}</b><span id="wkD">${now.toLocaleDateString(loc, { weekday: 'long' })}</span><small>${now.toLocaleDateString(loc, { day: 'numeric', month: 'long' })}</small></div>
+    <div class="wg wcal"><div class="wch">${now.toLocaleDateString(loc, { month: 'long', year: 'numeric' })}</div><div class="wcg">${hd}${cells}</div></div>
+    <div class="wg wring"><div class="rr">${ringSVG(nI / Math.max(40, nI), 'var(--acc)')}<b>${nI}</b><span>${T[0]}</span></div><div class="rr">${ringSVG(nN / Math.max(10, nN), '#f59e0b')}<b>${nN}</b><span>${T[1]}</span></div><div class="rr">${ringSVG(rems.length / Math.max(5, rems.length), '#ec4899')}<b>${rems.length}</b><span>${T[2]}</span></div></div>
+    <div class="wg wquote"><p>${esc(q[doy % q.length])}</p></div></div>`;
+}
+let clockT = null;
+function startClock() {
+  if (clockT) return;
+  clockT = setInterval(() => { const e = document.getElementById('wkT'); if (!e) return; const ar = (ui.lang || window.I18N.get()) !== 'en'; e.textContent = new Date().toLocaleTimeString(ar ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit', hour12: false }); }, 5000);
+}
 function drawToday() {
+  startClock();
   const ar = (ui.lang || window.I18N.get()) !== 'en', now = new Date(), h = now.getHours();
   const hi = h < 5 ? '🌙 سهران؟' : h < 12 ? '☀ صباح الخير' : h < 17 ? '🌤 طاب يومك' : h < 21 ? '🌆 مساء الخير' : '🌙 تصبح على خير';
   const dt = now.toLocaleDateString(ar ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -853,7 +878,8 @@ function drawToday() {
   const rec = visItems().filter(i => i.lastOpened).sort((a, b) => b.lastOpened - a.lastOpened).slice(0, 6);
   const itm = i => `<div class="tdi" data-it="${i.id}">${i.thumb ? `<img src="${i.thumb}">` : '<span>📄</span>'}<b>${esc(i.name)}</b></div>`;
   const tm = r => new Date(r.when).toLocaleTimeString(ar ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit' });
-  $('td').innerHTML = `<div class="tdw"><div class="tdh"><h1>${hi}</h1><span>${esc(dt)}</span></div>
+  const wgs = todayWidgets(ar, now, rems);
+  $('td').innerHTML = `<div class="tdw"><div class="tdh"><h1>${hi}</h1><span>${esc(dt)}</span></div>${wgs}
     ${missing.size ? `<div class="tdmiss"><b>⚠ ${missing.size} عنصر مسارهم مفقود (غالباً انتقلوا لمكان ثاني)</b><button class="sm pri" data-tq="mauto">🔧 إصلاح تلقائي</button><button class="sm" data-tq="mpick">📂 اختر المجلد اللي نقلتهم له</button></div>` : ''}
     <div class="tdq"><button data-tq="note">📝 ملاحظة سريعة</button><button data-tq="add">➕ إضافة عنصر</button><button data-tq="rem">🔔 تذكير</button><button data-tq="cv">🎨 لوحتي</button><button data-tq="srch">🔎 بحث شامل (Ctrl+K)</button></div>
     <div class="tdg">
@@ -1191,7 +1217,9 @@ function cmdFilter() {
   }
   cmdSel = 0; drawCmd();
 }
-function drawCmd() { $('cmdkList').innerHTML = cmdList.map((c, k) => `<div class="ci2 ${k === cmdSel ? 'on' : ''}" data-k="${k}">${esc(c.t)}</div>`).join('') || '<div class="hint" style="padding:12px">ما لقيت شي</div>'; }
+function cmdParts(t) { const m = /^(\S+)\s+(.*)$/s.exec(t); return m && !/[\p{L}\p{N}]/u.test(m[1]) ? [m[1], m[2]] : ['›', t]; }
+function cmdHue(s) { let h = 2166136261; for (const c of s) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619) >>> 0; } return (h >>> 7) % 360; }
+function drawCmd() { $('cmdkList').innerHTML = cmdList.map((c, k) => { const [ic, tx] = cmdParts(c.t); return `<div class="ci2 ${k === cmdSel ? 'on' : ''}" data-k="${k}"><span class="cic" style="--h:${cmdHue(ic)}">${esc(ic)}</span><span class="ctx">${esc(tx)}</span><kbd>↵</kbd></div>`; }).join('') || '<div class="hint" style="padding:12px">ما لقيت شي</div>'; }
 function openPalette() { $('cmdk').hidden = false; $('cmdkQ').value = ''; cmdFilter(); setTimeout(() => $('cmdkQ').focus(), 30); }
 function closePalette() { $('cmdk').hidden = true; }
 $('cmdkQ').addEventListener('input', cmdFilter);
