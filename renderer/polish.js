@@ -68,3 +68,12 @@
     out.addEventListener('mouseleave', () => out.querySelectorAll('.tile.tl').forEach(x => { x.classList.remove('tl'); reset(x); }));
   }
 })();
+
+/* توهج يتبع المؤشر على البطاقات */
+(() => {
+  let raf = 0, ev = null;
+  document.addEventListener('pointermove', e => {
+    if (e.pointerType === 'touch') return; ev = e; if (raf) return;
+    raf = requestAnimationFrame(() => { raf = 0; const t = ev.target && ev.target.closest && ev.target.closest('.tile,.wg'); if (!t) return; const r = t.getBoundingClientRect(); t.style.setProperty('--mx', (ev.clientX - r.left) + 'px'); t.style.setProperty('--my', (ev.clientY - r.top) + 'px'); });
+  }, { passive: true });
+})();

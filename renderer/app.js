@@ -204,8 +204,28 @@ function previewHTML(i) {
   if (i.thumb) return `<img class="${i.kind === 'image' || i.cover ? 'full' : 'icon'}" src="${esc(i.thumb)}" draggable="false" alt="">`;
   return `<span class="emo">${KIND_ICON[i.kind] || '📄'}</span>`;
 }
+/* لون البطاقة من لون أيقونتها */
+const ICOL = new Map();
+function iconColor(img) {
+  const k = img.currentSrc || img.src; if (ICOL.has(k)) return ICOL.get(k);
+  let res = null;
+  try {
+    const c = document.createElement('canvas'), n = 28; c.width = c.height = n; const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(img, 0, 0, n, n); const d = x.getImageData(0, 0, n, n).data, bins = Array.from({ length: 12 }, () => ({ w: 0, r: 0, g: 0, b: 0 }));
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i + 1], b = d[i + 2], a = d[i + 3]; if (a < 140) continue;
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx ? (mx - mn) / mx : 0; if (sat < .28 || mx < 50) continue;
+      let h; const df = mx - mn; if (mx === r) h = ((g - b) / df + 6) % 6; else if (mx === g) h = (b - r) / df + 2; else h = (r - g) / df + 4;
+      const bi = Math.floor(h * 2) % 12, w = sat * sat * (mx / 255); const B = bins[bi]; B.w += w; B.r += r * w; B.g += g * w; B.b += b * w;
+    }
+    const top = bins.reduce((m, b) => b.w > m.w ? b : m, bins[0]);
+    if (top.w > 1.2) res = `rgb(${Math.round(top.r / top.w)},${Math.round(top.g / top.w)},${Math.round(top.b / top.w)})`;
+  } catch (e) {}
+  ICOL.set(k, res); return res;
+}
 document.addEventListener('load', e => {
   const t = e.target;
+  if (t && t.tagName === 'IMG' && t.closest && t.classList.contains('icon')) { const tl = t.closest('.tile'); if (tl && !tl.classList.contains('hc') && !tl.classList.contains('ac')) { const c = iconColor(t); if (c) { tl.style.setProperty('--tc', c); tl.classList.add('ac'); } } }
   if (t && t.tagName === 'IMG' && t.classList.contains('icon') && t.naturalHeight && t.naturalWidth / t.naturalHeight > 1.4) t.className = 'full';
 }, true);
 document.addEventListener('error', e => {
@@ -838,8 +858,15 @@ $('optDesc').onchange = async e => { ui.showDesc = e.target.checked; applyView()
 $('optTags').onchange = async e => { ui.showTags = e.target.checked; applyView(); await persist(); };
 
 /* ---------- تبويب ذكّرني ---------- */
+let lastView = '';
+function viewIn(v) {
+  if (v === lastView) return; const first = !lastView; lastView = v; if (first) return;
+  const el = v === 'vault' ? document.querySelector('.layout') : $(v); if (!el) return;
+  el.classList.remove('vin'); void el.offsetWidth; el.classList.add('vin'); el.addEventListener('animationend', function f(e) { if (e.target !== el) return; el.classList.remove('vin'); el.removeEventListener('animationend', f); });
+}
 function showView(v) {
   if (selMode) exitSel();
+  const vv = ['zk', 'nt', 'td', 'cv'].includes(v) ? v : 'vault'; viewIn(vv);
   const B = document.body.classList;
   [['zk', 'zkview'], ['nt', 'ntview'], ['td', 'tdview'], ['cv', 'cvview']].forEach(([k, c]) => { B.toggle(c, v === k); $(k).hidden = v !== k; });
   [['navVault', 'vault'], ['navZk', 'zk'], ['navNt', 'nt'], ['navTd', 'td'], ['navCv', 'cv']].forEach(([id, k]) => $(id).classList.toggle('on', k === v || (k === 'vault' && !['zk', 'nt', 'td', 'cv'].includes(v))));
