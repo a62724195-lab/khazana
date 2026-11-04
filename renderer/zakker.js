@@ -55,7 +55,7 @@ create policy "zk files delete" on storage.objects for delete to authenticated
   }
   async function updItem(id, patch) {
     const it = T.items.find(i => i.id === id); if (!it) return;
-    Object.assign(it, patch, { updated: Date.now(), dirty: 1 }); await saveItem(it); render(); scheduleSync();
+    Object.assign(it, patch, { updated: Date.now(), dirty: 1 }); if (patch.done === true) { try { window.Fx && window.Fx.confetti(); } catch (e) {} } await saveItem(it); render(); scheduleSync();
   }
   async function delItem(id) {
     const it = T.items.find(i => i.id === id); if (!it) return;

@@ -77,11 +77,15 @@ const THEMES = [
 ];
 const RADS = { s: '3px', r: '22px', p: '30px' };
 const onAcc = h => { const m = /^#?([0-9a-f]{6})$/i.exec(h || ''); if (!m) return '#fff'; const n = parseInt(m[1], 16); return (0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) > 165 ? '#10151a' : '#fff'; };
+setInterval(() => { if (ui.theme === 'time') { const r = document.documentElement; r.classList.add('tt'); applyAppearance(); setTimeout(() => r.classList.remove('tt'), 1400); } }, 60000);
 function applyAppearance() {
   const r = document.documentElement, st = r.style;
-  if (ui.theme === 'light' || ui.theme === 'dark') r.setAttribute('data-theme', ui.theme); else r.removeAttribute('data-theme');
+  let th = ui.theme, tod = '';
+  if (th === 'time') { const hr = new Date().getHours() + new Date().getMinutes() / 60; th = hr >= 6 && hr < 19.5 ? 'light' : 'dark'; if (hr >= 17 && hr < 19.5) tod = 'eve'; else if (hr >= 5 && hr < 8) tod = 'dawn'; }
+  if (th === 'light' || th === 'dark') r.setAttribute('data-theme', th); else r.removeAttribute('data-theme');
+  if (tod) r.setAttribute('data-tod', tod); else r.removeAttribute('data-tod');
   const at = (k, v) => { if (v) r.setAttribute(k, v); else r.removeAttribute(k); };
-  at('data-preset', ui.preset); at('data-cs', ui.cs); at('data-dn', ui.dn); at('data-ff', ui.ff); at('data-hv', ui.hv); at('data-mo', ui.mo); at('data-gl', ui.gl); at('data-rad', RADS[ui.rad] ? ui.rad : '');
+  at('data-preset', ui.preset); at('data-cs', ui.cs); at('data-dn', ui.dn); at('data-ff', ui.ff); at('data-hv', ui.hv); at('data-mo', ui.mo); at('data-gl', ui.gl); at('data-wm', ui.wm); at('data-rad', RADS[ui.rad] ? ui.rad : '');
   if (RADS[ui.rad]) st.setProperty('--rad', RADS[ui.rad]); else st.removeProperty('--rad');
   if (ui.accent) { st.setProperty('--acc', ui.accent); st.setProperty('--onacc', onAcc(ui.accent)); st.setProperty('--acc2', `color-mix(in srgb, ${ui.accent} 16%, var(--card))`); }
   else ['--acc', '--onacc', '--acc2'].forEach(p => st.removeProperty(p));
@@ -1296,7 +1300,7 @@ const PREFS = [
   { id: 'look', ico: '🎨', t: 'المظهر', rows: [
     { t: 'اللغة', d: 'لغة واجهة التطبيق.', c: { sel: 'lang', o: [['ar', 'العربية'], ['en', 'English']] } },
     { t: 'الثيم', d: 'شكل التطبيق الكامل.', c: { sel: 'preset', o: PRESETS.map(p => [p[0], p[1]]) } },
-    { t: 'المظهر', d: 'فاتح أو داكن أو حسب الويندوز (للثيم الأساسي).', c: { sel: 'theme', o: [['auto', 'تلقائي'], ['light', 'فاتح'], ['dark', 'داكن']] } },
+    { t: 'المظهر', d: 'فاتح أو داكن أو حسب الويندوز (للثيم الأساسي).', c: { sel: 'theme', o: [['auto', 'تلقائي'], ['light', 'فاتح'], ['dark', 'داكن'], ['time', 'حسب الوقت (نهار / مغرب / ليل)']] } },
     { t: 'لون التطبيق', d: 'اللون الرئيسي للأزرار والتحديد.', c: { sw: 1 } },
     { t: 'شكل العرض الافتراضي', d: 'بطاقات كبيرة أو صغيرة أو قائمة (سطر لكل عنصر).', c: { sel: 'view', o: [['big', '▦ بطاقات كبيرة'], ['small', '▪▪ بطاقات صغيرة'], ['list', '☰ قائمة']] } },
     { t: 'يفتح على صفحة اليوم', d: 'أول ما تفتح البرنامج تشوف ملخص يومك.', c: { tg: 'startToday', def: 1 } },
@@ -1317,6 +1321,7 @@ const PREFS = [
     { t: 'تغبيش الخلفية', d: 'يخلي الصورة ناعمة.', c: { rg: 'wb', min: 0, max: 24, step: 2, def: 0, u: 'px' } },
     { t: 'تعتيم الخلفية', d: 'يحسّن قراءة النص فوق الصورة.', c: { rg: 'wd', min: 0, max: 80, step: 5, def: 0, u: '%' } },
     { t: 'حركة الماوس على البطاقة', d: 'وش يصير لما تمرّر الماوس.', c: { sg: 'hv', o: [['', 'عادي'], ['lift', 'ارتفاع'], ['glow', 'توهّج'], ['zoom', 'تكبير'], ['tilt', 'ميلان'], ['none', 'بدون']] } },
+    { t: 'خلفية متحركة', d: 'ألوان هادئة تتحرك ببطء وراء الصفحة (تخفّ تلقائياً إذا فعّلت تقليل الحركة في ويندوز).', c: { sg: 'wm', o: [['', 'إيقاف'], ['on', 'تشغيل']] } },
     { t: 'الواجهة الزجاجية', d: 'الشريط والبطاقات والنوافذ شفافة مع تغبيش (تظهر أحلى مع خلفية).', c: { sg: 'gl', o: [['', 'عادي'], ['on', 'زجاجي']] } },
     { t: 'الحركات', d: 'سلسة أو نطّاطة أو بدون حركات (للأجهزة الضعيفة).', c: { sg: 'mo', o: [['off', 'بدون'], ['', 'عادي'], ['lively', 'نطّاط']] } },
     { t: 'مفاجأة', d: 'ثيم ولون وستايل عشوائي. جرّب أكثر من مرة!', c: { fn: 'rand', l: '🎲 عشوائي' } },
@@ -1407,7 +1412,7 @@ $('prefsPane').addEventListener('click', async e => {
   else if (pf.dataset.pf === 'sync') window.Zakker.openSync();
   else if (pf.dataset.pf === 'github') window.api.openUrl('https://github.com/a62724195-lab/khazana');
 });
-const DKEYS = ['preset', 'accent', 'rad', 'cs', 'dn', 'tw', 'ff', 'fs', 'wp', 'wimg', 'wb', 'wd', 'hv', 'mo', 'gl'];
+const DKEYS = ['preset', 'accent', 'rad', 'cs', 'dn', 'tw', 'ff', 'fs', 'wp', 'wimg', 'wb', 'wd', 'hv', 'mo', 'gl', 'wm'];
 function randomLook() {
   const pick = a => a[Math.floor(Math.random() * a.length)];
   ui.preset = pick(PRESETS)[0]; ui.accent = Math.random() < .6 ? pick(SWATCHES.slice(1)) : ''; ui.rad = pick(['', 's', 'r', 'p']); ui.cs = pick(['', 'flat', 'outline', 'shadow', 'grad', 'glass', 'neo', 'bar']);

@@ -710,3 +710,17 @@ html[data-theme=dark] .wclock,html[data-preset=night] .wclock,html[data-preset=m
 @keyframes vin{from{opacity:0;translate:0 16px;scale:.992}to{opacity:1;translate:0 0;scale:1}}
 .vin{animation:vin .34s cubic-bezier(.2,.8,.25,1) backwards}
 @media(prefers-reduced-motion:reduce){.vin{animation:none}.tile::after,.wg::after{display:none}}
+
+/* ===== وضع الوقت + خلفية متحركة + كونفيتي ===== */
+html.tt *,html.tt{transition:background-color .9s ease,color .9s ease,border-color .9s ease!important}
+:root[data-tod=eve]:not([data-theme=dark]){--bg:#f7ede1;--card:#fff9f1;--line:#ecdcc8}
+:root[data-tod=dawn]:not([data-theme=dark]){--bg:#eef3f8;--card:#fbfdff;--line:#d9e3ee}
+@keyframes ambA{0%{transform:translate3d(-6%,-4%,0) scale(1)}100%{transform:translate3d(6%,5%,0) scale(1.18)}}
+@keyframes ambB{0%{transform:translate3d(5%,6%,0) scale(1.1)}100%{transform:translate3d(-7%,-5%,0) scale(.95)}}
+html[data-wm=on]:not([data-wall]) body::before,html[data-wm=on]:not([data-wall]) body::after{content:'';position:fixed;z-index:-1;pointer-events:none;width:70vmax;height:70vmax;border-radius:50%;filter:blur(70px);opacity:.2;will-change:transform}
+html[data-wm=on]:not([data-wall]) body::before{inset-block-start:-25vmax;inset-inline-start:-15vmax;background:var(--acc);animation:ambA 26s ease-in-out infinite alternate}
+html[data-wm=on]:not([data-wall]) body::after{inset-block-end:-30vmax;inset-inline-end:-20vmax;background:color-mix(in srgb,var(--acc) 40%,#7c5cff);animation:ambB 32s ease-in-out infinite alternate}
+html[data-wm=on][data-wall] #wall{inset:-60px;animation:wallDrift 50s ease-in-out infinite alternate}
+@keyframes wallDrift{from{transform:scale(1.04) translate3d(-1.5%,-1%,0)}to{transform:scale(1.12) translate3d(1.5%,1.2%,0)}}
+@media(prefers-reduced-motion:reduce){html[data-wm=on] body::before,html[data-wm=on] body::after,html[data-wm=on] #wall{animation:none!important}}
+canvas.fxc{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9999}

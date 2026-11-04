@@ -77,3 +77,19 @@
     raf = requestAnimationFrame(() => { raf = 0; const t = ev.target && ev.target.closest && ev.target.closest('.tile,.wg'); if (!t) return; const r = t.getBoundingClientRect(); t.style.setProperty('--mx', (ev.clientX - r.left) + 'px'); t.style.setProperty('--my', (ev.clientY - r.top) + 'px'); });
   }, { passive: true });
 })();
+
+/* كونفيتي */
+window.Fx = window.Fx || {};
+window.Fx.confetti = function (x, y) {
+  if (matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  const cv = document.createElement('canvas'); cv.className = 'fxc'; cv.width = innerWidth; cv.height = innerHeight; document.body.appendChild(cv);
+  const g = cv.getContext('2d'), acc = getComputedStyle(document.documentElement).getPropertyValue('--acc').trim() || '#2f7a5e';
+  const cols = [acc, '#f59e0b', '#ec4899', '#3b82f6', '#22c55e', '#facc15'], ox = x ?? innerWidth / 2, oy = y ?? innerHeight * .35;
+  const P = Array.from({ length: 110 }, () => { const a = Math.random() * Math.PI * 2, v = 4 + Math.random() * 9; return { x: ox, y: oy, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 5, w: 5 + Math.random() * 6, h: 3 + Math.random() * 5, r: Math.random() * 6, vr: (Math.random() - .5) * .4, c: cols[Math.random() * cols.length | 0] }; });
+  const t0 = performance.now();
+  (function step(t) {
+    const k = (t - t0) / 1700; g.clearRect(0, 0, cv.width, cv.height);
+    P.forEach(p => { p.vy += .28; p.vx *= .985; p.x += p.vx; p.y += p.vy; p.r += p.vr; g.save(); g.globalAlpha = Math.max(0, 1 - k * k); g.translate(p.x, p.y); g.rotate(p.r); g.fillStyle = p.c; g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); g.restore(); });
+    if (k < 1) requestAnimationFrame(step); else cv.remove();
+  })(t0);
+};
