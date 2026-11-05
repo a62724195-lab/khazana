@@ -1,9 +1,9 @@
 {
- "version": "2026-11-05 09:47",
+ "version": "2026-11-05 10:56",
  "files": [
   {
    "path": "renderer/app.js",
-   "sha": "53c4b22018e55b0c0168bcf5968b4254a7a55f2c3c21c82a7ca988b9b5b6e229"
+   "sha": "96d5d296e7ff354c3ec5106af902a6cb7dbb102e68f9d5d5268035d8419a1d5d"
   },
   {
    "path": "renderer/canvas.js",
@@ -19,7 +19,7 @@
   },
   {
    "path": "renderer/capture.js",
-   "sha": "11a3f83c263f42c971fc4f386b89b07c55c6bcc44cf02c8600e4edda0f59a588"
+   "sha": "2c5b5318f103dac1deca7eb319e35d644d89ac67944a71af0a2a452d6c24ce1f"
   },
   {
    "path": "renderer/fence.css",
@@ -31,11 +31,11 @@
   },
   {
    "path": "renderer/fence.js",
-   "sha": "09a7db36858654c7ce7e13c1fd1e981369899f7aba9d46aa75f8dcca9fcd2f8c"
+   "sha": "1f024bc3ed5a490788ecb72be1eca5333976ea42bfa7c004523d36ce5b8f1ea7"
   },
   {
    "path": "renderer/i18n.js",
-   "sha": "ae1824424c2cace68976d5ca903f209a1673d9ab5e489f8fc614a4d8620237f4"
+   "sha": "96a4c87797b809a8cb2c92a8286a35bd8d9632d8d59637f19386fe259924b124"
   },
   {
    "path": "renderer/index.html",
@@ -63,7 +63,7 @@
   },
   {
    "path": "renderer/notes.js",
-   "sha": "c80c34dd4c68ad7ba851125489754210ebe79ac2490a52b1df6126c1fef31fdd"
+   "sha": "6965faba474c842b1fe5dcb604a9c9e850ebe2a101dfb1825af0d97c70aa24c9"
   },
   {
    "path": "renderer/polish.js",
@@ -99,11 +99,11 @@
   },
   {
    "path": "main.js",
-   "sha": "7664a6d4aa973a37bbd3f7a53548cdbd1fe4fd8cae7609b2fa3bd4264ab3efcb"
+   "sha": "6f62b46f018ea6ce744ed318f2272a1f9a23b4c84ca02f38cc1c59a2e369d248"
   },
   {
    "path": "preload.js",
-   "sha": "2e7f2839a4a2bcba41322d981842ba330df3418c4746f50602399315a7712aeb"
+   "sha": "2c31a0c21bf7bef6d520af481f3dfb347c7caefb81dba91530766a0de20d7c44"
   },
   {
    "path": "assets/icon.ico",
