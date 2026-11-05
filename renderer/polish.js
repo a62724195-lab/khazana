@@ -93,3 +93,15 @@ window.Fx.confetti = function (x, y) {
     if (k < 1) requestAnimationFrame(step); else cv.remove();
   })(t0);
 };
+
+/* نغمات التذكير (مركّبة بـ WebAudio، بدون ملفات) */
+window.Fx.tone = function (name) {
+  try {
+    const A = window.Fx._ac = window.Fx._ac || new (window.AudioContext || window.webkitAudioContext)(); A.resume && A.resume();
+    const M = { bell: [[1318.5, 0, 1.4], [1568, .16, 1.4], [2093, .32, 1.8]], chime: [[523.3, 0, .5], [659.3, .14, .5], [784, .28, .5], [1046.5, .42, 1]], drop: [[880, 0, .5], [660, .12, .8]], soft: [[392, 0, .9], [523.3, .22, 1.2]] };
+    (M[name] || M.bell).forEach(([f, t, d]) => {
+      const t0 = A.currentTime + t;
+      [[1, .22], [2, .07], [3.01, .03]].forEach(([m, v]) => { const o = A.createOscillator(), g = A.createGain(); o.type = 'sine'; o.frequency.value = f * m; o.connect(g); g.connect(A.destination); g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(v, t0 + .015); g.gain.exponentialRampToValueAtTime(.0001, t0 + d); o.start(t0); o.stop(t0 + d + .05); });
+    });
+  } catch (e) {}
+};

@@ -724,3 +724,8 @@ html[data-wm=on][data-wall] #wall{inset:-60px;animation:wallDrift 50s ease-in-ou
 @keyframes wallDrift{from{transform:scale(1.04) translate3d(-1.5%,-1%,0)}to{transform:scale(1.12) translate3d(1.5%,1.2%,0)}}
 @media(prefers-reduced-motion:reduce){html[data-wm=on] body::before,html[data-wm=on] body::after,html[data-wm=on] #wall{animation:none!important}}
 canvas.fxc{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9999}
+
+.shrs{display:flex;align-items:flex-end;gap:3px;height:70px;padding:6px 4px 0;direction:ltr}.shrs i{flex:1;background:linear-gradient(var(--acc),color-mix(in srgb,var(--acc) 55%,#fff));border-radius:5px 5px 2px 2px;min-height:4px}
+.shl{display:flex;justify-content:space-between;color:var(--mute);font-size:11px;padding:2px 4px 8px;direction:ltr}
+.sdn{display:flex;align-items:center;gap:18px;padding:6px 4px}.sdn svg{width:120px;height:120px;flex:none}.sdl{display:flex;flex-direction:column;gap:5px;font-size:13px}.sdl span{display:flex;align-items:center;gap:7px}.sdl i{width:10px;height:10px;border-radius:3px;flex:none}.sdl b{margin-inline-start:auto;color:var(--mute)}
+.wtime{grid-column:1/-1}

@@ -94,6 +94,7 @@ create policy "zk files delete" on storage.objects for delete to authenticated
 
   /* ---------- المنبّه ---------- */
   function beep() {
+    try { const tn = localStorage.getItem('kz.tone'); if (tn && window.Fx && window.Fx.tone) { window.Fx.tone(tn); try { navigator.vibrate && navigator.vibrate([300, 150, 300]); } catch (_) {} return; } } catch (_) {}
     try { T.actx = T.actx || new (window.AudioContext || window.webkitAudioContext)(); const o = T.actx.createOscillator(), g = T.actx.createGain(); o.frequency.value = 880; o.connect(g); g.connect(T.actx.destination); g.gain.setValueAtTime(.3, T.actx.currentTime); o.start(); o.stop(T.actx.currentTime + .25); } catch (_) {}
     try { navigator.vibrate && navigator.vibrate([300, 150, 300]); } catch (_) {}
   }

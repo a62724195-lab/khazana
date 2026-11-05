@@ -85,7 +85,7 @@ function applyAppearance() {
   if (th === 'light' || th === 'dark') r.setAttribute('data-theme', th); else r.removeAttribute('data-theme');
   if (tod) r.setAttribute('data-tod', tod); else r.removeAttribute('data-tod');
   const at = (k, v) => { if (v) r.setAttribute(k, v); else r.removeAttribute(k); };
-  at('data-preset', ui.preset); at('data-cs', ui.cs); at('data-dn', ui.dn); at('data-ff', ui.ff); at('data-hv', ui.hv); at('data-mo', ui.mo); at('data-gl', ui.gl); at('data-wm', ui.wm); at('data-rad', RADS[ui.rad] ? ui.rad : '');
+  at('data-preset', ui.preset); at('data-cs', ui.cs); at('data-dn', ui.dn); at('data-ff', ui.ff); at('data-hv', ui.hv); at('data-mo', ui.mo); try { localStorage.setItem('kz.tone', ui.tone || ''); } catch (e) {} at('data-gl', ui.gl); at('data-wm', ui.wm); at('data-rad', RADS[ui.rad] ? ui.rad : '');
   if (RADS[ui.rad]) st.setProperty('--rad', RADS[ui.rad]); else st.removeProperty('--rad');
   if (ui.accent) { st.setProperty('--acc', ui.accent); st.setProperty('--onacc', onAcc(ui.accent)); st.setProperty('--acc2', `color-mix(in srgb, ${ui.accent} 16%, var(--card))`); }
   else ['--acc', '--onacc', '--acc2'].forEach(p => st.removeProperty(p));
@@ -899,7 +899,8 @@ function todayWidgets(ar, now, rems) {
     <div class="wg wclock"><b id="wkT">${tm}</b><span id="wkD">${now.toLocaleDateString(loc, { weekday: 'long' })}</span><small>${now.toLocaleDateString(loc, { day: 'numeric', month: 'long' })}</small></div>
     <div class="wg wcal"><div class="wch">${now.toLocaleDateString(loc, { month: 'long', year: 'numeric' })}</div><div class="wcg">${hd}${cells}</div></div>
     <div class="wg wring"><div class="rr">${ringSVG(nI / Math.max(40, nI), 'var(--acc)')}<b>${nI}</b><span>${T[0]}</span></div><div class="rr">${ringSVG(nN / Math.max(10, nN), '#f59e0b')}<b>${nN}</b><span>${T[1]}</span></div><div class="rr">${ringSVG(rems.length / Math.max(5, rems.length), '#ec4899')}<b>${rems.length}</b><span>${T[2]}</span></div></div>
-    <div class="wg wquote"><p>${esc(q[doy % q.length])}</p></div></div>`;
+    <div class="wg wquote"><p>${esc(q[doy % q.length])}</p></div>
+    <div class="wg wring wtime">${[[ar ? 'اليوم' : 'Day', (now.getHours() * 60 + now.getMinutes()) / 1440, 'var(--acc)'], [ar ? 'الأسبوع' : 'Week', (((now.getDay() + 1) % 7) + (now.getHours() / 24)) / 7, '#f59e0b'], [ar ? 'الشهر' : 'Month', (now.getDate() - 1 + now.getHours() / 24) / dim, '#ec4899'], [ar ? 'السنة' : 'Year', (doy - 1 + now.getHours() / 24) / (new Date(y, 1, 29).getMonth() === 1 ? 366 : 365), '#3b82f6']].map(([l, p, c]) => `<div class="rr">${ringSVG(p, c)}<b>${Math.round(p * 100)}%</b><span>${l}</span></div>`).join('')}</div></div>`;
 }
 let clockT = null;
 function startClock() {
@@ -1119,6 +1120,11 @@ async function openStats() {
   h += `<div class="sec"><span>🔥 الأكثر فتحاً</span></div>` + (top.length ? top.map(i => `<div class="srow">${nm(i)}${bar(i.openCount, mx)}<span class="sv">${i.openCount}</span></div>`).join('') : '<div class="hint" style="padding:6px">لسا ما فتحت شي من خزنة.</div>');
   h += `<div class="sec"><span>🕒 أكثر وقت استخدام</span></div>` + (topP.length ? topP.map(i => `<div class="srow">${nm(i)}${bar(play[i.id], mp, '#ea580c')}<span class="sv">${fmtDur(play[i.id])}</span></div>`).join('') : '<div class="hint" style="padding:6px">يبدأ الحساب لما تشغّل برنامج أو لعبة (.exe) من خزنة أو من ويندوز وخزنة شغّالة في الخلفية.</div>');
   h += `<div class="sec"><span>📅 آخر 7 أيام (مرات الفتح)</span></div><div class="sdays">` + days.map(d => `<div class="sd"><div class="sdb"><i style="height:${Math.round(d.n / md * 100)}%"></i></div><b>${d.n}</b><span>${esc(d.l)}</span></div>`).join('') + '</div>';
+  const hrs = Array(24).fill(0); L.forEach(i => (i.hist || []).forEach(t => { hrs[new Date(t).getHours()]++; })); const mh = Math.max(1, ...hrs), pk = hrs.indexOf(Math.max(...hrs));
+  if (hrs.some(n => n)) h += `<div class="sec"><span>⏰ أكثر ساعات استخدامك${hrs[pk] ? ' · ذروتك ' + String(pk).padStart(2, '0') + ':00' : ''}</span></div><div class="shrs">` + hrs.map((n, k) => `<i title="${k}:00 · ${n}" style="height:${Math.max(6, Math.round(n / mh * 100))}%;opacity:${n ? .35 + .65 * n / mh : .15}"></i>`).join('') + '</div><div class="shl"><span>12ص</span><span>6ص</span><span>12م</span><span>6م</span></div>';
+  const KC = ['var(--acc)', '#f59e0b', '#ec4899', '#3b82f6', '#8b5cf6', '#14b8a6', '#ef4444', '#84cc16'], ke = Object.entries(kinds).sort((x, y) => y[1] - x[1]), kt = ke.reduce((n, e) => n + e[1], 0) || 1; let acc0 = 0;
+  const ring = ke.slice(0, 8).map(([k, n], j) => { const f = n / kt, L2 = 2 * Math.PI * 40, d = `<circle cx="50" cy="50" r="40" fill="none" stroke="${KC[j]}" stroke-width="14" stroke-dasharray="${(L2 * f).toFixed(1)} ${L2.toFixed(1)}" stroke-dashoffset="${(-L2 * acc0).toFixed(1)}" transform="rotate(-90 50 50)"/>`; acc0 += f; return d; }).join('');
+  h += `<div class="sec"><span>🍩 توزيع الأنواع</span></div><div class="sdn"><svg viewBox="0 0 100 100">${ring}<text x="50" y="55" text-anchor="middle" font-size="18" font-weight="800" fill="currentColor">${kt}</text></svg><div class="sdl">${ke.slice(0, 8).map(([k, n], j) => `<span><i style="background:${KC[j]}"></i>${KIND_ICON[k] || '📦'} ${KIND_CAT[k] || k} <b>${Math.round(n / kt * 100)}%</b></span>`).join('')}</div></div>`;
   h += `<div class="sec"><span>🗂 حسب النوع</span></div><div class="skinds">` + Object.entries(kinds).sort((x, y) => y[1] - x[1]).map(([k, n]) => `<span class="tag">${KIND_ICON[k] || '📦'} ${KIND_CAT[k] || k} ${n}</span>`).join('') + '</div>';
   $('statsBody').innerHTML = h; $('statsClose').onclick = () => $('statsDlg').close(); $('statsDlg').showModal();
 }
@@ -1321,6 +1327,7 @@ const PREFS = [
     { t: 'تغبيش الخلفية', d: 'يخلي الصورة ناعمة.', c: { rg: 'wb', min: 0, max: 24, step: 2, def: 0, u: 'px' } },
     { t: 'تعتيم الخلفية', d: 'يحسّن قراءة النص فوق الصورة.', c: { rg: 'wd', min: 0, max: 80, step: 5, def: 0, u: '%' } },
     { t: 'حركة الماوس على البطاقة', d: 'وش يصير لما تمرّر الماوس.', c: { sg: 'hv', o: [['', 'عادي'], ['lift', 'ارتفاع'], ['glow', 'توهّج'], ['zoom', 'تكبير'], ['tilt', 'ميلان'], ['none', 'بدون']] } },
+    { t: 'نغمة التذكير', d: 'صوت ناعم مركّب بدل الصفير الافتراضي (يجرّبها لما تختار).', c: { sg: 'tone', o: [['', 'عادي'], ['bell', 'جرس'], ['chime', 'نغمات'], ['drop', 'قطرة'], ['soft', 'هادئ']] } },
     { t: 'خلفية متحركة', d: 'ألوان هادئة تتحرك ببطء وراء الصفحة (تخفّ تلقائياً إذا فعّلت تقليل الحركة في ويندوز).', c: { sg: 'wm', o: [['', 'إيقاف'], ['on', 'تشغيل']] } },
     { t: 'الواجهة الزجاجية', d: 'الشريط والبطاقات والنوافذ شفافة مع تغبيش (تظهر أحلى مع خلفية).', c: { sg: 'gl', o: [['', 'عادي'], ['on', 'زجاجي']] } },
     { t: 'الحركات', d: 'سلسة أو نطّاطة أو بدون حركات (للأجهزة الضعيفة).', c: { sg: 'mo', o: [['off', 'بدون'], ['', 'عادي'], ['lively', 'نطّاط']] } },
@@ -1399,7 +1406,7 @@ $('prefsPane').addEventListener('click', async e => {
   const sw = e.target.closest('[data-pc]'); if (sw) { ui.accent = sw.dataset.pc; applyAppearance(); await persist(); drawPrefs(); return; }
   const th = e.target.closest('[data-th]'); if (th) { const o = THEMES[+th.dataset.th][1]; DKEYS.forEach(k => delete ui[k]); Object.assign(ui, o, { cs: 'glass', gl: 'on', rad: 'r', wb: 0 }); applyAppearance(); await persist(); drawPrefs(); toast('🎨 ' + THEMES[+th.dataset.th][0]); return; }
   const pp = e.target.closest('[data-pp]'); if (pp) { ui.preset = pp.dataset.pp; applyAppearance(); await persist(); drawPrefs(); return; }
-  const sg = e.target.closest('[data-sg]'); if (sg) { ui[sg.dataset.sg] = sg.dataset.v; applyAppearance(); await persist(); drawPrefs(); return; }
+  const sg = e.target.closest('[data-sg]'); if (sg) { ui[sg.dataset.sg] = sg.dataset.v; if (sg.dataset.sg === 'tone') { try { localStorage.setItem('kz.tone', sg.dataset.v); window.Fx.tone(sg.dataset.v || 'bell'); } catch (e) {} } applyAppearance(); await persist(); drawPrefs(); return; }
   const wp = e.target.closest('[data-wp]'); if (wp) { ui.wp = wp.dataset.wp; applyAppearance(); await persist(); drawPrefs(); return; }
   if (e.target.closest('[data-wpup]')) { pickWall(); return; }
   const pa = e.target.closest('[data-pa]'); if (pa) { const k = pa.dataset.pa.split(':')[1]; const b = document.querySelector('[data-more="' + k + '"]'); if (b) b.click(); return; }
@@ -1412,7 +1419,7 @@ $('prefsPane').addEventListener('click', async e => {
   else if (pf.dataset.pf === 'sync') window.Zakker.openSync();
   else if (pf.dataset.pf === 'github') window.api.openUrl('https://github.com/a62724195-lab/khazana');
 });
-const DKEYS = ['preset', 'accent', 'rad', 'cs', 'dn', 'tw', 'ff', 'fs', 'wp', 'wimg', 'wb', 'wd', 'hv', 'mo', 'gl', 'wm'];
+const DKEYS = ['preset', 'accent', 'rad', 'cs', 'dn', 'tw', 'ff', 'fs', 'wp', 'wimg', 'wb', 'wd', 'hv', 'mo', 'gl', 'wm', 'tone'];
 function randomLook() {
   const pick = a => a[Math.floor(Math.random() * a.length)];
   ui.preset = pick(PRESETS)[0]; ui.accent = Math.random() < .6 ? pick(SWATCHES.slice(1)) : ''; ui.rad = pick(['', 's', 'r', 'p']); ui.cs = pick(['', 'flat', 'outline', 'shadow', 'grad', 'glass', 'neo', 'bar']);
