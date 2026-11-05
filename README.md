@@ -41,8 +41,27 @@ A free, open-source Windows desktop vault (Electron) for any file, program, imag
 من داخل التطبيق: **⋯ ← 🔄 تحديث التطبيق**. يجيب الملفات المتغيرة فقط من هذا المستودع.
 بعد أي رفع على `main` يحدّث GitHub Actions ملف `update/manifest.json` تلقائياً.
 
+**حماية التحديث / Update safety:**
+- قبل ما يتحدّث `manifest.json`، GitHub Actions يفحص كل ملفات JS بـ `node --check`. لو فيه غلطة كتابة، الفحص يفشل وما ينزل التحديث لأي أحد.
+  Before the manifest is updated, CI runs `node --check` on every JS file; a syntax error stops the update from reaching users.
+- التطبيق ينزّل التحديث لمجلد مؤقت ويفحصه (كتابة JS سليمة، JSON سليم، الملفات الأساسية موجودة) قبل ما يركّبه.
+  The app downloads updates to a temp folder and validates them before installing.
+- قبل التركيب ياخذ نسخة من الملفات الحالية، ولو البرنامج ما فتح بعد التحديث يرجع للنسخة السابقة تلقائياً.
+  It backs up the current files and rolls back automatically if the app fails to start after an update.
+- وقت البرمجة (تشغيل من الكود بـ `1-شغّل-التطبيق.bat`) التحديث التلقائي متوقف عشان ما يكتب فوق تعديلاتك. حدّث بـ `git pull`.
+  When running from source (not packaged) auto-update is disabled so it never overwrites your work.
+
+> ⚠️ مهم: أي رفع على `main` يوصل لكل المستخدمين خلال دقايق. جرّب عندك أول قبل ما ترفع.
+> Anything pushed to `main` reaches every user within minutes — test locally first.
+
+**فكرة للمستقبل (ما انسوّت لسا) / Next step (not done yet):** التوقيع الحقيقي. الحين البصمة (sha) جاية من نفس المستودع، فلو أحد سرق حساب GitHub يقدر ينزّل تحديث. الحل الأقوى: تنزيل التحديثات من GitHub Releases (أو فرع `stable`) بدل `main`، وتوقيع ملف الـ manifest بمفتاح خاص عندك (Ed25519)، والتطبيق يتأكد بالمفتاح العام قبل ما يركّب.
+Real signing: serve updates from Releases (or a `stable` branch) instead of `main`, sign the manifest with a private Ed25519 key, and verify it in the app with the public key.
+
 ## الخصوصية / Privacy
-بياناتك محفوظة محلياً في `%APPDATA%\khazana`. مفتاح Anthropic (اختياري) مشفّر بحساب ويندوز.
+بياناتك محفوظة محلياً في `%APPDATA%\خزانة` (اسم المجلد يجي من `productName` في package.json). مفتاح Anthropic (اختياري) مشفّر بحساب ويندوز.
+Your data is stored locally in `%APPDATA%\خزانة` (the folder name comes from `productName` in package.json).
+لو استخدمت البحث الذكي أو ميزات الذكاء الاصطناعي، أسماء عناصرك وأوصافها (مو الأقسام المقفلة) تنرسل لخدمة الذكاء الاصطناعي عشان تجاوب.
+If you use AI search/features, your item names and descriptions (not locked sections) are sent to the AI service.
 
 ## الترخيص / License
 MIT

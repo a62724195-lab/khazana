@@ -8,7 +8,49 @@ let win = null, tray = null, quitting = false;
 const ICON = path.join(__dirname, 'assets', 'icon.png');
 const appIcon = () => { try { const i = nativeImage.createFromPath(ICON); return i.isEmpty() ? undefined : i; } catch (e) { return undefined; } };
 
-if (!app.requestSingleInstanceLock()) { app.quit(); }
+/* KZ-ROLLBACK:BEGIN — لو آخر تحديث خلّى البرنامج ما يفتح، نرجع للنسخة القديمة تلقائياً (لا تحذف هذا الجزء) */
+const updPendingFile = () => path.join(app.getPath('userData'), 'update-pending.json');
+const updRolledFile = () => path.join(app.getPath('userData'), 'update-rolledback.json');
+function restoreUpdateBackup() {
+  const bdir = path.join(app.getPath('userData'), 'update-backup'); let n = 0;
+  const list = JSON.parse(fs.readFileSync(path.join(bdir, 'list.json'), 'utf8'));
+  for (const it of list) {
+    try {
+      if (it.had) { const b = fs.readFileSync(path.join(bdir, it.bak)); fs.writeFileSync(it.dst + '.rb', b); fs.renameSync(it.dst + '.rb', it.dst); }
+      else fs.rmSync(it.dst, { force: true });
+      n++;
+    } catch (e) {}
+  }
+  return n;
+}
+let updFirstBoot = false;
+function rollbackUpdate(p, why) {
+  try { restoreUpdateBackup(); } catch (e) {}
+  try { fs.writeFileSync(updRolledFile(), JSON.stringify({ version: p.version, at: Date.now(), why: String(why || '').slice(0, 300) })); } catch (e) {}
+  try { const sf = path.join(app.getPath('userData'), 'settings.json'); const s = JSON.parse(fs.readFileSync(sf, 'utf8')); s.updVersion = p.from || ''; s.updSkip = p.version; fs.writeFileSync(sf + '.rb', JSON.stringify(s)); fs.renameSync(sf + '.rb', sf); } catch (e) {}
+  try { fs.unlinkSync(updPendingFile()); } catch (e) {}
+  app.relaunch(); app.exit(0);
+}
+const gotLock = app.requestSingleInstanceLock(); // نسخة ثانية من البرنامج ما تلمس ملفات التحديث
+(function checkUpdateRollback() {
+  if (!gotLock) return;
+  let p = null; try { p = JSON.parse(fs.readFileSync(updPendingFile(), 'utf8')); } catch (e) { return; }
+  if ((p.boots || 0) >= 1) { rollbackUpdate(p, 'app did not start after update'); return; } // المرة اللي قبل ما فتح البرنامج: نرجع
+  p.boots = 1; try { fs.writeFileSync(updPendingFile(), JSON.stringify(p)); } catch (e) {}
+  updFirstBoot = true;
+  // أول تشغيل بعد التحديث: لو صار خطأ قبل ما تفتح الواجهة نرجع على طول
+  const onCrash = err => { if (updFirstBoot) rollbackUpdate(p, (err && err.stack) || err); };
+  process.on('uncaughtException', onCrash);
+  process._kzUpdCrash = onCrash;
+})();
+function markUpdateBootOK() { // الواجهة فتحت وحمّلت الخزنة: التحديث سليم
+  if (updFirstBoot) { updFirstBoot = false; try { fs.unlinkSync(updPendingFile()); } catch (e) {} if (process._kzUpdCrash) process.removeListener('uncaughtException', process._kzUpdCrash); }
+  let rb = null; try { rb = JSON.parse(fs.readFileSync(updRolledFile(), 'utf8')); fs.unlinkSync(updRolledFile()); } catch (e) {}
+  if (rb) setTimeout(() => { try { new Notification({ title: 'خزنة', body: '↩ التحديث الأخير ما اشتغل صح، فرجّعنا النسخة السابقة تلقائياً. بياناتك سليمة.' }).show(); } catch (e) {} }, 1500);
+}
+/* KZ-ROLLBACK:END */
+
+if (!gotLock) { app.quit(); }
 app.on('second-instance', () => showWin());
 
 /* ---------- تخزين ---------- */
@@ -17,23 +59,69 @@ const profName = () => { try { return JSON.parse(fs.readFileSync(path.join(app.g
 const safeProf = n => String(n || '').trim().replace(/[^\p{L}\p{N}_ -]/gu, '').slice(0, 24).trim().replace(/ +/g, '_');
 const vaultFile = () => path.join(dataDir(), profName() === 'default' ? 'vault.json' : 'vault-' + profName() + '.json');
 const settingsFile = () => path.join(dataDir(), 'settings.json');
-function readJSON(f, def) { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return def; } }
-function writeJSON(f, d) {
-  fs.mkdirSync(path.dirname(f), { recursive: true });
-  try { if (fs.existsSync(f)) fs.copyFileSync(f, f.replace(/\.json$/, '.bak.json')); } catch (e) {}
-  const tmp = f + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(d));
-  fs.renameSync(tmp, f);
+/* ---------- 💾 حفظ آمن للملفات ----------
+   - الكتابة «ذرّية»: نكتب بملف مؤقت + fsync + rename، فلو طفى الجهاز بالنص يظل الملف القديم سليم
+   - لو ملف JSON خربان ما نرجّع فاضي بصمت: نجرّب نسخة .bak */
+const parseJSONText = t => JSON.parse(String(t).replace(/^\uFEFF/, ''));
+function tryReadJSON(f) {
+  let text;
+  try { text = fs.readFileSync(f, 'utf8'); } catch (e) { return { ok: false, missing: e.code === 'ENOENT', error: e }; }
+  try { return { ok: true, data: parseJSONText(text), text }; } catch (e) { return { ok: false, corrupt: true, error: e }; }
 }
+const bakOf = f => f.replace(/\.json$/, '.bak.json');
+function readJSON(f, def) {
+  const r = tryReadJSON(f); if (r.ok) return r.data;
+  if (r.corrupt) { const b = tryReadJSON(bakOf(f)); if (b.ok) return b.data; }
+  return def;
+}
+function sleepSync(ms) { try { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); } catch (e) {} }
+function writeFileAtomic(f, str) {
+  fs.mkdirSync(path.dirname(f), { recursive: true });
+  const tmp = f + '.tmp', buf = Buffer.isBuffer(str) ? str : Buffer.from(String(str), 'utf8');
+  const fd = fs.openSync(tmp, 'w');
+  try { let off = 0; while (off < buf.length) off += fs.writeSync(fd, buf, off, buf.length - off); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
+  for (let k = 0; ; k++) { // ويندوز أحياناً يقفل الملف لحظة (مضاد الفيروسات): نعيد المحاولة
+    try { fs.renameSync(tmp, f); return; } catch (e) {
+      if (k >= 5 || !['EPERM', 'EBUSY', 'EACCES'].includes(e.code)) { try { fs.unlinkSync(tmp); } catch (_) {} throw e; }
+      sleepSync(60 * (k + 1));
+    }
+  }
+}
+// عدد الأشياء الحقيقية بالخزنة (عناصر + ملاحظات) عشان نعرف إذا النسخة «فاضية»
+function vaultCount(d) {
+  const a = Array.isArray(d) ? d : (d && Array.isArray(d.items) ? d.items : null); if (!a) return -1;
+  let n = 0; for (const x of a) { if (!x) continue; if (x.kind === '_meta') n += (Array.isArray(x.notes) ? x.notes.length : 0); else n++; }
+  return n;
+}
+const isVaultData = d => Array.isArray(d) || !!(d && typeof d === 'object' && Array.isArray(d.items));
+const isVaultName = f => /^vault(-.+)?\.json$/.test(path.basename(f)) && !/\.(bak|corrupt-[^.]*)\.json$/.test(path.basename(f));
+function writeJSON(f, d) {
+  const str = typeof d === 'string' ? d : JSON.stringify(d);
+  try {
+    // ننسخ الملف الحالي لـ .bak بس لو هو سليم (عشان ما يمسح ملف خربان نسخة سليمة)
+    const cur = fs.existsSync(f) ? tryReadJSON(f) : null;
+    if (cur && cur.ok) {
+      let keep = false; // خزنة فاضية ما تكتب فوق نسخة .bak فيها بيانات
+      if (isVaultName(f) && vaultCount(cur.data) === 0) { const old = tryReadJSON(bakOf(f)); keep = old.ok && vaultCount(old.data) > 0; }
+      if (!keep) writeFileAtomic(bakOf(f), cur.text);
+    }
+  } catch (e) {}
+  writeFileAtomic(f, str);
+}
+const stampNow = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()); };
 
 /* ---------- مفتاح API (مشفّر بحساب ويندوز) ---------- */
+let keyCache = null; // نفك تشفير المفتاح مرة وحدة بس، مو مع كل تحميل
 function getKey() {
+  if (keyCache !== null) return keyCache;
   const s = readJSON(settingsFile(), {});
+  let k = '';
   try {
-    if (s.keyEnc && safeStorage.isEncryptionAvailable()) return safeStorage.decryptString(Buffer.from(s.keyEnc, 'base64'));
-    if (s.keyPlain) return Buffer.from(s.keyPlain, 'base64').toString('utf8');
-  } catch (e) {}
-  return '';
+    if (s.keyEnc && safeStorage.isEncryptionAvailable()) k = safeStorage.decryptString(Buffer.from(s.keyEnc, 'base64'));
+    else if (s.keyPlain) k = Buffer.from(s.keyPlain, 'base64').toString('utf8');
+  } catch (e) { k = ''; }
+  keyCache = k;
+  return k;
 }
 function setKey(k) {
   const s = readJSON(settingsFile(), {});
@@ -43,6 +131,7 @@ function setKey(k) {
     else s.keyPlain = Buffer.from(k, 'utf8').toString('base64');
   }
   writeJSON(settingsFile(), s);
+  keyCache = null;
 }
 
 /* ---------- أنواع الملفات ---------- */
@@ -291,7 +380,8 @@ async function callClaude({ system, content, max = 800 }) {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: MODEL, max_tokens: max, system, messages: [{ role: 'user', content }] })
+      body: JSON.stringify({ model: MODEL, max_tokens: max, system, messages: [{ role: 'user', content }] }),
+      signal: AbortSignal.timeout(20000) // لو النت علّق ما يظل الزر «…» للأبد
     });
     const d = await r.json();
     if (!r.ok) return { ok: false, error: (d && d.error && d.error.message) || ('HTTP ' + r.status) };
@@ -299,7 +389,10 @@ async function callClaude({ system, content, max = 800 }) {
     const m = t.match(/\{[\s\S]*\}/);
     if (!m) return { ok: false, error: 'bad_reply' };
     return { ok: true, data: JSON.parse(m[0]) };
-  } catch (e) { return { ok: false, error: String(e.message || e) }; }
+  } catch (e) {
+    if (e && (e.name === 'TimeoutError' || e.name === 'AbortError')) return { ok: false, error: 'ما رد خلال 20 ثانية، تأكد من النت وجرّب مرة ثانية' };
+    return { ok: false, error: String(e.message || e) };
+  }
 }
 
 ipcMain.handle('ai:suggest', async (_e, d) => {
@@ -353,7 +446,7 @@ function openCapture() {
     width: 560, height: 330, x: Math.round(wa.x + (wa.width - 560) / 2), y: Math.round(wa.y + wa.height * 0.2),
     frame: false, transparent: true, resizable: false, skipTaskbar: true, alwaysOnTop: true, hasShadow: false, show: false,
     minimizable: false, maximizable: false, title: 'ملاحظة سريعة',
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: false }
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
   capWin.loadFile(uiFile('capture.html'));
   capWin.once('ready-to-show', () => { capWin.show(); capWin.focus(); });
@@ -363,7 +456,22 @@ function openCapture() {
   capWin.webContents.on('will-navigate', e => e.preventDefault());
 }
 ipcMain.handle('cap:hide', () => { if (capWin && !capWin.isDestroyed()) capWin.hide(); return true; });
-ipcMain.handle('cap:save', (_e, d) => { if (!win || win.isDestroyed()) return false; win.webContents.send('ext', { type: 'note', text: String((d && d.text) || '').slice(0, 20000), tags: String((d && d.tags) || '').slice(0, 200) }); if (capWin && !capWin.isDestroyed()) capWin.hide(); return true; });
+// الملاحظة السريعة: نرسلها للنافذة الرئيسية وننتظر تأكيد إنها انحفظت فعلاً قبل ما تطلع ✓
+const extAcks = new Map(); let extAckN = 0;
+ipcMain.handle('ext:ack', (_e, id, ok) => { const r = extAcks.get(id); if (r) { extAcks.delete(id); r(!!ok); } return true; });
+function sendExtAwait(msg, ms = 8000) {
+  return new Promise(res => {
+    if (!win || win.isDestroyed() || win.webContents.isCrashed()) return res(false);
+    const id = 'a' + (++extAckN); const t = setTimeout(() => { extAcks.delete(id); res(false); }, ms);
+    extAcks.set(id, ok => { clearTimeout(t); res(ok); });
+    try { win.webContents.send('ext', { ...msg, ack: id }); } catch (e) { clearTimeout(t); extAcks.delete(id); res(false); }
+  });
+}
+ipcMain.handle('cap:save', async (_e, d) => {
+  const ok = await sendExtAwait({ type: 'note', text: String((d && d.text) || '').slice(0, 20000), tags: String((d && d.tags) || '').slice(0, 200) });
+  if (ok && capWin && !capWin.isDestroyed()) capWin.hide();
+  return ok;
+});
 const NOTE_AI = {
   summarize: ['لخّص الملاحظة بنقاط قصيرة بنفس لغة النص. ارجع JSON فقط: {"text":"الملخص بصيغة ماركداون"}', 600],
   tasks: ['استخرج المهام القابلة للتنفيذ من الملاحظة. ارجع JSON فقط: {"tasks":["مهمة قصيرة","..."]} بنفس لغة النص. إذا ما فيه مهام ارجع قائمة فاضية.', 600],
@@ -376,11 +484,117 @@ ipcMain.handle('ai:note', async (_e, d) => {
 });
 
 /* ---------- IPC ---------- */
-ipcMain.handle('vault:load', () => {
-  const v = readJSON(vaultFile(), { items: [] });
-  return { items: Array.isArray(v.items) ? v.items : [], hasKey: !!getKey() };
+/* ---------- 🗄 الخزنة بالذاكرة ----------
+   - نقرأ الملف مرة وحدة ونخليه بالذاكرة (الحاويات ما تقرأ القرص كل ثانيتين)
+   - الحفظ مؤجّل 300ms (لو صار كذا تعديل ورا بعض نكتب مرة وحدة) ونكمّل الحفظ قبل ما يسكّر البرنامج
+   - لو الملف خربان: نجرّب vault.bak.json ثم آخر نسخة احتياطية سليمة، والملف الخربان ننقله جنب باسم vault.corrupt-التاريخ.json */
+const vault = { file: '', data: null, str: '', diskStr: null, diskCount: -1, dirty: false, timer: null, epoch: 0, recovered: null, retry: null };
+const loadedEpoch = new Map(); // كل نافذة: آخر مرة حمّلت فيها الخزنة (عشان ما تحفظ بيانات قديمة فوق الجديدة)
+function vaultBackupsNewestFirst(f) {
+  try {
+    const base = path.basename(f), tag = base === 'vault.json' ? '' : base.slice(6, -5) + '-';
+    const re = new RegExp('^khazana-(backup|before-restore)-' + tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\d{4}-\\d\\d-\\d\\d(?:[-_T0-9]*)\\.json$');
+    const dir = backupDir();
+    return fs.readdirSync(dir).filter(n => re.test(n)).map(n => { const p = path.join(dir, n); let t = 0; try { t = fs.statSync(p).mtimeMs; } catch (e) {} return { p, t }; }).sort((a, b) => b.t - a.t).map(x => x.p);
+  } catch (e) { return []; }
+}
+function readVaultFromDisk(f) {
+  let r = tryReadJSON(f);
+  for (let k = 0; !r.ok && !r.missing && !r.corrupt && k < 4; k++) { sleepSync(150); r = tryReadJSON(f); } // ملف مقفول لحظة
+  if (r.ok && isVaultData(r.data)) return { data: Array.isArray(r.data) ? { items: r.data } : r.data, text: r.text };
+  if (!r.ok && !r.missing && !r.corrupt) return { error: String((r.error && r.error.code) || r.error) }; // ما قدرنا نقرأ: لا نحفظ فوقه
+  const cands = [bakOf(f), ...vaultBackupsNewestFirst(f)];
+  if (r.missing) { // مستخدم جديد، إلا لو فيه .bak فيه بيانات (نادر)
+    const b = tryReadJSON(cands[0]);
+    if (!(b.ok && isVaultData(b.data) && vaultCount(b.data) > 0)) return { data: { items: [] }, text: null, fresh: true };
+  }
+  // الملف خربان (أو ناقص): ندوّر على أحدث نسخة سليمة، ونفضّل اللي فيها بيانات
+  let pick = null, firstValid = null;
+  for (const c of cands) {
+    const b = tryReadJSON(c); if (!b.ok || !isVaultData(b.data)) continue;
+    const item = { file: c, data: Array.isArray(b.data) ? { items: b.data } : b.data, text: b.text, count: vaultCount(b.data) };
+    if (!firstValid) firstValid = item;
+    if (item.count > 0) { pick = item; break; }
+  }
+  pick = pick || firstValid;
+  let corrupt = '';
+  if (!r.missing) { // ننقل الملف الخربان جنب (ما نحذفه أبداً)
+    corrupt = f.replace(/\.json$/, '.corrupt-' + stampNow() + '.json');
+    try { fs.renameSync(f, corrupt); } catch (e) { try { fs.copyFileSync(f, corrupt); } catch (e2) { corrupt = ''; } }
+  }
+  const info = { at: Date.now(), from: pick ? path.basename(pick.file) : '', count: pick ? pick.count : 0, corrupt: corrupt ? path.basename(corrupt) : '', missing: !!r.missing };
+  if (pick) { try { writeFileAtomic(f, pick.text); } catch (e) {} }
+  return { data: pick ? pick.data : { items: [] }, text: pick ? pick.text : null, recovered: info };
+}
+function vaultLoad() {
+  const f = vaultFile();
+  if (vault.data && vault.file === f) return vault.data;
+  vaultFlush(); // لو تغيّر الملف الشخصي نكمّل حفظ القديم أول
+  const r = readVaultFromDisk(f);
+  if (r.error) { vault.file = ''; vault.data = null; return { items: [], loadError: r.error }; }
+  vault.file = f; vault.data = r.data; vault.str = JSON.stringify(r.data); vault.dirty = false;
+  vault.diskStr = r.text; vault.diskCount = r.text == null ? -1 : vaultCount(r.data);
+  vault.epoch++;
+  if (r.recovered) { vault.recovered = r.recovered; console.warn('[khazana] vault recovered', JSON.stringify(r.recovered)); }
+  return vault.data;
+}
+function vaultFlush() {
+  clearTimeout(vault.timer); vault.timer = null;
+  if (!vault.dirty || !vault.file) return true;
+  try {
+    if (vault.diskStr != null) { // آخر نسخة سليمة على القرص تصير .bak (إلا لو كانت فاضية والـ .bak فيه بيانات)
+      let keep = false;
+      if (vault.diskCount === 0) { const old = tryReadJSON(bakOf(vault.file)); keep = old.ok && vaultCount(old.data) > 0; }
+      if (!keep) writeFileAtomic(bakOf(vault.file), vault.diskStr);
+    }
+    writeFileAtomic(vault.file, vault.str);
+    vault.diskStr = vault.str; vault.diskCount = vaultCount(vault.data); vault.dirty = false;
+    return true;
+  } catch (e) {
+    console.error('[khazana] save failed', e && e.message);
+    clearTimeout(vault.retry); vault.retry = setTimeout(vaultFlush, 2000); // نعيد المحاولة (مثلاً القرص كان مقفول)
+    return false;
+  }
+}
+let fencePushT = null;
+function pushVaultToFences() { // نبلّغ الحاويات إن البيانات تغيّرت (بدل ما تسأل كل 2.5 ثانية)
+  clearTimeout(fencePushT);
+  fencePushT = setTimeout(() => { fences.forEach(w => { try { if (!w.isDestroyed()) w.webContents.send('vault:changed'); } catch (e) {} }); }, 150);
+}
+function vaultSet(items) {
+  const data = { items: Array.isArray(items) ? items : [] };
+  const str = JSON.stringify(data);
+  if (str === vault.str) return false; // ما تغيّر شي
+  vault.data = data; vault.str = str; vault.dirty = true;
+  clearTimeout(vault.timer); vault.timer = setTimeout(vaultFlush, 300);
+  pushVaultToFences();
+  return true;
+}
+function vaultReplace(data) { // استرجاع نسخة: نكتب على طول ونخلي كل النوافذ تعيد التحميل
+  vaultLoad(); vault.data = Array.isArray(data) ? { items: data } : data; vault.str = JSON.stringify(vault.data); vault.dirty = true;
+  const ok = vaultFlush(); vault.epoch++; pushVaultToFences(); return ok;
+}
+function recoveredText(r) {
+  if (r.from) return '⚠ ملف الخزنة كان خربان، استرجعنا آخر نسخة سليمة ✓\n' + 'رجّعنا ' + r.count + ' عنصر/ملاحظة من «' + r.from + '».' + (r.corrupt ? '\nالملف الخربان ما انحذف، محفوظ باسم «' + r.corrupt + '» بمجلد البيانات.' : '');
+  return '⚠ ملف الخزنة خربان وما لقينا نسخة سليمة نسترجعها.\n' + (r.corrupt ? 'الملف الخربان ما انحذف، محفوظ باسم «' + r.corrupt + '» بمجلد البيانات، وتقدر تسترجع من «النسخ الاحتياطية».' : '');
+}
+let bootOK = false;
+ipcMain.handle('vault:load', e => {
+  const v = vaultLoad();
+  if (!v.loadError) loadedEpoch.set(e.sender.id, vault.epoch);
+  if (win && !win.isDestroyed() && e.sender === win.webContents) { if (!bootOK) { bootOK = true; markUpdateBootOK(); } }
+  let recovered = null;
+  if (vault.recovered && win && !win.isDestroyed() && e.sender === win.webContents) {
+    recovered = vault.recovered; vault.recovered = null; recovered.msg = recoveredText(recovered);
+    const w = win; setTimeout(() => { try { if (w && !w.isDestroyed()) dialog.showMessageBox(w, { type: 'warning', title: 'خزنة', message: recovered.msg.split('\n')[0], detail: recovered.msg.split('\n').slice(1).join('\n') }); } catch (er) {} }, 1200);
+  }
+  return { items: Array.isArray(v.items) ? v.items : [], hasKey: !!getKey(), recovered, loadError: v.loadError || '' };
 });
-ipcMain.handle('vault:save', (_e, items) => { writeJSON(vaultFile(), { items }); return true; });
+ipcMain.handle('vault:save', (e, items) => {
+  // نرفض الحفظ من نافذة ما حمّلت الخزنة الحالية (مثلاً بعد استرجاع نسخة أو تبديل الملف الشخصي)
+  if (!vault.data || vault.file !== vaultFile() || loadedEpoch.get(e.sender.id) !== vault.epoch) return false;
+  vaultSet(items); return true;
+});
 ipcMain.handle('file:inspect', (_e, p) => inspectPath(p));
 ipcMain.handle('thumb:make', (_e, p, kind) => (typeof p === 'string' && fs.existsSync(p)) ? makeThumb(p, kind) : '');
 ipcMain.handle('pick', async (_e, o = {}) => {
@@ -415,11 +629,62 @@ ipcMain.handle('items:exists', (_e, paths) => (paths || []).map(p => { try { ret
 /* ---------- 📦 نقل الملفات لمجلد خزنة (بدل ما تظل في سطح المكتب) ---------- */
 const filesRoot = () => { const c = getSet().filesDir; return c && typeof c === 'string' ? c : path.join(app.getPath('documents'), 'Khazana Files'); };
 const safeName = s => String(s || '').replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').trim().slice(0, 60);
+// حماية النقل:
+//  - مجلدات النظام والبرامج (Windows, Program Files, ProgramData, AppData, مجلد خزنة نفسه…): ممنوع ننقلها أو أي شي داخلها
+//  - المجلدات الخاصة (مجلد المستخدم، سطح المكتب، المستندات، التنزيلات…): ممنوع ننقل المجلد نفسه أو اللي يحتويه، بس الملفات اللي داخله عادي
+//  - جذر أي قرص (C:\ D:\) ممنوع
+function moveGuards() {
+  const norm = p => (p && typeof p === 'string') ? path.resolve(p).toLowerCase() : '';
+  const gp = k => { try { return app.getPath(k); } catch (e) { return ''; } };
+  const env = process.env;
+  const system = [env.WINDIR, env.SystemRoot, env.ProgramFiles, env['ProgramFiles(x86)'], env.ProgramW6432, env.ProgramData, env.APPDATA, env.LOCALAPPDATA, gp('appData'), gp('userData'),
+    __dirname, path.dirname(process.execPath)].map(norm).filter(Boolean);
+  const special = [gp('home'), gp('desktop'), gp('documents'), gp('downloads'), gp('pictures'), gp('music'), gp('videos'), gp('temp'), env.USERPROFILE, env.PUBLIC,
+    env.SystemDrive ? env.SystemDrive + '\\Users' : ''].map(norm).filter(Boolean);
+  return { system, special };
+}
 function blockedForMove(p) {
-  const low = path.resolve(p).toLowerCase();
-  const bad = [process.env.WINDIR, process.env.ProgramFiles, process.env['ProgramFiles(x86)'], process.env.ProgramData, path.join(process.env.LOCALAPPDATA || '__x__', 'Programs')].filter(Boolean).map(x => x.toLowerCase());
-  if (path.dirname(low) === low) return true;
-  return bad.some(b => low === b || low.startsWith(b + path.sep));
+  const low = path.resolve(p).toLowerCase(), sep = path.sep;
+  if (path.dirname(low) === low) return true; // جذر قرص
+  if (/^[a-z]:[\\/](windows|program files( \(x86\))?|programdata|\$recycle\.bin|system volume information)([\\/]|$)/i.test(low) || /[\\/]appdata([\\/]|$)/i.test(low)) return true;
+  const { system, special } = moveGuards();
+  const inside = (a, b) => a === b || a.startsWith(b + sep); // a داخل b
+  if (system.some(b => inside(low, b) || b.startsWith(low + sep))) return true;
+  if (special.some(b => low === b || b.startsWith(low + sep))) return true;
+  return false;
+}
+// عدّ ملفات مجلد وحجمه (بحد أقصى عشان ما يعلّق)
+function dirStats(dir, cap = 20000) {
+  let count = 0, size = 0, over = false; const stack = [dir];
+  while (stack.length) {
+    const d = stack.pop(); let ents = [];
+    try { ents = fs.readdirSync(d, { withFileTypes: true }); } catch (e) { continue; }
+    for (const e of ents) {
+      const f = path.join(d, e.name);
+      if (e.isSymbolicLink()) { count++; continue; }
+      if (e.isDirectory()) stack.push(f); else { count++; try { size += fs.statSync(f).size; } catch (er) {} }
+      if (count > cap) { over = true; return { count, size, over }; }
+    }
+  }
+  return { count, size, over };
+}
+// قائمة كل الملفات مع أحجامها (للتأكد إن النسخ كامل قبل ما نحذف الأصل)
+function treeList(p) {
+  const st = fs.statSync(p); if (!st.isDirectory()) return new Map([['', st.size]]);
+  const out = new Map(), stack = [['', p]];
+  while (stack.length) {
+    const [rel, d] = stack.pop();
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const r = rel ? rel + '/' + e.name : e.name, f = path.join(d, e.name);
+      if (e.isDirectory()) { out.set(r + '/', -1); stack.push([r, f]); } else out.set(r, fs.statSync(f).size);
+    }
+  }
+  return out;
+}
+function sameTree(a, b) {
+  const A = treeList(a), B = treeList(b); if (A.size !== B.size) return false;
+  for (const [k, v] of A) if (B.get(k) !== v) return false;
+  return true;
 }
 function uniqueDest(dir, name) {
   let t = path.join(dir, name), k = 1; const ext = path.extname(name), base = path.basename(name, ext);
@@ -427,22 +692,36 @@ function uniqueDest(dir, name) {
   return t;
 }
 function moveAny(src, dst) {
-  try { fs.renameSync(src, dst); return; } catch (e) { if (e.code !== 'EXDEV' && e.code !== 'EPERM') throw e; }
-  fs.cpSync(src, dst, { recursive: true, errorOnExist: true });
-  fs.rmSync(src, { recursive: true, force: true });
+  try { fs.renameSync(src, dst); return; } catch (e) {
+    if (e.code === 'EPERM' || e.code === 'EBUSY' || e.code === 'EACCES') { const er = new Error('in_use'); er.code = 'IN_USE'; throw er; } // الملف مفتوح ببرنامج ثاني: ما ننسخ ونحذف
+    if (e.code !== 'EXDEV') throw e;
+  }
+  // قرص ثاني (EXDEV): ننسخ، نتأكد إن النسخة كاملة، وبعدين نشيل الأصل. لو صار أي خطأ نرجّع كل شي مثل ما كان
+  try {
+    fs.cpSync(src, dst, { recursive: true, errorOnExist: true, force: false });
+    if (!sameTree(src, dst)) throw new Error('copy_incomplete');
+  } catch (e) { try { fs.rmSync(dst, { recursive: true, force: true }); } catch (er) {} throw e; }
+  // نغيّر اسم الأصل أول (لو مقفول يفشل هنا وما انحذف شي)، وبعدين نحذفه
+  const trash = src + '.khazana-moving';
+  try { fs.renameSync(src, trash); } catch (e) { try { fs.rmSync(dst, { recursive: true, force: true }); } catch (er) {} const er = new Error('in_use'); er.code = 'IN_USE'; throw er; }
+  try { fs.rmSync(trash, { recursive: true, force: true }); } catch (e) { /* النسخة الجديدة كاملة؛ بقايا الأصل تظل باسم .khazana-moving */ }
 }
 ipcMain.handle('files:dir', () => { const d = filesRoot(); try { fs.mkdirSync(d, { recursive: true }); } catch (e) {} return d; });
 ipcMain.handle('files:chooseDir', async () => { const r = await dialog.showOpenDialog(win, { properties: ['openDirectory', 'createDirectory'] }); if (r.canceled || !r.filePaths[0]) return ''; setSet('filesDir', r.filePaths[0]); return r.filePaths[0]; });
 ipcMain.handle('files:move', (_e, o = {}) => {
-  const out = { moved: {}, skipped: [], failed: [] };
+  const out = { moved: {}, skipped: [], failed: [], inUse: [], needConfirm: [] };
   const root = filesRoot();
+  const okDirs = new Set(Array.isArray(o.allowDirs) ? o.allowDirs : []);
   for (const it of (Array.isArray(o.items) ? o.items : [])) {
     try {
       const src = it && it.path; if (typeof src !== 'string' || !src || !fs.existsSync(src)) { out.skipped.push(it && it.id); continue; }
-      if (blockedForMove(src) || /\.lnk$/i.test(src) || path.resolve(src).toLowerCase().startsWith(path.resolve(root).toLowerCase() + path.sep)) { out.skipped.push(it.id); continue; }
+      if (blockedForMove(src) || /\.lnk$/i.test(src) || path.resolve(src).toLowerCase().startsWith(path.resolve(root).toLowerCase() + path.sep) || path.resolve(root).toLowerCase().startsWith(path.resolve(src).toLowerCase() + path.sep)) { out.skipped.push(it.id); continue; }
+      if (fs.statSync(src).isDirectory() && !okDirs.has(it.id)) { // المجلدات ما تنتقل إلا بعد تأكيد واضح (مع عدد الملفات والحجم)
+        const s = dirStats(src); out.needConfirm.push({ id: it.id, path: src, count: s.count, size: s.size, over: s.over }); continue;
+      }
       const sub = safeName(it.section); const dir = sub ? path.join(root, sub) : root; fs.mkdirSync(dir, { recursive: true });
       const dst = uniqueDest(dir, path.basename(src)); moveAny(src, dst); out.moved[it.id] = dst;
-    } catch (e) { out.failed.push(it && it.id); }
+    } catch (e) { if (e && e.code === 'IN_USE') out.inUse.push(it && it.id); else out.failed.push(it && it.id); }
   }
   return out;
 });
@@ -518,6 +797,7 @@ ipcMain.handle('data:path', () => dataDir());
 ipcMain.handle('backup:export', async () => {
   const r = await dialog.showSaveDialog(win, { defaultPath: 'khazana-backup.json', filters: [{ name: 'JSON', extensions: ['json'] }] });
   if (r.canceled || !r.filePath) return false;
+  vaultFlush();
   fs.copyFileSync(vaultFile(), r.filePath);
   return true;
 });
@@ -629,12 +909,40 @@ async function updCheck() {
   return { man, files, changed };
 }
 ipcMain.handle('update:check', async () => {
+  if (!app.isPackaged) return { ok: false, error: 'نسخة التطوير: التحديث التلقائي متوقف عشان ما يمسح تعديلاتك (حدّث بـ git pull)' };
   try { const { man, changed } = await updCheck(); return { ok: true, version: man.version, count: changed.length, names: changed.map(f => f.path) }; }
   catch (e) { return { ok: false, error: String(e.message || e) }; }
 });
+/* KZ-UPDATE-SAFE:BEGIN — فحص التحديث قبل تركيبه (لا تحذف هذا الجزء: التحديث يرفض أي main.js ما فيه هالعلامات) */
+const UPD_REQUIRED = ['main.js', 'preload.js', 'renderer/index.html', 'renderer/app.js'];
+// يفحص الملفات اللي نزلت (بالمجلد المؤقت) قبل ما نركّبها. يرجّع قائمة المشاكل (فاضية = سليم)
+function validateUpdateFiles(staged, getLocal) {
+  const vm = require('vm'), errs = [];
+  const get = rel => staged.has(rel) ? staged.get(rel) : getLocal(rel);
+  for (const rel of UPD_REQUIRED) { const b = get(rel); if (!b || !b.length) errs.push('ملف ناقص: ' + rel); }
+  for (const [rel, buf] of staged) {
+    const text = Buffer.isBuffer(buf) ? buf.toString('utf8') : String(buf || '');
+    if (!text.trim() && !/^assets\//.test(rel)) { errs.push('ملف فاضي: ' + rel); continue; }
+    try {
+      if (/\.js$/i.test(rel)) new vm.Script(text.replace(/^#!.*/, ''), { filename: rel }); // فحص الكتابة (Syntax) بدون تشغيل
+      else if (/\.json$/i.test(rel)) JSON.parse(text.replace(/^\uFEFF/, ''));
+      else if (/\.html$/i.test(rel) && !/<html[\s>]/i.test(text)) errs.push('ملف HTML غريب: ' + rel);
+    } catch (e) { errs.push(rel + ': ' + String(e.message || e).split('\n')[0]); }
+  }
+  const m = get('main.js'); const mt = m ? m.toString('utf8') : '';
+  if (mt && !(mt.includes('KZ-UPDATE-SAFE:BEGIN') && mt.includes('KZ-ROLLBACK:BEGIN'))) errs.push('main.js الجديد ما فيه نظام التحديث الآمن أو الرجوع للنسخة السابقة');
+  return errs;
+}
+/* KZ-UPDATE-SAFE:END */
+const updBackupDir = () => path.join(dataDir(), 'update-backup');
 ipcMain.handle('update:apply', async () => {
+  // وأنت تبرمج (تشغيل من الكود بـ 1-شغّل-التطبيق.bat) التحديث ممنوع عشان ما يكتب فوق تعديلاتك
+  if (!app.isPackaged) return { ok: false, error: 'التحديث التلقائي متوقف بنسخة التطوير (عشان ما يمسح تعديلاتك). حدّث بـ git pull' };
+  let stageDir = '';
   try {
     const { man, files, changed } = await updCheck();
+    // 1) ننزّل كل الملفات المتغيرة لمجلد مؤقت ونتأكد من البصمة
+    stageDir = path.join(app.getPath('temp'), 'khazana-update-' + Date.now()); fs.mkdirSync(stageDir, { recursive: true });
     const bufs = new Map();
     for (const f of changed) {
       let b = null;
@@ -645,17 +953,34 @@ ipcMain.handle('update:apply', async () => {
       }
       if (!b) throw new Error('الملف لسا ما تحدّث على الخادم، جرّب بعد دقيقة (' + f.path + ')');
       bufs.set(f.path, b);
+      const sp = path.join(stageDir, f.path); fs.mkdirSync(path.dirname(sp), { recursive: true }); fs.writeFileSync(sp, b);
     }
+    // 2) نفحص الملفات قبل التركيب: لو فيه غلطة ما نركّب شي
+    const errs = validateUpdateFiles(bufs, rel => { try { return fs.readFileSync(localPathU(rel)); } catch (e) { return null; } });
+    if (errs.length) throw new Error('التحديث فيه مشكلة وما ركّبته: ' + errs.slice(0, 3).join(' | '));
+    // 3) نحدد وش بيتغيّر، وناخذ نسخة من الملفات الحالية عشان نرجع لها لو التحديث ما اشتغل
+    const plan = [];
     for (const f of files) {
-      const dst = destPathU(f.path); fs.mkdirSync(path.dirname(dst), { recursive: true });
+      const dst = destPathU(f.path);
       let b = bufs.get(f.path);
       if (!b) { if (!f.path.startsWith('renderer/') || !app.isPackaged || fs.existsSync(dst)) continue; try { b = fs.readFileSync(path.join(__dirname, f.path)); } catch (e) { continue; } }
-      fs.writeFileSync(dst + '.new', b); fs.renameSync(dst + '.new', dst);
+      plan.push({ rel: f.path, dst, b });
     }
+    const bdir = updBackupDir(); fs.rmSync(bdir, { recursive: true, force: true }); fs.mkdirSync(bdir, { recursive: true });
+    const backup = plan.map((p, i) => { const had = fs.existsSync(p.dst); if (had) fs.copyFileSync(p.dst, path.join(bdir, 'f' + i)); return { dst: p.dst, had, bak: 'f' + i }; });
+    writeFileAtomic(path.join(bdir, 'list.json'), JSON.stringify(backup));
+    // 4) علامة «تحديث جديد لسا ما اشتغل»: لو البرنامج ما فتح بعده، يرجع للنسخة القديمة تلقائياً
+    writeFileAtomic(updPendingFile(), JSON.stringify({ version: man.version, from: getSet().updVersion || '', at: Date.now(), boots: 0 }));
+    // 5) التركيب
+    try {
+      for (const p of plan) { fs.mkdirSync(path.dirname(p.dst), { recursive: true }); writeFileAtomic(p.dst, p.b); }
+    } catch (e) { restoreUpdateBackup(); throw new Error('ما قدرت أكتب ملفات التحديث، رجّعت النسخة القديمة (' + (e.code || e.message) + ')'); }
     setSet('updVersion', man.version);
+    vaultFlush();
     setTimeout(() => { quitting = true; app.relaunch(); app.exit(0); }, 900);
     return { ok: true, count: changed.length };
   } catch (e) { return { ok: false, error: String(e.message || e) }; }
+  finally { if (stageDir) { try { fs.rmSync(stageDir, { recursive: true, force: true }); } catch (e) {} } }
 });
 
 
@@ -663,11 +988,13 @@ ipcMain.handle('update:apply', async () => {
 let updAvail = null, updNotified = '';
 let updBusy = false, updLast = 0;
 async function bgUpdateCheck() {
+  if (!app.isPackaged) return; // نسخة التطوير: لا نزعجك بتحديثات (ملفاتك هي الأحدث)
   if (updBusy) return; updBusy = true; updLast = Date.now();
   try {
     const { man, changed } = await updCheck();
     if (!changed.length) { updAvail = null; if (win && !win.isDestroyed()) win.webContents.send('upd:avail', null); updBusy = false; return; }
     const key = changed.map(f => f.sha).join('');
+    if (getSet().updSkip && getSet().updSkip === man.version) { updBusy = false; return; } // نفس التحديث اللي رجعنا منه: ما نزعجك فيه مرة ثانية
     updAvail = { count: changed.length, version: man.version };
     if (win && !win.isDestroyed()) win.webContents.send('upd:avail', updAvail);
     if (key !== updNotified) {
@@ -706,7 +1033,7 @@ function runningExes() {
 async function playTick() {
   if (process.platform !== 'win32') return;
   try {
-    const v = readJSON(vaultFile(), { items: [] });
+    const v = vaultLoad();
     const apps = (v.items || []).filter(i => i && i.kind === 'app' && i.path);
     if (!apps.length) return;
     const run = await runningExes(); if (!run) return;
@@ -721,7 +1048,7 @@ ipcMain.handle('fence:running', async () => {
   try {
     if (!runC.set || Date.now() - runC.t > 4000) { runC = { t: Date.now(), set: await runningExes() }; }
     if (!runC.set) return [];
-    const v = readJSON(vaultFile(), { items: [] });
+    const v = vaultLoad();
     return (v.items || []).filter(i => i && (i.kind === 'app' || i.kind === 'game') && i.path).filter(i => { const e = exeOf(i); return e && runC.set.has(e); }).map(i => i.id);
   } catch (e) { return []; }
 });
@@ -732,13 +1059,18 @@ const backupDir = () => getSet().backupDir || path.join(dataDir(), 'backups');
 function autoBackup() {
   try {
     if (getSet().autoBackup === false) return null;
+    vaultLoad(); // لو ملف الخزنة خربان نسترجعه أول (عشان النسخة اليومية تكون سليمة)
+    vaultFlush(); // نكمّل أي حفظ معلّق أول
     const dir = backupDir(); fs.mkdirSync(dir, { recursive: true });
     const d = new Date(); const day = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     let last = null;
-    fs.readdirSync(dataDir()).filter(n => /^vault(-.+)?\.json$/.test(n) && !/\.bak\./.test(n)).forEach(n => {
+    fs.readdirSync(dataDir()).filter(n => isVaultName(n)).forEach(n => {
       const tag = n === 'vault.json' ? '' : n.slice(6, -5) + '-';
       const f = path.join(dir, 'khazana-backup-' + tag + day + '.json');
-      fs.copyFileSync(path.join(dataDir(), n), f); last = f;
+      // ما ننسخ ملف خربان فوق نسخة سليمة، ولا خزنة فاضية فوق نسخة اليوم اللي فيها بيانات
+      const cur = tryReadJSON(path.join(dataDir(), n)); if (!cur.ok || !isVaultData(cur.data)) return;
+      if (vaultCount(cur.data) === 0) { const old = tryReadJSON(f); if (old.ok && vaultCount(old.data) > 0) return; }
+      writeFileAtomic(f, cur.text); last = f;
       const re = new RegExp('^khazana-backup-' + tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\d{4}-\\d\\d-\\d\\d\\.json$');
       const all = fs.readdirSync(dir).filter(x => re.test(x)).sort();
       all.slice(0, Math.max(0, all.length - 14)).forEach(x => { try { fs.unlinkSync(path.join(dir, x)); } catch (e) {} });
@@ -763,9 +1095,9 @@ ipcMain.handle('backup:restore', (_e, name) => {
     if (!(Array.isArray(d) || Array.isArray(d.items))) return false;
     const p = profName(), tag = p === 'default' ? '' : p + '-', now = new Date(), pad = n => String(n).padStart(2, '0');
     const stamp = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) + '-' + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+    vaultFlush();
     if (fs.existsSync(vaultFile())) fs.copyFileSync(vaultFile(), path.join(dir, 'khazana-before-restore-' + tag + stamp + '.json'));
-    writeJSON(vaultFile(), Array.isArray(d) ? { items: d } : d);
-    return true;
+    return vaultReplace(Array.isArray(d) ? { items: d } : d);
   } catch (e) { return false; }
 });
 ipcMain.handle('backup:open', async () => { const d = backupDir(); fs.mkdirSync(d, { recursive: true }); await shell.openPath(d); return d; });
@@ -778,13 +1110,14 @@ ipcMain.handle('backup:choose', async () => {
 /* ---------- الملفات الشخصية (خزنة منفصلة لكل غرض) ---------- */
 ipcMain.handle('profile:list', () => {
   const list = ['default'];
-  try { fs.readdirSync(dataDir()).forEach(n => { const m = /^vault-(.+)\.json$/.exec(n); if (m && !/\.bak$/.test(m[1])) list.push(m[1]); }); } catch (e) {}
+  try { fs.readdirSync(dataDir()).forEach(n => { const m = /^vault-(.+)\.json$/.exec(n); if (m && !/\.(bak|corrupt-[^.]*)$/.test(m[1])) list.push(m[1]); }); } catch (e) {}
   return { current: profName(), list: [...new Set(list)] };
 });
 ipcMain.handle('profile:switch', (_e, name) => {
   const n = name === 'default' ? 'default' : safeProf(name); if (!n) return false;
   if (n !== 'default' && !fs.existsSync(path.join(dataDir(), 'vault-' + n + '.json'))) writeJSON(path.join(dataDir(), 'vault-' + n + '.json'), { items: [] });
   [...fences.keys()].forEach(s => closeFence(s, false));
+  vaultFlush(); // نكمّل حفظ الملف الحالي قبل ما نبدّل
   setSet('profile', n);
   if (win && !win.isDestroyed()) win.webContents.reloadIgnoringCache();
   setTimeout(() => restoreFences(false), 800);
@@ -964,7 +1297,7 @@ function openFence(sec) {
     frame: false, resizable: false, skipTaskbar: true, show: false,
     ...(mat ? { transparent: false, backgroundColor: '#00000000', backgroundMaterial: mat, hasShadow: true } : { transparent: true, hasShadow: false }),
     minimizable: false, maximizable: false, fullscreenable: false, title: 'حاوية خزنة',
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: false }
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
   w._sec = sec; w._mat = mat; w._edge = edge; w._full = full; w._collapsed = !edge && !!cfg.collapsed;
   if (edge) { w.setAlwaysOnTop(true, 'floating'); w.setIgnoreMouseEvents(true, { forward: true }); } w.loadFile(uiFile('fence.html'), { query: { sec, col: cfg.collapsed && !edge ? '1' : '0', edge } });
@@ -975,7 +1308,7 @@ function openFence(sec) {
   w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   w.webContents.on('will-navigate', e => e.preventDefault());
   fences.set(sec, w);
-  const f = getFenceCfg(); saveFenceCfg(sec, { open: true });
+  saveFenceCfg(sec, { open: true });
 }
 function closeFence(sec, forget = true) {
   const w = fences.get(sec);
@@ -1025,7 +1358,7 @@ const matOK = () => { try { return process.platform === 'win32' && parseInt(Stri
 ipcMain.handle('fence:style:get', e => { const w = BrowserWindow.fromWebContents(e.sender); if (!w || !w._sec) return null; const c = getFenceCfg()[w._sec] || {}; return { ...(c.style ? cleanStyle(c.style) : {}), mat: w._mat || '', matOK: matOK(), edge: w._edge || '' }; });
 const feedFile = () => path.join(dataDir(), 'fence-feed.json'), padFile = () => path.join(dataDir(), 'fence-pads.json');
 let feed = null;
-ipcMain.handle('fence:feed:set', (_e, list) => { feed = Array.isArray(list) ? list.slice(0, 40) : []; try { fs.writeFileSync(feedFile(), JSON.stringify(feed)); } catch (e) {} fences.forEach(w => { try { if (!w.isDestroyed()) w.webContents.send('fence:feed', feed); } catch (e) {} }); return true; });
+ipcMain.handle('fence:feed:set', (_e, list) => { feed = Array.isArray(list) ? list.slice(0, 40) : []; try { writeFileAtomic(feedFile(), JSON.stringify(feed)); } catch (e) {} fences.forEach(w => { try { if (!w.isDestroyed()) w.webContents.send('fence:feed', feed); } catch (e) {} }); return true; });
 ipcMain.handle('fence:feed:get', () => { if (!feed) feed = readJSON(feedFile(), []); return feed; });
 ipcMain.handle('fence:done', (_e, id) => { try { if (win && !win.isDestroyed()) win.webContents.send('fence:done', String(id)); } catch (e) {} return true; });
 ipcMain.handle('fence:pad:get', (_e, id) => String((readJSON(padFile(), {}))[String(id)] || ''));
@@ -1033,7 +1366,7 @@ ipcMain.handle('fence:pad:set', (_e, id, txt) => { const d = readJSON(padFile(),
 ipcMain.handle('fence:all', (e, act) => {
   if (act === 'collapse' || act === 'expand') fences.forEach(w => { if (!w.isDestroyed() && !w._edge) { try { w.webContents.send('fence:col', act === 'collapse'); } catch (er) {} } });
   else if (act === 'close') [...fences.keys()].forEach(s => closeFence(s));
-  else if (act === 'open') { const v = readJSON(vaultFile(), { items: [] }); const meta = (v.items || []).find(x => x && x.kind === '_meta') || {}; (meta.sections || []).filter(s => s && !s.parent && !s.lock).slice(0, 8).forEach(s => openFence(s.id)); }
+  else if (act === 'open') { const v = vaultLoad(); const meta = (v.items || []).find(x => x && x.kind === '_meta') || {}; (meta.sections || []).filter(s => s && !s.parent && !s.lock).slice(0, 8).forEach(s => openFence(s.id)); }
   return fences.size;
 });
 ipcMain.handle('fence:order:get', e => { const w = BrowserWindow.fromWebContents(e.sender); return w && w._sec ? ((getFenceCfg()[w._sec] || {}).order || {}) : {}; });
@@ -1083,7 +1416,7 @@ function openQuick() {
     width: 640, height: 76, x: Math.round(wa.x + (wa.width - 640) / 2), y: Math.round(wa.y + wa.height * 0.18),
     frame: false, transparent: true, resizable: false, skipTaskbar: true, alwaysOnTop: true, hasShadow: false, show: false,
     minimizable: false, maximizable: false, title: 'بحث خزنة',
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: false }
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
   quick.loadFile(uiFile('quick.html'));
   quick.once('ready-to-show', () => { quick.show(); quick.focus(); });
@@ -1100,7 +1433,7 @@ function createWindow() {
   win = new BrowserWindow({
     width: 1100, height: 760, minWidth: 340, minHeight: 420,
     title: 'خزنة', icon: appIcon(), backgroundColor: '#f6f5f1', autoHideMenuBar: true, show: !process.argv.includes('--hidden'),
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: false }
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
   // إذا فيه مجلد ui بجانب ملف exe نقرأ الواجهة منه (تحديثات صغيرة بدون إعادة بناء)
   win.loadFile(uiFile('index.html'));
@@ -1112,8 +1445,9 @@ function createWindow() {
 }
 
 app.setAppUserModelId('local.khazana.app');
-app.on('before-quit', () => { quitting = true; });
+app.on('before-quit', () => { quitting = true; vaultFlush(); });
 app.whenReady().then(async () => {
+  if (!gotLock) return; // البرنامج مفتوح من قبل: النسخة الثانية تسكّر بدون ما تسوي شي
   createWindow();
   await buildTray();
   try {
@@ -1133,5 +1467,5 @@ app.whenReady().then(async () => {
   startWatch();
   app.on('activate', () => { if (!win) createWindow(); });
 });
-app.on('will-quit', () => globalShortcut.unregisterAll());
+app.on('will-quit', () => { vaultFlush(); globalShortcut.unregisterAll(); });
 app.on('window-all-closed', () => { if (quitting || !tray) app.quit(); });

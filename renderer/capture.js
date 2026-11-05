@@ -3,8 +3,9 @@ async function ini() { try { const r = await window.api.load(); const m = (r.ite
 function reset() { $('t').value = ''; $('tg').value = ''; $('ok').hidden = true; $('t').focus(); }
 async function save() {
   const text = $('t').value.trim(); if (!text) { window.api.capHide(); return; }
-  await window.api.capSave({ text, tags: $('tg').value.trim() });
-  $('ok').hidden = false; setTimeout(reset, 400);
+  let ok = false; try { ok = await window.api.capSave({ text, tags: $('tg').value.trim() }); } catch (e) { ok = false; }
+  if (!ok) { $('ok').textContent = '⚠ ما انحفظت! افتح خزنة وجرّب مرة ثانية (نصّك باقي هنا)'; $('ok').hidden = false; return; } // ما نمسح النص
+  $('ok').textContent = '✓ انحفظت في ملاحظاتي'; $('ok').hidden = false; setTimeout(reset, 400);
 }
 $('sv').onclick = save;
 document.addEventListener('keydown', e => {

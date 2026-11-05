@@ -58,6 +58,8 @@ contextBridge.exposeInMainWorld('api', {
   fenceStyleGet: () => inv('fence:style:get'), fenceMaterial: m => inv('fence:material', m), fenceEdge: e => inv('fence:edge', e), fenceIgnore: on => inv('fence:ignore', on), fenceRunning: () => inv('fence:running'), fencesAll: a => inv('fence:all', a), fenceFeedSet: l => inv('fence:feed:set', l), fenceFeedGet: () => inv('fence:feed:get'), onFenceFeed: cb => ipcRenderer.on('fence:feed', (_e, l) => cb(l)), fenceDone: id => inv('fence:done', id), onFenceDone: cb => ipcRenderer.on('fence:done', (_e, id) => cb(id)), padGet: id => inv('fence:pad:get', id), padSet: (id, t) => inv('fence:pad:set', id, t), backupList: () => inv('backup:list'), backupRestore: n => inv('backup:restore', n), onFenceCol: cb => ipcRenderer.on('fence:col', (_e, on) => cb(on)), fenceOrderGet: () => inv('fence:order:get'), fenceOrderSet: (r, ids) => inv('fence:order:set', r, ids), fenceEdgeSize: t => inv('fence:edgesize', t), fenceStyleSet: (s, all) => inv('fence:style:set', s, all), onFenceStyle: cb => ipcRenderer.on('fence:style', (_e, s) => cb(s)),
   capHide: () => inv('cap:hide'), capSave: d => inv('cap:save', d), onCapReset: cb => ipcRenderer.on('cap:reset', () => cb()), onCapBlur: cb => ipcRenderer.on('cap:blur', () => cb()), aiNote: d => inv('ai:note', d),
   onExt: cb => ipcRenderer.on('ext', (_e, d) => cb(d)),
+  extAck: (id, ok) => inv('ext:ack', id, ok),
+  onVaultChanged: cb => ipcRenderer.on('vault:changed', () => cb()),
   onQuickReset: cb => ipcRenderer.on('quick:reset', () => cb()),
   onFocusSearch: cb => ipcRenderer.on('focus-search', () => cb())
 });

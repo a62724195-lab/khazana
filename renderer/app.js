@@ -17,7 +17,7 @@ let suppressClick = false;
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function setBusy(msg) { $('busy').hidden = !msg; $('busyTxt').textContent = msg || ''; }
-function toast(m, undo) {
+function toast(m, undo, ms) {
   const t = $('toast'); t.textContent = m;
   if (undo) {
     const b = document.createElement('button'); b.textContent = 'تراجع';
@@ -25,10 +25,12 @@ function toast(m, undo) {
     t.append(b); t.classList.add('act');
   } else t.classList.remove('act');
   t.classList.add('show'); clearTimeout(t._t);
-  t._t = setTimeout(() => t.classList.remove('show'), undo ? 8000 : 3000);
+  t._t = setTimeout(() => t.classList.remove('show'), ms || (undo ? 8000 : 3000));
 }
 // الأقسام تُحفظ كعنصر خاص أول القائمة (نفس ملف البيانات)
-const persist = () => window.api.save([{ id: '__meta__', kind: '_meta', sections, ui, views, collapsed: [...collapsed], groups, trash, notes, boards }, ...items]);
+// ما نحفظ شي قبل ما تخلص قراءة الخزنة (عشان ما تنحفظ خزنة فاضية فوق بياناتك)
+let vaultLoaded = false; const extQueue = [];
+const persist = () => !vaultLoaded ? Promise.resolve(false) : window.api.save([{ id: '__meta__', kind: '_meta', sections, ui, views, collapsed: [...collapsed], groups, trash, notes, boards }, ...items]);
 function fileURL(p) {
   const parts = String(p).replace(/\\/g, '/').split('/'); const first = parts.shift();
   return 'file:///' + first + '/' + parts.map(encodeURIComponent).join('/');
@@ -518,8 +520,19 @@ async function moveToVault(ids, ask, auto) {
   if (ask && !confirm(`تبي أنقل ${L.length} ملف لمجلد خزنة (Documents\\Khazana Files) وأشيلهم من مكانهم الحالي (مثل سطح المكتب)؟\nتقدر تتراجع بعدها.`)) return;
   setBusy('أنقل الملفات…'); let r = null; try { r = await window.api.filesMove({ items: L }); } catch (e) {} setBusy('');
   if (!r) return toast('تعذّر النقل');
+  // المجلدات ما تنتقل إلا بعد تأكيد واضح بعدد الملفات والحجم
+  if (r.needConfirm && r.needConfirm.length && !auto) {
+    const mb = n => (n / 1048576).toFixed(n > 104857600 ? 0 : 1) + ' MB';
+    const ok = r.needConfirm.filter(c => !c.over && confirm(`هذا مجلد كامل:\n${c.path}\nفيه ${c.count} ملف (${mb(c.size)}).\nمتأكد تبي تنقله كله لمجلد خزنة؟`));
+    if (r.needConfirm.some(c => c.over)) toast('فيه مجلد كبير مرة (أكثر من 20 ألف ملف) ما نقلته');
+    if (ok.length) {
+      setBusy('أنقل الملفات…'); let r2 = null; try { r2 = await window.api.filesMove({ items: L.filter(x => ok.some(c => c.id === x.id)), allowDirs: ok.map(c => c.id) }); } catch (e) {} setBusy('');
+      if (r2) { Object.assign(r.moved, r2.moved); r.inUse = (r.inUse || []).concat(r2.inUse || []); r.failed = (r.failed || []).concat(r2.failed || []); }
+    }
+  }
+  if (r.inUse && r.inUse.length) toast(`${r.inUse.length} ملف مفتوح ببرنامج ثاني، سكّره وجرّب مرة ثانية (ما نقلته ولا حذفت شي)`, null, 6000);
   const old = []; items.forEach(i => { const np = r.moved[i.id]; if (np) { old.push({ id: i.id, from: np, to: i.path }); i.path = np; } });
-  if (!old.length) return toast('ما انتقل شي (ملفات نظام أو محميّة)');
+  if (!old.length) return (r.inUse && r.inUse.length) ? null : toast('ما انتقل شي (ملفات نظام أو محميّة)');
   await persist(); await checkMissing(); render();
   toast(`📦 انتقل ${old.length} ملف لمجلد خزنة`, async () => { await window.api.filesRestore({ moves: old }); old.forEach(o => { const it = items.find(i => i.id === o.id); if (it) it.path = o.to; }); await persist(); checkMissing(); render(); });
 }
@@ -917,7 +930,7 @@ function drawToday() {
   const nts = window.Notes.list().slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.updated || 0) - (a.updated || 0)).slice(0, 5);
   const top = visItems().filter(i => i.openCount > 0).sort((a, b) => b.openCount - a.openCount).slice(0, 6);
   const rec = visItems().filter(i => i.lastOpened).sort((a, b) => b.lastOpened - a.lastOpened).slice(0, 6);
-  const itm = i => `<div class="tdi" data-it="${i.id}">${i.thumb ? `<img src="${i.thumb}">` : '<span>📄</span>'}<b>${esc(i.name)}</b></div>`;
+  const itm = i => `<div class="tdi" data-it="${esc(i.id)}">${i.thumb ? `<img src="${esc(i.thumb)}">` : '<span>📄</span>'}<b>${esc(i.name)}</b></div>`;
   const tm = r => new Date(r.when).toLocaleTimeString(ar ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit' });
   const wgs = todayWidgets(ar, now, rems);
   $('td').innerHTML = `<div class="tdw"><div class="tdh"><h1>${hi}</h1><span>${esc(dt)}</span></div>${wgs}
@@ -925,7 +938,7 @@ function drawToday() {
     <div class="tdq"><button data-tq="note">📝 ملاحظة سريعة</button><button data-tq="add">➕ إضافة عنصر</button><button data-tq="rem">🔔 تذكير</button><button data-tq="cv">🎨 لوحتي</button><button data-tq="srch">🔎 بحث شامل (Ctrl+K)</button></div>
     <div class="tdg">
       <section><h3>🔔 تذكيرات اليوم</h3>${rems.map(r => `<div class="tdr ${r.when < Date.now() ? 'late' : ''}" data-tq="rem"><b>${esc(r.title)}</b><small>${tm(r)}</small></div>`).join('') || '<div class="hint">ما عندك تذكيرات اليوم 🎉</div>'}</section>
-      <section><h3>📝 ملاحظاتك</h3>${nts.map(n => `<div class="tdr" data-nt="${n.id}"><b>${n.pinned ? '📌 ' : ''}${n.lock ? '🔒 ' : ''}${esc(n.title || 'بدون عنوان')}</b></div>`).join('') || '<div class="hint">لسا ما كتبت ملاحظات.</div>'}</section>
+      <section><h3>📝 ملاحظاتك</h3>${nts.map(n => `<div class="tdr" data-nt="${esc(n.id)}"><b>${n.pinned ? '📌 ' : ''}${n.lock ? '🔒 ' : ''}${esc(n.title || 'بدون عنوان')}</b></div>`).join('') || '<div class="hint">لسا ما كتبت ملاحظات.</div>'}</section>
       <section><h3>⭐ الأكثر استخداماً</h3><div class="tdit">${top.map(itm).join('') || '<div class="hint">افتح عناصرك وبتظهر هنا.</div>'}</div></section>
       <section><h3>🕘 فتحتها مؤخراً</h3><div class="tdit">${rec.map(itm).join('') || '<div class="hint">ما فتحت شي لسا.</div>'}</div></section>
     </div>
@@ -950,25 +963,33 @@ window.Zakker.mount($('zk'));
 /* ---------- البداية ---------- */
 (async () => {
   const s = await window.api.load(); hasKey = s.hasKey;
+  if (s.loadError) { toast('⚠ ما قدرت أقرأ ملف الخزنة (' + s.loadError + '). سكّر البرنامج وافتحه مرة ثانية — ما راح أحفظ شي عشان ما تضيع بياناتك.', null, 60000); return; }
   const { meta, rest } = splitLoaded(s.items || []);
   sections = meta && Array.isArray(meta.sections) ? meta.sections : [];
   if (meta) { ui = { ...ui, ...(meta.ui || {}) }; views = meta.views || {}; collapsed = new Set(meta.collapsed || []); groups = Array.isArray(meta.groups) ? meta.groups : []; notes = Array.isArray(meta.notes) ? meta.notes : []; boards = Array.isArray(meta.boards) ? meta.boards : []; trash = (Array.isArray(meta.trash) ? meta.trash : []).filter(x => x && Date.now() - (x._del || 0) < 30 * 864e5); }
   applyAppearance(); window.I18N.set(ui.lang || window.I18N.auto());
   if (window.Splash) window.Splash.ready(!ui.welcomed, lg => { ui.lang = lg; ui.welcomed = true; window.I18N.set(lg); render(); persist(); if (!ui.toured) { ui.toured = true; persist(); setTimeout(() => window.Tour && window.Tour.show(), 1300); } }, ui.lang);
-  items = rest.map(x => newItem(x)); normalizeSections();
+  items = rest.map(x => newItem(x)); vaultLoaded = true; normalizeSections();
   render(); playEnter(); checkMissing().then(() => { if (missing.size && missing.size <= 300) relocate([...missing], null, true); }); loadPlay().then(render);
   if (ui.startToday !== false) showView('td');
+  extQueue.splice(0).forEach(d => onExtMsg(d));
+  if (s.recovered && s.recovered.msg) toast(s.recovered.msg.replace(/\n/g, ' '), null, 15000);
 })();
 
 /* ---------- أوامر من الحاويات والبحث السريع ---------- */
-if (window.api.onExt) window.api.onExt(async d => {
+async function onExtMsg(d) {
+  if (!vaultLoaded) { extQueue.push(d); return; } // لسا ما تحمّلت الخزنة: نخليه بالطابور
   if (d.type === 'addLink') {
     if (items.some(i => i.url === d.url)) return window.api.notify('هذا الرابط مضاف من قبل');
     let host = ''; try { host = new URL(d.url).hostname.replace(/^www\./, ''); } catch (e) {}
     const dr = newItem({ kind: 'link', name: host || 'رابط', category: KIND_CAT.link, url: d.url, section: '' }); try { await autoFill(dr); } catch (e) {}
     commit(dr); await persist(); render(); window.api.notify('انضاف الرابط: ' + dr.name + ' ✓'); return;
   }
-  if (d.type === 'note') { window.Notes.quick(d.text, d.tags); window.api.notify('📝 انحفظت الملاحظة'); return; }
+  if (d.type === 'note') {
+    let ok = false; try { window.Notes.quick(d.text, d.tags); ok = await persist(); } catch (e) { ok = false; }
+    if (d.ack && window.api.extAck) window.api.extAck(d.ack, ok);
+    if (ok) window.api.notify('📝 انحفظت الملاحظة'); return;
+  }
   if (d.type === 'open') { const it = items.find(i => i.id === d.id); if (it) openItem(it); return; }
   if (d.type === 'add') {
     const paths = [...new Set(d.paths)].filter(p => !items.some(i => i.path === p));
@@ -981,7 +1002,8 @@ if (window.api.onExt) window.api.onExt(async d => {
     }
     await persist(); render(); checkMissing(); if (n) { toast(`انضاف ${n} عنصر`); if (d.notify) window.api.notify(`انضاف ${n} عنصر للخزنة ✓`); }
   }
-});
+}
+if (window.api.onExt) window.api.onExt(onExtMsg);
 
 /* ---------- ⚡ المجموعات ---------- */
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -1273,7 +1295,7 @@ function cmdAll() {
   return c;
 }
 function cmdFilter() {
-  const q = $('cmdkQ').value.trim(), nq = norm(q), out = [];
+  const q = $('cmdkQ').value.trim(), nq = norm(q);
   if (!q) { cmdList = cmdAll().slice(0, 9).map(([t, , f]) => ({ t, f })); }
   else {
     const qt = nq.split(/\s+/).filter(Boolean);

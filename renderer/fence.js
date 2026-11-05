@@ -65,7 +65,6 @@ function renderCore() {
   const s = sections.find(x => x.id === cur);
   if (s && lockedSec(cur)) { $('ttl').textContent = (s.emoji || '📁') + ' ' + s.name; $('back').hidden = cur === sec; $('grid').innerHTML = '<div class="empty">🔒 هذا القسم مقفل بكلمة سر.<br>افتحه من نافذة خزنة.</div>'; return; }
   if (!s) { $('ttl').textContent = 'القسم انحذف'; $('grid').innerHTML = '<div class="empty">هذا القسم انحذف من الخزنة.<br>اضغط ✕ لإغلاق الحاوية.</div>'; return; }
-  const root = sections.find(x => x.id === sec);
   $('ttl').textContent = (s.emoji || '📁') + ' ' + s.name;
   $('back').hidden = cur === sec;
   applyAcc();
@@ -197,14 +196,16 @@ $('col').onclick = () => setCol(!collapsed);
 $('head').ondblclick = e => { if (!e.target.closest('button')) setCol(!collapsed); };
 // تغيير الحجم (النوافذ الشفافة في ويندوز ما تدعم السحب من الحافة)
 $('grip').onmousedown = e => {
-  e.preventDefault(); const sx = e.screenX, sy = e.screenY, w0 = window.outerWidth, h0 = window.outerHeight; const rtl = true;
+  e.preventDefault(); const sx = e.screenX, sy = e.screenY, w0 = window.outerWidth, h0 = window.outerHeight;
   const mv = ev => window.api.fenceResize(w0 + (ev.screenX - sx), h0 + (ev.screenY - sy), false);
   const up = ev => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); window.api.fenceResize(w0 + (ev.screenX - sx), h0 + (ev.screenY - sy), true); };
   document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
 };
 if (new URLSearchParams(location.search).get('col') === '1') { collapsed = true; $('box').classList.add('col'); $('col').textContent = '▸'; }
 (async () => { try { orderMap = (window.api.fenceOrderGet && await window.api.fenceOrderGet()) || {}; render(); } catch (e) {} })();
-load(); replayAnim(); setInterval(load, 2500); window.addEventListener('focus', load);
+load(); replayAnim(); window.addEventListener('focus', load);
+// بدل ما نقرأ الخزنة كل 2.5 ثانية: البرنامج الرئيسي يبلّغنا لما تتغيّر البيانات
+if (window.api.onVaultChanged) window.api.onVaultChanged(load); else setInterval(load, 2500);
 
 // سحب وإفلات ملفات لإضافتها للقسم الحالي
 let dragN = 0;

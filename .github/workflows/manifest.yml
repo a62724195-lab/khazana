@@ -10,6 +10,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # فحص قبل التحديث: لو أي ملف JS فيه غلطة كتابة (Syntax) أو ملف ناقص، نوقف هنا
+      # وما يتحدّث manifest.json، يعني ما ينزل التحديث الخربان لأي مستخدم
+      - name: check files before publishing the update
+        run: |
+          set -e
+          for f in main.js preload.js scripts/*.js renderer/*.js; do
+            echo "checking $f"
+            node --check "$f"
+          done
+          for f in main.js preload.js renderer/index.html renderer/app.js package.json; do
+            test -s "$f" || { echo "missing or empty: $f"; exit 1; }
+          done
+          node -e "JSON.parse(require('fs').readFileSync('package.json','utf8'))"
+          grep -q "KZ-UPDATE-SAFE:BEGIN" main.js || { echo "main.js lost the safe updater block"; exit 1; }
+          grep -q "KZ-ROLLBACK:BEGIN" main.js || { echo "main.js lost the rollback block"; exit 1; }
       - run: node scripts/make-manifest.js
       - name: commit manifest
         run: |

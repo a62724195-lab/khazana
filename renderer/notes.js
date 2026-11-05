@@ -73,7 +73,7 @@
       return `<div class="npick" data-ov="1"><div class="npbox"><div class="nph"><b>اربط عنصر من الخزنة</b><button class="sm" data-ovx="1">✕</button></div><input id="ntPickQ" class="f" placeholder="ابحث…" value="${esc(q)}"><div class="npl">${l.map(i => `<div class="npi" data-pick="${i.id}">${esc(i.name)}<span class="hint">${esc(i.category || '')}</span></div>`).join('') || '<div class="hint" style="padding:10px">ما لقيت شي</div>'}</div></div></div>`;
     },
     rem(n) {
-      const t = new Date(); const pad = x => String(x).padStart(2, '0'); const dv = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      const pad = x => String(x).padStart(2, '0'); const dv = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
       const def = new Date(Date.now() + 36e5);
       return `<div class="npick" data-ov="1"><div class="npbox"><div class="nph"><b>⏰ ذكّرني بهذا السطر</b><button class="sm" data-ovx="1">✕</button></div><div class="hint remtxt">${esc(N.ov.text)}</div>
         <div class="npl" style="flex-direction:row;flex-wrap:wrap;gap:6px"><button class="sm" data-rp="60">بعد ساعة</button><button class="sm" data-rp="tonight">الليلة ٨</button><button class="sm" data-rp="tom">بكرة ٩ الصبح</button><button class="sm" data-rp="week">بعد أسبوع</button></div>
