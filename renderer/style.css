@@ -731,3 +731,92 @@ canvas.fxc{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z
 .wtime{grid-column:1/-1}
 
 html[data-gl="on"] .chip.on{background:var(--acc)!important;color:var(--onacc)!important;border-color:var(--acc)!important}
+
+
+/* ===== ui-fixes: إصلاحات الشكل + لمسات ناعمة (نفس التصميم والألوان) ===== */
+/* [1] العناصر اللي عليها hidden تبقى مخفية (كان صف «إزالة القفل» يطلع بقسم جديد) */
+.crow[hidden]{display:none!important}
+/* [2] مربع الاختيار جنب نصه، مو بالطرف الثاني */
+label.crow{justify-content:flex-start;gap:9px;padding:3px 2px}
+/* [3] قوائم الاختيار داخل قائمة «تخصيص» كانت بيضاء ونصها ما ينقرأ بالداكن */
+.menu select,.crow select{background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:4px 10px;min-width:118px;max-width:170px}
+.menu .crow b{font-weight:600;font-size:12.5px;color:var(--ink)}
+.menu .crow{min-height:32px}
+/* [4] نص مختلط عربي/إنجليزي: القص (…) يصير بآخر الكلام مو بأوله */
+.nm,.sn,.tdi b,.ci2 .ctx,.tag{unicode-bidi:plaintext}
+html[dir=rtl] .nm,html[dir=rtl] .sn,html[dir=rtl] .tdi b,html[dir=rtl] .ci2 .ctx{text-align:right}
+html[dir=ltr] .nm,html[dir=ltr] .sn,html[dir=ltr] .tdi b,html[dir=ltr] .ci2 .ctx{text-align:left}
+/* [5] وسوم البطاقة (اسم القسم الطويل) ما تتكسر على سطرين وثلاث */
+.meta{min-width:0;row-gap:4px}
+.tag{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;flex:none;border-radius:99px;padding:1px 9px;line-height:1.6}
+/* [6] أزرار البطاقة: زر الفتح دايماً بسطر لحاله، والأيقونات بصف واحد مرتب (كانت تتلخبط بالروابط والبطاقات الصغيرة) */
+#out:not(.v-list) .tile .acts{flex-wrap:wrap;gap:6px}
+#out:not(.v-list) .tile .acts .open{flex:1 1 100%;min-width:0}
+#out:not(.v-list) .tile .acts .mini{width:100%;justify-content:space-between;flex-wrap:nowrap;gap:2px}
+.tile .acts .mini button{flex:1 1 0;min-width:0;max-width:40px;height:28px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;background:transparent;border-color:transparent;opacity:.78}
+.tile .acts .mini button:hover{opacity:1;background:var(--acc2);border-color:color-mix(in srgb,var(--acc) 40%,transparent)}
+.tile .acts .mini button.pinon{opacity:1}
+#out.v-small .tile .acts .mini button{height:24px;font-size:12px}
+#out.v-list .tile .acts .mini button{flex:none;width:30px}
+.tile .acts .open{border-radius:11px;font-weight:600;background:linear-gradient(180deg,color-mix(in srgb,#fff 14%,var(--acc)),var(--acc));box-shadow:0 3px 10px color-mix(in srgb,var(--acc) 32%,transparent),inset 0 1px 0 rgba(255,255,255,.22);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .acts .open:hover{filter:brightness(1.06)}
+/* [7] البطاقات: زوايا أنعم وعمق خفيف وحافة لامعة (نفس الألوان) */
+.tile{border-radius:18px;box-shadow:0 1px 2px rgba(0,0,0,.05),0 6px 18px rgba(0,0,0,.06);border-color:color-mix(in srgb,var(--line) 85%,transparent)}
+:root[data-theme="dark"] .tile{box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 8px 22px rgba(0,0,0,.32)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .tile{box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 8px 22px rgba(0,0,0,.32)}}
+.tile .pre{position:relative}
+.tile .pre::after{content:'';position:absolute;inset:auto 0 0 0;height:38%;background:linear-gradient(to top,color-mix(in srgb,var(--card) 35%,transparent),transparent);pointer-events:none}
+#out.v-gal .tile .pre::after,#out.v-list .tile .pre::after{display:none}
+.tile .body{padding:10px 13px 2px}
+#out:not(.v-list) .tile .acts{padding:8px 13px 12px}
+.nm{font-size:14.5px;letter-spacing:.1px}
+/* [8] شريط الأدوات: الأزرار ما تنكسر لسطرين، وقائمة الترتيب ما تنقص عند الشاشات الصغيرة */
+.bar{flex-wrap:wrap;row-gap:8px}
+.bar .chips{min-width:200px}
+.bar button.sm,#sortSel,.bar .addwrap>button{white-space:nowrap;flex:none;height:32px;border-radius:99px;padding-inline:13px}
+#sortSel{min-width:110px}
+.seg{flex:none}
+/* [9] القائمة الجانبية: القسم المختار أوضح، والعدد بشكل شارة */
+.sitem{border-radius:12px;padding:7px 10px;transition:background .15s,border-color .15s}
+.sitem.on{background:linear-gradient(90deg,var(--acc2),color-mix(in srgb,var(--acc2) 55%,transparent));box-shadow:inset 3px 0 0 var(--acc)}
+[dir=rtl] .sitem.on,html[dir=rtl] .sitem.on{box-shadow:inset -3px 0 0 var(--acc)}
+.sc{min-width:22px;text-align:center;font-size:11px;padding:0 6px;border-radius:99px;background:color-mix(in srgb,var(--ink) 7%,transparent);line-height:1.7}
+.sitem.on .sc{background:var(--acc);color:var(--onacc)}
+/* [10] النوافذ: زوايا أنعم وخلفية ضبابية ورا النافذة */
+dialog{border-radius:20px;box-shadow:0 24px 60px rgba(0,0,0,.35);border-color:color-mix(in srgb,var(--line) 80%,transparent)}
+dialog::backdrop{background:rgba(0,0,0,.42);backdrop-filter:blur(4px)}
+/* [11] إطار التركيز الأصفر كان يطلع حول محتوى الإحصائيات كامل */
+#statsBody:focus,#cleanBody:focus,#trashBody:focus,#bkList:focus,#profList:focus,#grpList:focus,#prefsPane:focus,#cmdkList:focus{outline:none}
+/* [12] شريط التحديد: الأزرار كانت تنكسر 2-3 أسطر */
+#bulk{border-radius:99px;padding:8px 14px;backdrop-filter:blur(14px) saturate(1.3);background:color-mix(in srgb,var(--card) 88%,transparent);max-width:calc(100vw - 24px)}
+#bulk button{white-space:nowrap;border-radius:99px;flex:none}
+#bulk select{max-width:150px;border-radius:99px;padding:4px 10px}
+#bulk b,#bulkN{white-space:nowrap}
+/* [13] زر «إنشاء وتبديل» بالملفات الشخصية كان ينكسر سطرين */
+#profAdd,#profClose,#bkClose,#trashClose,#trashEmpty,#statsClose,#cleanClose,#cleanDel{white-space:nowrap}
+/* [14] أزرار نافذة التعديل بصف مرتب */
+#imgBtn,#diagBtn,#relinkBtn{white-space:nowrap}
+
+/* [15] لمسات أوضح: معاينة بزوايا داخل البطاقة + حافة زجاجية + شرائح أنعم */
+#out.v-big .tile .pre,#out:not(.v-gal):not(.v-list):not(.v-small) .tile .pre{margin:8px 8px 0;border-radius:13px;height:112px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),inset 0 -12px 24px rgba(0,0,0,.08)}
+#out.v-small .tile .pre{margin:6px 6px 0;border-radius:11px}
+.tile{background:linear-gradient(180deg,color-mix(in srgb,var(--ink) 3%,var(--card)),var(--card) 45%)}
+.tile::before{content:'';position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent);pointer-events:none;z-index:3}
+.tile.hc::before{inset:0 auto 0 auto;inset-inline-start:0;height:auto;width:4px;background:var(--tc);border-radius:0 4px 4px 0}
+html[dir=rtl] .tile.hc::before{border-radius:4px 0 0 4px}
+#out.v-list .tile.hc::before{width:5px}
+.tile .acts .mini{background:color-mix(in srgb,var(--ink) 5%,transparent);border-radius:11px;padding:2px}
+.chip{padding:4px 13px;border-color:color-mix(in srgb,var(--line) 80%,transparent);background:color-mix(in srgb,var(--card) 85%,transparent);transition:background .15s,border-color .15s,box-shadow .15s}
+.chip:hover{border-color:var(--acc)}
+.chip.on{background:linear-gradient(180deg,color-mix(in srgb,#fff 14%,var(--acc)),var(--acc));box-shadow:0 3px 10px color-mix(in srgb,var(--acc) 35%,transparent);font-weight:600}
+.seg{border-radius:99px;overflow:hidden}
+.bar button.sm,.bar .addwrap>button{background:color-mix(in srgb,var(--card) 85%,transparent)}
+dialog h2,dialog h3{letter-spacing:.2px}
+dialog .row input,dialog input[type=text],dialog input:not([type]),dialog textarea,dialog select{border-radius:11px}
+.zk-mut:has(.eart){text-align:center;padding:10px 0}
+.zk-mut .eart{display:block;margin:0 auto 6px}
+
+/* [16] صفوف الاختيار بالقائمة كانت ترث هامش ولون عناوين النماذج (فراغات كبيرة ونص باهت) */
+label.crow{margin:0;color:var(--ink)}
+/* [17] صفحة اليوم: دوائر (عنصر/ملاحظة/تذكير) كانت تنضغط ويتقص كلامها بالشاشات المتوسطة */
+@media(max-width:1100px){.wgs{grid-template-columns:1fr 1fr}}

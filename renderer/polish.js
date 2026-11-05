@@ -12,7 +12,7 @@
   function decorate(root) {
     root.querySelectorAll && root.querySelectorAll('.empty:not([data-art]),.nempty:not([data-art]),.zk-mut:not([data-art])').forEach(el => {
       el.setAttribute('data-art', '1');
-      if (el.classList.contains('zk-mut') && (el.textContent || '').length > 40) return;
+      if (el.classList.contains('zk-mut') && !/^\s*(ما فيه|ما عندك|لا يوجد|No |Nothing)/i.test(el.textContent || '')) return; // بس رسائل «فاضي»، مو العناوين والتواريخ
       el.insertAdjacentHTML('afterbegin', art(kindOf(el)));
     });
   }

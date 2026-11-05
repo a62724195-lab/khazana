@@ -678,7 +678,7 @@ $('addMenu').addEventListener('click', async e => {
 $('moreMenu').addEventListener('click', async e => {
   const k = e.target.closest('[data-more]'); if (!k) return; closeMenus();
   const a = k.dataset.more;
-  if (a === 'settings') { $('apiKey').value = ''; $('apiKey').placeholder = hasKey ? '•••••••• (محفوظ — اكتب مفتاحاً جديداً للتغيير)' : 'sk-ant-...'; $('dataPath').textContent = 'مكان بياناتك: ' + await window.api.dataPath(); $('setDlg').showModal(); }
+  if (a === 'settings') { $('apiKey').value = ''; $('apiKey').placeholder = hasKey ? '•••••••• (محفوظ — اكتب مفتاحاً جديداً للتغيير)' : 'sk-ant-...'; $('dataPath').innerHTML = 'مكان بياناتك: <bdi dir="ltr">' + esc(await window.api.dataPath()) + '</bdi>'; $('setDlg').showModal(); }
   else if (a === 'clean') openClean();
   else if (a === 'update') {
     if (!window.api.updateCheck) return toast('حدّث ملفات resources أول مرة يدوياً (main.js)');
@@ -883,7 +883,7 @@ function viewIn(v) {
 }
 function showView(v) {
   if (selMode) exitSel();
-  const vv = ['zk', 'nt', 'td', 'cv'].includes(v) ? v : 'vault'; viewIn(vv);
+  const vv = ['zk', 'nt', 'td', 'cv'].includes(v) ? v : 'vault'; viewIn(vv); window.scrollTo(0, 0);
   const B = document.body.classList;
   [['zk', 'zkview'], ['nt', 'ntview'], ['td', 'tdview'], ['cv', 'cvview']].forEach(([k, c]) => { B.toggle(c, v === k); $(k).hidden = v !== k; });
   [['navVault', 'vault'], ['navZk', 'zk'], ['navNt', 'nt'], ['navTd', 'td'], ['navCv', 'cv']].forEach(([id, k]) => $(id).classList.toggle('on', k === v || (k === 'vault' && !['zk', 'nt', 'td', 'cv'].includes(v))));
