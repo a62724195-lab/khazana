@@ -1,9 +1,9 @@
 {
- "version": "2026-11-05 10:56",
+ "version": "2026-11-05 12:22",
  "files": [
   {
    "path": "renderer/app.js",
-   "sha": "96d5d296e7ff354c3ec5106af902a6cb7dbb102e68f9d5d5268035d8419a1d5d"
+   "sha": "cda8b1d7522a2949dbf9fe7fb2256e2a13d13475e5260b01c81da3ed76faf2cf"
   },
   {
    "path": "renderer/canvas.js",
@@ -67,7 +67,7 @@
   },
   {
    "path": "renderer/polish.js",
-   "sha": "dccc3dd86eaf11565b33dae8dfb7399d8219daf8d18621ac0099ee3eca687a21"
+   "sha": "a19d22c89ca7d6ebaeaa226c6f968b40663d7086d36443c78e83be5c6ca07e34"
   },
   {
    "path": "renderer/quick.css",
@@ -87,7 +87,7 @@
   },
   {
    "path": "renderer/style.css",
-   "sha": "ef00ceed54a9d11ce2368f0ab38c2c71d8947144c271587eaae1942e07b60498"
+   "sha": "f0b4eb22de77b8d08ff2c9a4757e1e389ff1f764c81acb56539d75d484ed4ed8"
   },
   {
    "path": "renderer/zakker.css",
