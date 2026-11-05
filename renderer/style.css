@@ -729,3 +729,5 @@ canvas.fxc{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z
 .shl{display:flex;justify-content:space-between;color:var(--mute);font-size:11px;padding:2px 4px 8px;direction:ltr}
 .sdn{display:flex;align-items:center;gap:18px;padding:6px 4px}.sdn svg{width:120px;height:120px;flex:none}.sdl{display:flex;flex-direction:column;gap:5px;font-size:13px}.sdl span{display:flex;align-items:center;gap:7px}.sdl i{width:10px;height:10px;border-radius:3px;flex:none}.sdl b{margin-inline-start:auto;color:var(--mute)}
 .wtime{grid-column:1/-1}
+
+html[data-gl="on"] .chip.on{background:var(--acc)!important;color:var(--onacc)!important;border-color:var(--acc)!important}
