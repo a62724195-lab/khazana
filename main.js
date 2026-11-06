@@ -708,20 +708,56 @@ function moveAny(src, dst) {
 }
 ipcMain.handle('files:dir', () => { const d = filesRoot(); try { fs.mkdirSync(d, { recursive: true }); } catch (e) {} return d; });
 ipcMain.handle('files:chooseDir', async () => { const r = await dialog.showOpenDialog(win, { properties: ['openDirectory', 'createDirectory'] }); if (r.canceled || !r.filePaths[0]) return ''; setSet('filesDir', r.filePaths[0]); return r.filePaths[0]; });
-ipcMain.handle('files:move', (_e, o = {}) => {
-  const out = { moved: {}, skipped: [], failed: [], inUse: [], needConfirm: [] };
+// اختصارات سطح المكتب (.lnk) اللي تنضاف للخزنة/الحاويات تنتقل من سطح المكتب مثل باقي الملفات.
+// بس من سطح المكتب نفسه (حق المستخدم أو العام C:\Users\Public\Desktop أو OneDrive)، أما اختصارات قائمة ابدأ وغيرها فتظل مكانها
+const SHORTCUT_RE = /\.(lnk|appref-ms)$/i;
+function desktopDirs() {
+  const norm = p => { try { return p ? path.resolve(p).toLowerCase() : ''; } catch (e) { return ''; } };
+  const env = process.env; let d = ''; try { d = app.getPath('desktop'); } catch (e) {}
+  const pub = path.join(env.PUBLIC || ((env.SystemDrive || 'C:') + '\\Users\\Public'), 'Desktop');
+  return { user: [d, env.USERPROFILE ? path.join(env.USERPROFILE, 'Desktop') : '', env.OneDrive ? path.join(env.OneDrive, 'Desktop') : ''].map(norm).filter(Boolean), pub: norm(pub) };
+}
+function deskKind(src) { // 'user' | 'public' | ''
+  const dir = path.dirname(path.resolve(src)).toLowerCase(), D = desktopDirs();
+  if (D.pub && dir === D.pub) return 'public';
+  return D.user.includes(dir) ? 'user' : '';
+}
+// سطح المكتب العام يحتاج صلاحية مسؤول: ننقل كل الاختصارات بطلب UAC واحد. لو رفض المستخدم يظل كل شي مكانه
+const psq = s => "'" + String(s).replace(/'/g, "''") + "'";
+function elevatedMove(pairs) {
+  return new Promise(res => {
+    if (process.platform !== 'win32' || !pairs.length) return res(false);
+    const inner = '$ErrorActionPreference="Stop";' + pairs.map(p => `try { Move-Item -LiteralPath ${psq(p.src)} -Destination ${psq(p.dst)} -ErrorAction Stop } catch {}`).join(';');
+    const b64 = Buffer.from(inner, 'utf16le').toString('base64');
+    const outer = `try { $p = Start-Process -FilePath powershell.exe -Verb RunAs -WindowStyle Hidden -Wait -PassThru -ArgumentList '-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-EncodedCommand','${b64}'; exit 0 } catch { exit 5 }`;
+    require('child_process').execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', outer], { windowsHide: true, timeout: 120000 }, err => res(!err));
+  });
+}
+ipcMain.handle('files:move', async (_e, o = {}) => {
+  const out = { moved: {}, skipped: [], failed: [], inUse: [], needConfirm: [], adminDenied: [] };
+  const elev = [];
   const root = filesRoot();
   const okDirs = new Set(Array.isArray(o.allowDirs) ? o.allowDirs : []);
   for (const it of (Array.isArray(o.items) ? o.items : [])) {
     try {
       const src = it && it.path; if (typeof src !== 'string' || !src || !fs.existsSync(src)) { out.skipped.push(it && it.id); continue; }
-      if (blockedForMove(src) || /\.lnk$/i.test(src) || path.resolve(src).toLowerCase().startsWith(path.resolve(root).toLowerCase() + path.sep) || path.resolve(root).toLowerCase().startsWith(path.resolve(src).toLowerCase() + path.sep)) { out.skipped.push(it.id); continue; }
+      const dk = SHORTCUT_RE.test(src) ? deskKind(src) : '';
+      if (blockedForMove(src) || (SHORTCUT_RE.test(src) && !dk) || path.resolve(src).toLowerCase().startsWith(path.resolve(root).toLowerCase() + path.sep) || path.resolve(root).toLowerCase().startsWith(path.resolve(src).toLowerCase() + path.sep)) { out.skipped.push(it.id); continue; }
       if (fs.statSync(src).isDirectory() && !okDirs.has(it.id)) { // المجلدات ما تنتقل إلا بعد تأكيد واضح (مع عدد الملفات والحجم)
         const s = dirStats(src); out.needConfirm.push({ id: it.id, path: src, count: s.count, size: s.size, over: s.over }); continue;
       }
       const sub = safeName(it.section); const dir = sub ? path.join(root, sub) : root; fs.mkdirSync(dir, { recursive: true });
-      const dst = uniqueDest(dir, path.basename(src)); moveAny(src, dst); out.moved[it.id] = dst;
+      const dst = uniqueDest(dir, path.basename(src));
+      try { moveAny(src, dst); out.moved[it.id] = dst; }
+      catch (e) { if (dk === 'public' && e && e.code === 'IN_USE') elev.push({ id: it.id, src, dst }); else throw e; }
     } catch (e) { if (e && e.code === 'IN_USE') out.inUse.push(it && it.id); else out.failed.push(it && it.id); }
+  }
+  if (elev.length) { // سطح المكتب العام: نقل بصلاحية مسؤول (طلب واحد)، وبعدين نتأكد بأنفسنا وش انتقل فعلاً
+    const batch = elev.slice(0, 40); await elevatedMove(batch);
+    for (const p of elev) {
+      let ok = false; try { ok = batch.includes(p) && !fs.existsSync(p.src) && fs.existsSync(p.dst); } catch (e) {}
+      if (ok) out.moved[p.id] = p.dst; else out.adminDenied.push(p.id);
+    }
   }
   return out;
 });
@@ -908,9 +944,12 @@ async function updCheck() {
   const changed = files.filter(f => { try { return sha(fs.readFileSync(localPathU(f.path))) !== f.sha; } catch (e) { return true; } });
   return { man, files, changed };
 }
+// «وش الجديد» لنافذة التحديث (اختياري بالـ manifest: notes = { ar: [...], en: [...] })
+const updNotes = man => { const n = man && man.notes; const cl = a => Array.isArray(a) ? a.filter(x => typeof x === 'string').map(x => x.slice(0, 200)).slice(0, 12) : []; return n && typeof n === 'object' ? { ar: cl(n.ar || n), en: cl(n.en) } : { ar: [], en: [] }; };
+const updProg = (i, n) => { try { if (win && !win.isDestroyed()) win.webContents.send('upd:prog', { i, n }); } catch (e) {} };
 ipcMain.handle('update:check', async () => {
   if (!app.isPackaged) return { ok: false, error: 'نسخة التطوير: التحديث التلقائي متوقف عشان ما يمسح تعديلاتك (حدّث بـ git pull)' };
-  try { const { man, changed } = await updCheck(); return { ok: true, version: man.version, count: changed.length, names: changed.map(f => f.path) }; }
+  try { const { man, changed } = await updCheck(); return { ok: true, version: man.version, count: changed.length, names: changed.map(f => f.path), notes: updNotes(man) }; }
   catch (e) { return { ok: false, error: String(e.message || e) }; }
 });
 /* KZ-UPDATE-SAFE:BEGIN — فحص التحديث قبل تركيبه (لا تحذف هذا الجزء: التحديث يرفض أي main.js ما فيه هالعلامات) */
@@ -944,6 +983,7 @@ ipcMain.handle('update:apply', async () => {
     // 1) ننزّل كل الملفات المتغيرة لمجلد مؤقت ونتأكد من البصمة
     stageDir = path.join(app.getPath('temp'), 'khazana-update-' + Date.now()); fs.mkdirSync(stageDir, { recursive: true });
     const bufs = new Map();
+    let done = 0; updProg(0, changed.length);
     for (const f of changed) {
       let b = null;
       for (let k = 0; k < 5; k++) { // جيت هب يتأخر تحديث الكاش أحياناً دقيقة: نعيد المحاولة
@@ -952,7 +992,7 @@ ipcMain.handle('update:apply', async () => {
         await new Promise(r => setTimeout(r, 1500 * (k + 1)));
       }
       if (!b) throw new Error('الملف لسا ما تحدّث على الخادم، جرّب بعد دقيقة (' + f.path + ')');
-      bufs.set(f.path, b);
+      bufs.set(f.path, b); updProg(++done, changed.length);
       const sp = path.join(stageDir, f.path); fs.mkdirSync(path.dirname(sp), { recursive: true }); fs.writeFileSync(sp, b);
     }
     // 2) نفحص الملفات قبل التركيب: لو فيه غلطة ما نركّب شي
@@ -995,7 +1035,7 @@ async function bgUpdateCheck() {
     if (!changed.length) { updAvail = null; if (win && !win.isDestroyed()) win.webContents.send('upd:avail', null); updBusy = false; return; }
     const key = changed.map(f => f.sha).join('');
     if (getSet().updSkip && getSet().updSkip === man.version) { updBusy = false; return; } // نفس التحديث اللي رجعنا منه: ما نزعجك فيه مرة ثانية
-    updAvail = { count: changed.length, version: man.version };
+    updAvail = { count: changed.length, version: man.version, notes: updNotes(man) };
     if (win && !win.isDestroyed()) win.webContents.send('upd:avail', updAvail);
     if (key !== updNotified) {
       updNotified = key;
@@ -1446,8 +1486,41 @@ function createWindow() {
 
 app.setAppUserModelId('local.khazana.app');
 app.on('before-quit', () => { quitting = true; vaultFlush(); });
+/* ---------- 🎙️ الملاحظات الصوتية: ملفات الصوت داخل مجلد بيانات التطبيق ---------- */
+const voiceDir = () => path.join(dataDir(), 'voice');
+const voiceName = n => { const s = String(n || ''); return /^[a-z0-9_-]{4,64}\.(webm|ogg|m4a|mp4|wav)$/i.test(s) ? s : ''; };
+ipcMain.handle('voice:save', async (_e, id, buf, mime) => {
+  try {
+    const ext = /ogg/.test(mime || '') ? 'ogg' : /mp4|m4a/.test(mime || '') ? 'm4a' : 'webm';
+    const name = voiceName(String(id || '').replace(/[^a-z0-9_-]/gi, '').slice(0, 40) + '-' + Date.now().toString(36) + '.' + ext);
+    if (!name || !buf) return { ok: false, error: 'bad' };
+    const data = Buffer.from(buf); if (!data.length || data.length > 60 * 1024 * 1024) return { ok: false, error: 'size' };
+    await fs.promises.mkdir(voiceDir(), { recursive: true });
+    const f = path.join(voiceDir(), name); await fs.promises.writeFile(f + '.tmp', data); await fs.promises.rename(f + '.tmp', f);
+    return { ok: true, file: name, path: f, size: data.length };
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+ipcMain.handle('voice:read', async (_e, name) => {
+  const n = voiceName(name); if (!n) return null;
+  try { return await fs.promises.readFile(path.join(voiceDir(), n)); } catch (e) { return null; }
+});
+ipcMain.handle('voice:del', async (_e, name) => {
+  const n = voiceName(name); if (!n) return false;
+  try { await fs.promises.unlink(path.join(voiceDir(), n)); return true; } catch (e) { return false; }
+});
+ipcMain.handle('voice:show', (_e, name) => { const n = voiceName(name); if (n) shell.showItemInFolder(path.join(voiceDir(), n)); return !!n; });
+/* المايك مسموح لنافذة خزنة نفسها بس (ملفات التطبيق المحلية)، وأي طلب ثاني مرفوض */
+function mediaGuard() {
+  const { session } = require('electron'); const ses = session.defaultSession;
+  const roots = () => [path.join(__dirname, 'renderer'), path.join(process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(process.execPath), 'ui')].map(r => path.resolve(r).toLowerCase() + path.sep);
+  const own = (wc, url) => { try { const u = String(url || (wc && wc.getURL && wc.getURL()) || ''); if (!u.startsWith('file:')) return false; const p = path.resolve(require('url').fileURLToPath(u)).toLowerCase(); return roots().some(r => p.startsWith(r)); } catch (e) { return false; } };
+  const audioOnly = d => { const t = (d && d.mediaTypes) || []; return !t.length || t.every(x => x === 'audio'); };
+  ses.setPermissionRequestHandler((wc, perm, cb, d) => { const ok = own(wc, d && d.requestingUrl); cb(perm === 'media' ? ok && audioOnly(d) : ok); });
+  ses.setPermissionCheckHandler((wc, perm, origin, d) => own(wc, (d && d.requestingUrl) || ''));
+}
 app.whenReady().then(async () => {
   if (!gotLock) return; // البرنامج مفتوح من قبل: النسخة الثانية تسكّر بدون ما تسوي شي
+  try { mediaGuard(); } catch (e) {}
   createWindow();
   await buildTray();
   try {

@@ -47,6 +47,7 @@ contextBridge.exposeInMainWorld('api', {
   updateApply: () => inv('update:apply'),
   updatePending: () => inv('update:pending'),
   onUpdateAvail: cb => ipcRenderer.on('upd:avail', (_e, d) => cb(d)),
+  onUpdateProg: cb => ipcRenderer.on('upd:prog', (_e, d) => cb(d)),
   playGet: () => inv('play:get'),
   backupNow: () => inv('backup:now'),
   backupOpen: () => inv('backup:open'),
@@ -61,5 +62,9 @@ contextBridge.exposeInMainWorld('api', {
   extAck: (id, ok) => inv('ext:ack', id, ok),
   onVaultChanged: cb => ipcRenderer.on('vault:changed', () => cb()),
   onQuickReset: cb => ipcRenderer.on('quick:reset', () => cb()),
+  voiceSave: (id, buf, mime) => inv('voice:save', id, buf, mime),
+  voiceRead: name => inv('voice:read', name),
+  voiceDel: name => inv('voice:del', name),
+  voiceShow: name => inv('voice:show', name),
   onFocusSearch: cb => ipcRenderer.on('focus-search', () => cb())
 });

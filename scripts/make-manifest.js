@@ -9,6 +9,8 @@ fs.readdirSync(path.join(root, 'assets')).sort().forEach(n => add('assets/' + n)
 const old = fs.existsSync(path.join(root, 'update/manifest.json')) ? JSON.parse(fs.readFileSync(path.join(root, 'update/manifest.json'), 'utf8')) : {};
 const same = JSON.stringify(old.files) === JSON.stringify(files);
 const out = { version: same && old.version ? old.version : new Date().toISOString().slice(0, 16).replace('T', ' '), files };
+// «وش الجديد» اللي يطلع بنافذة التحديث: من update/notes.json لو موجود ({ "ar": [...], "en": [...] })
+try { const nf = path.join(root, 'update/notes.json'); if (fs.existsSync(nf)) { const nt = JSON.parse(fs.readFileSync(nf, 'utf8')); if (nt && (Array.isArray(nt.ar) || Array.isArray(nt.en))) out.notes = { ar: nt.ar || [], en: nt.en || [] }; } } catch (e) { console.log('notes.json skipped:', e.message); }
 fs.mkdirSync(path.join(root, 'update'), { recursive: true });
 fs.writeFileSync(path.join(root, 'update/manifest.json'), JSON.stringify(out, null, 1) + '\n');
 console.log('manifest:', files.length, 'files, version', out.version);

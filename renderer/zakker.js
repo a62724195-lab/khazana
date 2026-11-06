@@ -27,7 +27,7 @@ create policy "zk files delete" on storage.objects for delete to authenticated
   const MAX_FILE = 20 * 1024 * 1024;
   const T = { items: [], root: null, opts: {}, cfg: {}, ringing: null, beepT: null, actx: null, syncing: false, status: '', tab: 'r', whenTs: null, dayOff: 0, rep: 0, urls: {}, fetching: new Set(), started: false, syncT: 0 };
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const fmt = ts => new Date(ts).toLocaleString('ar-SA-u-ca-gregory', { weekday: 'short', hour: 'numeric', minute: '2-digit', day: 'numeric', month: 'short' });
+  const fmt = ts => window.KZTime ? new Date(ts).toLocaleDateString('ar-SA-u-ca-gregory', { weekday: 'short', day: 'numeric', month: 'short' }) + '، ' + window.KZTime.fmt(ts, true) : new Date(ts).toLocaleString('ar-SA-u-ca-gregory', { weekday: 'short', hour: 'numeric', minute: '2-digit', day: 'numeric', month: 'short' });
   const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2, 12));
   const q = s => T.root && T.root.querySelector(s);
   const vis = () => T.items.filter(i => !i.deleted);
@@ -196,7 +196,7 @@ create policy "zk files delete" on storage.objects for delete to authenticated
   }
   async function sync() {
     if (T.syncing || !T.cfg.session) return; T.syncing = true; setStatus('جاري المزامنة…');
-    try { await push(); await pull(); setStatus('☁ متزامن ' + new Date().toLocaleTimeString('ar-SA-u-ca-gregory', { hour: 'numeric', minute: '2-digit' })); }
+    try { await push(); await pull(); setStatus('☁ متزامن ' + (window.KZTime ? window.KZTime.fmt(new Date(), true) : new Date().toLocaleTimeString('ar-SA-u-ca-gregory', { hour: 'numeric', minute: '2-digit' }))); }
     catch (e) { setStatus('⚠ ' + (e.message || 'فشلت المزامنة')); }
     finally { T.syncing = false; }
   }

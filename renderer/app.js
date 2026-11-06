@@ -515,7 +515,9 @@ $('sideList').addEventListener('click', async e => {
 /* ---------- 📦 نقل الملفات لمجلد خزنة ---------- */
 async function moveToVault(ids, ask, auto) {
   if (!window.api.filesMove) return;
-  const L = items.filter(i => ids.includes(i.id) && i.path && !i.uri && !/\.lnk$/i.test(i.path) && !(auto && (i.kind === 'folder' || i.kind === 'app'))).map(i => ({ id: i.id, path: i.path, section: secName(i.section) }));
+  // اختصارات البرامج (.lnk) تنتقل بعد من سطح المكتب (main.js يتأكد إنها على سطح المكتب فعلاً، وغيرها يظل مكانه)
+  const isSc = p => /\.(lnk|appref-ms)$/i.test(p || '');
+  const L = items.filter(i => ids.includes(i.id) && i.path && !i.uri && (isSc(i.path) || !(auto && (i.kind === 'folder' || i.kind === 'app')))).map(i => ({ id: i.id, path: i.path, section: secName(i.section) }));
   if (!L.length) return;
   if (ask && !confirm(`تبي أنقل ${L.length} ملف لمجلد خزنة (Documents\\Khazana Files) وأشيلهم من مكانهم الحالي (مثل سطح المكتب)؟\nتقدر تتراجع بعدها.`)) return;
   setBusy('أنقل الملفات…'); let r = null; try { r = await window.api.filesMove({ items: L }); } catch (e) {} setBusy('');
@@ -530,6 +532,7 @@ async function moveToVault(ids, ask, auto) {
       if (r2) { Object.assign(r.moved, r2.moved); r.inUse = (r.inUse || []).concat(r2.inUse || []); r.failed = (r.failed || []).concat(r2.failed || []); }
     }
   }
+  if (r.adminDenied && r.adminDenied.length) toast(`${r.adminDenied.length} اختصار على سطح المكتب العام يحتاج موافقة ويندوز (مسؤول) عشان ينتقل، فظل مكانه`, null, 6000);
   if (r.inUse && r.inUse.length) toast(`${r.inUse.length} ملف مفتوح ببرنامج ثاني، سكّره وجرّب مرة ثانية (ما نقلته ولا حذفت شي)`, null, 6000);
   const old = []; items.forEach(i => { const np = r.moved[i.id]; if (np) { old.push({ id: i.id, from: np, to: i.path }); i.path = np; } });
   if (!old.length) return (r.inUse && r.inUse.length) ? null : toast('ما انتقل شي (ملفات نظام أو محميّة)');
@@ -685,9 +688,7 @@ $('moreMenu').addEventListener('click', async e => {
     toast('أبحث عن تحديث…'); const r = await window.api.updateCheck();
     if (!r.ok) return toast('تعذّر الاتصال بـ GitHub: ' + r.error);
     if (!r.count) return toast('✅ عندك آخر نسخة');
-    if (!confirm(`فيه تحديث جديد (${r.count} ملف).\nأحدّث الحين؟ التطبيق بيعيد تشغيل نفسه وبياناتك ما تتأثر.`)) return;
-    toast('أنزّل التحديث…'); const u = await window.api.updateApply();
-    toast(u.ok ? '✅ تم! يعيد التشغيل…' : 'فشل التحديث: ' + u.error);
+    openUpdDlg(r);
   }
   else if (a === 'prefs') openPrefs();
   else if (a === 'stats2') openStats();
@@ -813,10 +814,37 @@ document.addEventListener('keydown', e => {
 });
 
 /* ---------- 🔔 تنبيه التحديث ---------- */
-function showUpdBar(d) { if (!d) { $('updBar').hidden = true; $('moreBtn').classList.remove('hasupd'); return; } $('updTxt').textContent = `🔄 فيه تحديث جديد للتطبيق (${d.count} ملف)`; $('updBar').hidden = false; $('moreBtn').classList.add('hasupd'); }
+function showUpdBar(d) { lastUpd = d || lastUpd; if (d && d.version) { try { if (localStorage.getItem('kz-upd-shown') !== d.version) { localStorage.setItem('kz-upd-shown', d.version); setTimeout(() => openUpdDlg(d), 400); } } catch (e) {} } if (!d) { $('updBar').hidden = true; $('moreBtn').classList.remove('hasupd'); return; } $('updTxt').textContent = `🔄 فيه تحديث جديد للتطبيق (${d.count} ملف)`; $('updBar').hidden = false; $('moreBtn').classList.add('hasupd'); }
 if (window.api.onUpdateAvail) { window.api.onUpdateAvail(showUpdBar); setTimeout(() => window.api.updatePending && Promise.resolve(window.api.updatePending()).then(showUpdBar), 2500); }
 $('updLater').onclick = () => { $('updBar').hidden = true; };
-$('updGo').onclick = async () => { $('updGo').disabled = true; $('updTxt').textContent = '⏳ أنزّل التحديث…'; const u = await window.api.updateApply(); if (u.ok) $('updTxt').textContent = '✅ تم! يعيد التشغيل…'; else { $('updTxt').textContent = 'فشل التحديث: ' + u.error; $('updGo').disabled = false; } };
+$('updGo').onclick = () => { $('updBar').hidden = true; openUpdDlg(lastUpd || {}); };
+/* 🔄 نافذة التحديث بتصميم التطبيق (بدل نافذة ويندوز). منطق التحديث والأمان نفسه بـ main.js ما تغيّر */
+let lastUpd = null, updRunning = false;
+function openUpdDlg(d) {
+  const dlg = $('updDlg'); if (!dlg || !dlg.showModal) { if (confirm(`فيه تحديث جديد (${d.count || ''} ملف).\nأحدّث الحين؟`)) runUpd(); return; }
+  const en = (ui.lang || window.I18N.get()) === 'en';
+  $('updVer').textContent = (en ? 'Version ' : 'الإصدار ') + (d.version ? fmtVer(d.version) : '') + (d.count ? (en ? ` · ${d.count} files` : ` · ${d.count} ملف`) : '');
+  const N = (d.notes && ((en && d.notes.en && d.notes.en.length) ? d.notes.en : d.notes.ar)) || [];
+  const L = N.length ? N : [en ? 'Improvements and fixes' : 'تحسينات وإصلاحات'];
+  $('updNotes').innerHTML = L.map(x => `<li>${esc(x)}</li>`).join('');
+  $('updProg').hidden = true; $('updErr').hidden = true; $('updNowBtn').disabled = false; $('updLaterBtn').disabled = false;
+  $('updFill').style.width = '0'; $('updFill').parentNode.classList.remove('ind');
+  if (!dlg.open) { dlg.showModal(); try { $('updNowBtn').focus({ focusVisible: false }); } catch (e) {} }
+}
+function fmtVer(v) { const m = /^(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)$/.exec(String(v)); if (!m || !window.fmtTime) return String(v); const dt = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5])); return `${m[1]}-${m[2]}-${m[3]} ${window.fmtTime(dt)}`; }
+async function runUpd() {
+  if (updRunning) return; updRunning = true;
+  $('updNowBtn').disabled = true; $('updLaterBtn').disabled = true; $('updErr').hidden = true;
+  $('updProg').hidden = false; $('updMsg').textContent = '⏳ أنزّل التحديث…'; $('updFill').parentNode.classList.add('ind');
+  let u = null; try { u = await window.api.updateApply(); } catch (e) { u = { ok: false, error: String(e && e.message || e) }; }
+  updRunning = false; $('updFill').parentNode.classList.remove('ind');
+  if (u && u.ok) { $('updFill').style.width = '100%'; $('updMsg').textContent = '✅ تم! يعيد التشغيل…'; return; }
+  $('updProg').hidden = true; $('updErr').hidden = false; $('updErr').textContent = 'فشل التحديث: ' + ((u && u.error) || ''); $('updNowBtn').disabled = false; $('updLaterBtn').disabled = false;
+}
+$('updNowBtn').onclick = runUpd;
+$('updLaterBtn').onclick = () => { if (!updRunning) $('updDlg').close(); };
+$('updDlg').addEventListener('cancel', e => { if (updRunning) e.preventDefault(); });
+if (window.api.onUpdateProg) window.api.onUpdateProg(p => { if (!p || !p.n) return; $('updFill').parentNode.classList.remove('ind'); $('updFill').style.width = Math.round(100 * p.i / p.n) + '%'; $('updMsg').textContent = `⏳ أنزّل التحديث… ${p.i} / ${p.n}`; });
 
 /* ---------- الملفات المفقودة ---------- */
 let lastCheck = 0;
@@ -901,7 +929,7 @@ const QUOTES = {
 };
 function ringSVG(p, c) { const r = 24, L = 2 * Math.PI * r; return `<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="${r}" class="rb"/><circle cx="30" cy="30" r="${r}" class="rf" style="stroke:${c};stroke-dasharray:${(L * Math.max(.04, Math.min(1, p))).toFixed(1)} ${L.toFixed(1)}"/></svg>`; }
 function todayWidgets(ar, now, rems) {
-  const loc = ar ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', tm = now.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', hour12: false });
+  const loc = ar ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', tm = window.KZTime ? window.KZTime.fmt(now, ar) : now.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', hour12: false });
   const y = now.getFullYear(), m = now.getMonth(), first = new Date(y, m, 1).getDay(), dim = new Date(y, m + 1, 0).getDate();
   const dayHas = new Set(); (window.Zakker.list ? window.Zakker.list() : []).forEach(r => { if (r.when && !r.done) { const d = new Date(r.when); if (d.getFullYear() === y && d.getMonth() === m) dayHas.add(d.getDate()); } });
   const hd = (ar ? ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'] : ['S', 'M', 'T', 'W', 'T', 'F', 'S']).map(x => `<i class="h">${x}</i>`).join('');
@@ -918,7 +946,7 @@ function todayWidgets(ar, now, rems) {
 let clockT = null;
 function startClock() {
   if (clockT) return;
-  clockT = setInterval(() => { const e = document.getElementById('wkT'); if (!e) return; const ar = (ui.lang || window.I18N.get()) !== 'en'; e.textContent = new Date().toLocaleTimeString(ar ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit', hour12: false }); }, 5000);
+  clockT = setInterval(() => { const e = document.getElementById('wkT'); if (!e) return; const ar = (ui.lang || window.I18N.get()) !== 'en'; e.textContent = window.KZTime ? window.KZTime.fmt(new Date(), ar) : new Date().toLocaleTimeString(ar ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit', hour12: false }); }, 5000);
 }
 function drawToday() {
   startClock();
@@ -931,7 +959,7 @@ function drawToday() {
   const top = visItems().filter(i => i.openCount > 0).sort((a, b) => b.openCount - a.openCount).slice(0, 6);
   const rec = visItems().filter(i => i.lastOpened).sort((a, b) => b.lastOpened - a.lastOpened).slice(0, 6);
   const itm = i => `<div class="tdi" data-it="${esc(i.id)}">${i.thumb ? `<img src="${esc(i.thumb)}">` : '<span>📄</span>'}<b>${esc(i.name)}</b></div>`;
-  const tm = r => new Date(r.when).toLocaleTimeString(ar ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+  const tm = r => window.KZTime ? window.KZTime.fmt(r.when, ar) : new Date(r.when).toLocaleTimeString(ar ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit' });
   const wgs = todayWidgets(ar, now, rems);
   $('td').innerHTML = `<div class="tdw"><div class="tdh"><h1>${hi}</h1><span>${esc(dt)}</span></div>${wgs}
     ${missing.size ? `<div class="tdmiss"><b>⚠ ${missing.size} عنصر مسارهم مفقود (غالباً انتقلوا لمكان ثاني)</b><button class="sm pri" data-tq="mauto">🔧 إصلاح تلقائي</button><button class="sm" data-tq="mpick">📂 اختر المجلد اللي نقلتهم له</button></div>` : ''}
@@ -951,6 +979,7 @@ $('td').addEventListener('click', e => {
   if (k === 'note') { showView('nt'); window.Notes.create('blank'); } else if (k === 'add') { showView('vault'); $('addBtn').click(); } else if (k === 'rem') showView('zk') ; else if (k === 'cv') showView('cv'); else if (k === 'srch') openPalette(); else if (k === 'mauto') relocate([...missing]).then(drawToday); else if (k === 'mpick') window.api.pick({ dirs: true }).then(ps => ps && ps[0] && relocate([...missing], [ps[0]]).then(drawToday));
 });
 window.Notes.mount($('nt'), {
+  voice: window.api.voiceSave ? { save: (id, b, m) => window.api.voiceSave(id, b, m), read: f => window.api.voiceRead(f), del: f => window.api.voiceDel(f), show: f => window.api.voiceShow(f) } : null,
   get: () => notes, save: () => persist(), items: () => visItems(), open: it => { showView('vault'); openItem(it); },
   hash: (p, s) => hashPass(p, s), salt: () => uid() + uid(), signedIn: () => window.Zakker.signedIn(), docs: () => window.Zakker.getDocs(), setDoc: (id, d, del) => window.Zakker.setDoc(id, d, del), onDocs: cb => { notesMerge = cb; },
   remind: (title, when, noteId) => window.Zakker.addRem(title, when, { note: noteId }), ai: d => window.api.aiNote(d),
@@ -966,7 +995,7 @@ window.Zakker.mount($('zk'));
   if (s.loadError) { toast('⚠ ما قدرت أقرأ ملف الخزنة (' + s.loadError + '). سكّر البرنامج وافتحه مرة ثانية — ما راح أحفظ شي عشان ما تضيع بياناتك.', null, 60000); return; }
   const { meta, rest } = splitLoaded(s.items || []);
   sections = meta && Array.isArray(meta.sections) ? meta.sections : [];
-  if (meta) { ui = { ...ui, ...(meta.ui || {}) }; views = meta.views || {}; collapsed = new Set(meta.collapsed || []); groups = Array.isArray(meta.groups) ? meta.groups : []; notes = Array.isArray(meta.notes) ? meta.notes : []; boards = Array.isArray(meta.boards) ? meta.boards : []; trash = (Array.isArray(meta.trash) ? meta.trash : []).filter(x => x && Date.now() - (x._del || 0) < 30 * 864e5); }
+  if (meta) { ui = { ...ui, ...(meta.ui || {}) }; if (ui.clock && window.KZTime) window.KZTime.set(ui.clock !== '24'); views = meta.views || {}; collapsed = new Set(meta.collapsed || []); groups = Array.isArray(meta.groups) ? meta.groups : []; notes = Array.isArray(meta.notes) ? meta.notes : []; boards = Array.isArray(meta.boards) ? meta.boards : []; trash = (Array.isArray(meta.trash) ? meta.trash : []).filter(x => x && Date.now() - (x._del || 0) < 30 * 864e5); }
   applyAppearance(); window.I18N.set(ui.lang || window.I18N.auto());
   if (window.Splash) window.Splash.ready(!ui.welcomed, lg => { ui.lang = lg; ui.welcomed = true; window.I18N.set(lg); render(); persist(); if (!ui.toured) { ui.toured = true; persist(); setTimeout(() => window.Tour && window.Tour.show(), 1300); } }, ui.lang);
   items = rest.map(x => newItem(x)); vaultLoaded = true; normalizeSections();
@@ -1001,6 +1030,13 @@ async function onExtMsg(d) {
       commit(dr); n++;
     }
     await persist(); render(); checkMissing(); if (n) { toast(`انضاف ${n} عنصر`); if (d.notify) window.api.notify(`انضاف ${n} عنصر للخزنة ✓`); }
+    // نفس مسار الإضافة العادية: اللي ينضاف من الحاويات (سحب من سطح المكتب) ينتقل لمجلد خزنة حسب إعداد «نقل الملفات عند إضافتها»
+    const mode = ui.moveMode || 'ask';
+    if (n && mode !== 'never') {
+      const ids = items.filter(i => paths.includes(i.path)).map(i => i.id);
+      if (mode === 'ask' && window.api.openMain) { try { await window.api.openMain(); } catch (e) {} } // نطلع النافذة عشان سؤال التأكيد يبان
+      await moveToVault(ids, mode === 'ask', true);
+    }
   }
 }
 if (window.api.onExt) window.api.onExt(onExtMsg);
@@ -1014,7 +1050,7 @@ async function runGroup(g) {
   for (const it of list) { await openItem(it); await sleep(450); }
 }
 function renderGrpMenu() {
-  $('grpMenu').innerHTML = (groups.length ? groups.map(g => `<div class="grow" data-g="${g.id}"><button class="grun" data-grun="${g.id}" title="تشغيل">▶ ${esc(g.emoji || '⚡')} ${esc(g.name)} <span class="hint">(${(g.ids || []).length})</span>${g.sched && g.sched.on ? ` <span class="hint">⏰ ${esc(g.sched.time)}</span>` : ''}</button><button data-gedit="${g.id}" title="تعديل">✏</button><button data-gdel="${g.id}" title="حذف">🗑</button></div>`).join('') : '<div class="hint" style="padding:6px 4px">ما عندك مجموعات. مثلاً «وضع الدراسة» تفتح متصفح + ملفاتك + ملاحظاتك بضغطة.</div>')
+  $('grpMenu').innerHTML = (groups.length ? groups.map(g => `<div class="grow" data-g="${g.id}"><button class="grun" data-grun="${g.id}" title="تشغيل">▶ ${esc(g.emoji || '⚡')} ${esc(g.name)} <span class="hint">(${(g.ids || []).length})</span>${g.sched && g.sched.on ? ` <span class="hint">⏰ ${esc(window.KZTime ? window.KZTime.fmtHM(g.sched.time) : g.sched.time)}</span>` : ''}</button><button data-gedit="${g.id}" title="تعديل">✏</button><button data-gdel="${g.id}" title="حذف">🗑</button></div>`).join('') : '<div class="hint" style="padding:6px 4px">ما عندك مجموعات. مثلاً «وضع الدراسة» تفتح متصفح + ملفاتك + ملاحظاتك بضغطة.</div>')
     + '<button class="sm" id="grpNew" style="margin-top:6px">+ مجموعة جديدة</button>';
 }
 $('grpBtn').onclick = e => { e.stopPropagation(); const h = $('grpMenu').hidden; closeMenus(); renderGrpMenu(); $('grpMenu').hidden = !h; };
@@ -1143,7 +1179,7 @@ async function openStats() {
   h += `<div class="sec"><span>🕒 أكثر وقت استخدام</span></div>` + (topP.length ? topP.map(i => `<div class="srow">${nm(i)}${bar(play[i.id], mp, '#ea580c')}<span class="sv">${fmtDur(play[i.id])}</span></div>`).join('') : '<div class="hint" style="padding:6px">يبدأ الحساب لما تشغّل برنامج أو لعبة (.exe) من خزنة أو من ويندوز وخزنة شغّالة في الخلفية.</div>');
   h += `<div class="sec"><span>📅 آخر 7 أيام (مرات الفتح)</span></div><div class="sdays">` + days.map(d => `<div class="sd"><div class="sdb"><i style="height:${Math.round(d.n / md * 100)}%"></i></div><b>${d.n}</b><span>${esc(d.l)}</span></div>`).join('') + '</div>';
   const hrs = Array(24).fill(0); L.forEach(i => (i.hist || []).forEach(t => { hrs[new Date(t).getHours()]++; })); const mh = Math.max(1, ...hrs), pk = hrs.indexOf(Math.max(...hrs));
-  if (hrs.some(n => n)) h += `<div class="sec"><span>⏰ أكثر ساعات استخدامك${hrs[pk] ? ' · ذروتك ' + String(pk).padStart(2, '0') + ':00' : ''}</span></div><div class="shrs">` + hrs.map((n, k) => `<i title="${k}:00 · ${n}" style="height:${Math.max(6, Math.round(n / mh * 100))}%;opacity:${n ? .35 + .65 * n / mh : .15}"></i>`).join('') + '</div><div class="shl"><span>12ص</span><span>6ص</span><span>12م</span><span>6م</span></div>';
+  if (hrs.some(n => n)) h += `<div class="sec"><span>⏰ أكثر ساعات استخدامك${hrs[pk] ? ' · ذروتك ' + (window.KZTime ? window.KZTime.fmtHour(pk) : String(pk).padStart(2, '0') + ':00') : ''}</span></div><div class="shrs">` + hrs.map((n, k) => `<i title="${k}:00 · ${n}" style="height:${Math.max(6, Math.round(n / mh * 100))}%;opacity:${n ? .35 + .65 * n / mh : .15}"></i>`).join('') + '</div><div class="shl"><span>12ص</span><span>6ص</span><span>12م</span><span>6م</span></div>';
   const KC = ['var(--acc)', '#f59e0b', '#ec4899', '#3b82f6', '#8b5cf6', '#14b8a6', '#ef4444', '#84cc16'], ke = Object.entries(kinds).sort((x, y) => y[1] - x[1]), kt = ke.reduce((n, e) => n + e[1], 0) || 1; let acc0 = 0;
   const ring = ke.slice(0, 8).map(([k, n], j) => { const f = n / kt, L2 = 2 * Math.PI * 40, d = `<circle cx="50" cy="50" r="40" fill="none" stroke="${KC[j]}" stroke-width="14" stroke-dasharray="${(L2 * f).toFixed(1)} ${L2.toFixed(1)}" stroke-dashoffset="${(-L2 * acc0).toFixed(1)}" transform="rotate(-90 50 50)"/>`; acc0 += f; return d; }).join('');
   h += `<div class="sec"><span>🍩 توزيع الأنواع</span></div><div class="sdn"><svg viewBox="0 0 100 100">${ring}<text x="50" y="55" text-anchor="middle" font-size="18" font-weight="800" fill="currentColor">${kt}</text></svg><div class="sdl">${ke.slice(0, 8).map(([k, n], j) => `<span><i style="background:${KC[j]}"></i>${KIND_ICON[k] || '📦'} ${KIND_CAT[k] || k} <b>${Math.round(n / kt * 100)}%</b></span>`).join('')}</div></div>`;
@@ -1327,6 +1363,7 @@ document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && !e.a
 const PREFS = [
   { id: 'look', ico: '🎨', t: 'المظهر', rows: [
     { t: 'اللغة', d: 'لغة واجهة التطبيق.', c: { sel: 'lang', o: [['ar', 'العربية'], ['en', 'English']] } },
+    { t: 'نظام الوقت', d: '١٢ ساعة (ص/م) أو ٢٤ ساعة، لكل الأوقات بالتطبيق والحاويات والتذكيرات.', c: { sel: 'clock', o: [['12', '١٢ ساعة (3:05 م)'], ['24', '٢٤ ساعة (15:05)']] } },
     { t: 'الثيم', d: 'شكل التطبيق الكامل.', c: { sel: 'preset', o: PRESETS.map(p => [p[0], p[1]]) } },
     { t: 'المظهر', d: 'فاتح أو داكن أو حسب الويندوز (للثيم الأساسي).', c: { sel: 'theme', o: [['auto', 'تلقائي'], ['light', 'فاتح'], ['dark', 'داكن'], ['time', 'حسب الوقت (نهار / مغرب / ليل)']] } },
     { t: 'لون التطبيق', d: 'اللون الرئيسي للأزرار والتحديد.', c: { sw: 1 } },
@@ -1336,6 +1373,7 @@ const PREFS = [
     { t: 'إظهار التصنيف والوسوم', d: 'الشارات الصغيرة على البطاقة.', c: { tg: 'showTags' } }
   ] },
   { id: 'design', ico: '🖌', t: 'التصميم', rows: [
+    { t: '💾 حفظ الشكل', d: 'احفظ تصميمك الحالي باسم، وارجع له متى ما بغيت لو جربت تصميم ثاني وما عجبك.', col: 1, c: { looks: 1 } },
     { t: 'ثيمات جاهزة', d: 'خلفية وألوان وزجاج بضغطة وحدة.', col: 1, c: { thm: 1 } },
     { t: 'الثيمات', d: 'اختر شكل التطبيق الكامل.', col: 1, c: { pre: 1 } },
     { t: 'لون التطبيق', d: 'اختر من الألوان أو اصنع لونك من القوس الملوّن.', col: 1, c: { sw: 1, cu: 1 } },
@@ -1381,13 +1419,11 @@ const PREFS = [
     { t: 'المجموعات', d: 'افتح عدة عناصر بضغطة، مع جدولة بوقت.', c: { fn: 'groups', l: 'إدارة' } },
     { t: 'مراقبة مجلد', d: 'إشعار لكل ملف جديد في مجلد (مثل التنزيلات).', c: { b: 'more:watch', l: 'اختيار مجلد' } }
   ] },
-  { id: 'desk', ico: '🪟', t: 'سطح المكتب', rows: [
-    { t: 'حاوية ذكية: فتحتها مؤخراً', d: 'تتعبّى لحالها.', c: { b: 'more:smart-recent', l: 'تشغيل / إيقاف' } },
-    { t: 'حاوية ذكية: الأكثر استخداماً', d: 'أكثر ما تفتحه.', c: { b: 'more:smart-used', l: 'تشغيل / إيقاف' } },
-    { t: 'حاوية ذكية: أضفتها حديثاً', d: 'آخر ما أضفته.', c: { b: 'more:smart-added', l: 'تشغيل / إيقاف' } },
-    { t: 'حاوية ذكية: المثبّتة', d: 'عناصرك المثبّتة ⭐.', c: { b: 'more:smart-pinned', l: 'تشغيل / إيقاف' } },
+  { id: 'desk', ico: '🪟', t: 'الحاويات', rows: [
+    { t: 'الحاويات على سطح المكتب', d: 'حاويات زجاجية ترتّب برامجك وملفاتك على سطح المكتب. لتغيير تصميم أي حاوية اضغط 🎨 فوقها.', col: 1, c: { fhero: 1 } },
+    { t: 'حاويات ذكية', d: 'تتعبّى لحالها. اضغط على أي وحدة لتشغيلها أو إيقافها.', col: 1, c: { smart: 1 } },
     { t: 'حاوية لقسم', d: 'من القائمة الجانبية: حط الماوس على أي قسم واضغط 🪟.', c: { txt: '' } },
-    { t: 'اختصارات لوحة المفاتيح', d: 'Ctrl+Alt+Space فتح خزنة · Ctrl+Alt+F بحث سريع · Ctrl+Alt+D إظهار الحاويات · Ctrl+Alt+V إضافة من الحافظة · Ctrl+K لوحة الأوامر', c: { txt: '' } }
+    { t: 'اختصارات لوحة المفاتيح', d: '', col: 1, c: { keys: 1 } }
   ] },
   { id: 'ai', ico: '✨', t: 'الذكاء الاصطناعي', rows: [
     { t: 'مفتاح Anthropic API (اختياري)', d: 'بدون مفتاح كل شي يشتغل بالكلمات. بالمفتاح: تعرّف تلقائي على الملفات وبحث بالوصف. المفتاح مشفّر على جهازك.', c: { b: 'more:settings', l: 'إدارة المفتاح' } }
@@ -1399,12 +1435,24 @@ const PREFS = [
   ] }
 ];
 let prefsTab = 'look';
-function prefsVal(k) { if (k === 'lang') return ui.lang || window.I18N.get(); if (k === 'preset') return ui.preset || ''; if (k === 'theme') return ui.theme || 'auto'; if (k === 'view') return ui.view || 'big'; if (k === 'moveMode') return ui.moveMode || 'ask'; return ''; }
+function prefsVal(k) { if (k === 'lang') return ui.lang || window.I18N.get(); if (k === 'preset') return ui.preset || ''; if (k === 'theme') return ui.theme || 'auto'; if (k === 'view') return ui.view || 'big'; if (k === 'moveMode') return ui.moveMode || 'ask'; if (k === 'clock') return ui.clock || (window.KZTime && !window.KZTime.h12() ? '24' : '12'); return ''; }
 const dval = k => ui[k] === undefined || ui[k] === null ? '' : String(ui[k]);
 function prefsCtl(c) {
   if (c.sel) return `<select data-ps="${c.sel}">${c.o.map(([v, l]) => `<option value="${v}" ${prefsVal(c.sel) === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
   if (c.tg) return `<label class="tgl"><input type="checkbox" data-pt="${c.tg}" ${(c.def ? ui[c.tg] !== false : ui[c.tg]) ? 'checked' : ''}><i></i></label>`;
   if (c.sw) return `<div class="swatches">${SWATCHES.map(x => `<button type="button" class="sw ${x ? '' : 'def'} ${(ui.accent || '') === x ? 'on' : ''}" data-pc="${x}" style="${x ? 'background:' + x : ''}"></button>`).join('')}${c.cu ? `<span class="sw cust ${ui.accent && !SWATCHES.includes(ui.accent) ? 'on' : ''}" title="لون مخصّص"><input type="color" data-pcc value="${/^#[0-9a-f]{6}$/i.test(ui.accent || '') ? ui.accent : '#2f6f5e'}"></span>` : ''}</div>`;
+  if (c.looks) return looksHTML();
+  if (c.fhero) {
+    // معرض تصاميم الحاويات: بطاقات زجاجية بمعاينة حيّة (نفس التصاميم العشرة اللي في 🎨 فوق كل حاوية). عرض فقط، ما يغيّر أي سلوك
+    const FD = [['زجاجي', 'linear-gradient(160deg,#2a3148,#10131d)', 14, '#8be9fd'], ['ليلي', '#0d1117', 10, '#58a6ff'], ['ورقي', '#f6f1e7', 12, '#b4691f', 1], ['نيون', 'radial-gradient(#1a0f3a,#07060f)', 16, '#ff2bd6'], ['شفق', 'linear-gradient(120deg,#3b2dd1,#b51fd9,#0ea5e9)', 18, '#fff'], ['بسيط', 'repeating-linear-gradient(45deg,#222 0 6px,#2b2b2b 6px 12px)', 14, '#e5e7eb'], ['لاصقة', 'linear-gradient(#fff6ae,#ffed7d)', 4, '#b45309', 1], ['ريترو', 'linear-gradient(#1b1b2f,#2a1b4f)', 0, '#22d3ee'], ['غروب', 'linear-gradient(160deg,#ff7e5f,#b24592,#2b1055)', 18, '#fde68a'], ['ميكا', 'linear-gradient(#3a3a40,#222226)', 8, '#a3e635']];
+    const ICS = ['🎮', '📚', '🎵', '🖼', '🛠', '🌐'];
+    const fz = (d, k, big) => `<span class="fz ${d[4] ? 'lt' : ''} ${big ? 'big' : ''}" style="--fb:${d[1]};--fr:${Math.min(d[2], 16)}px;--fa:${d[3]};--dl:${k * 0.12}s"><span class="fz-h"><i></i><b>${big ? big : esc(d[0])}</b></span><span class="fz-g">${ICS.map((x, j) => `<i style="--j:${j}">${x}</i>`).join('')}</span></span>`;
+    return `<div class="fhero2"><div class="fh2-stage">${fz(FD[0], 0, '🎮 ألعاب')}${fz(FD[4], 1, '📚 دراسة')}${fz(FD[9], 2, '🛠 برامج')}</div>
+      <div class="fh2-tx"><b>١٠ تصاميم · ٣ طرق عرض · شريط على الحافة</b><span>كل حاوية لها تصميمها الخاص. اضغط 🎨 فوق أي حاوية على سطح المكتب وغيّر الشكل والألوان والشفافية — التغيير يبان مباشرة.</span><button class="sm pri" data-pa="more:fences-all">إظهار / إخفاء الحاويات</button></div></div>
+      <div class="fgal">${FD.map((d, k) => `<div class="fgc">${fz(d, k)}<span class="fgn">${esc(d[0])}</span></div>`).join('')}</div>`;
+  }
+  if (c.smart) return `<div class="smgrid">${[['recent', '🕘', 'فتحتها مؤخراً'], ['used', '🔥', 'الأكثر استخداماً'], ['added', '✨', 'أضفتها حديثاً'], ['pinned', '⭐', 'المثبّتة']].map(([k, i, n]) => `<button type="button" class="smc smc2" data-pa="more:smart-${k}"><span class="smi">${i}</span><b>${n}</b><small>تشغيل / إيقاف</small></button>`).join('')}</div>`;
+  if (c.keys) return `<div class="kgrid">${[['Ctrl+Alt+Space', 'فتح خزنة'], ['Ctrl+Alt+F', 'بحث سريع'], ['Ctrl+Alt+D', 'إظهار الحاويات'], ['Ctrl+Alt+V', 'إضافة من الحافظة'], ['Ctrl+K', 'لوحة الأوامر']].map(([k, n]) => `<div class="kc"><kbd>${k}</kbd><span>${n}</span></div>`).join('')}</div>`;
   if (c.thm) return `<div class="pgal tgal">${THEMES.map(([n, o], k) => `<button type="button" class="tcard" data-th="${k}"><span class="tv" style="background:${WALLS[o.wp]}"><b style="background:${o.accent}"></b><i></i><i></i></span>${esc(n)}</button>`).join('')}</div>`;
   if (c.pre) return `<div class="pgal">${PRESETS.map(([k, n, b, cd, a]) => `<button type="button" class="pcard ${(ui.preset || '') === k ? 'on' : ''}" data-pp="${k}"><span class="pv" style="background:${b}"><i style="background:${cd}"></i><i style="background:${cd}"></i><b style="background:${a}"></b></span>${esc(n)}</button>`).join('')}</div>`;
   if (c.sg) return `<div class="seg2">${c.o.map(([v, l]) => `<button type="button" class="${dval(c.sg) === v ? 'on' : ''}" data-sg="${c.sg}" data-v="${v}">${esc(l)}</button>`).join('')}</div>`;
@@ -1441,6 +1489,33 @@ $('prefsPane').addEventListener('click', async e => {
   else if (pf.dataset.pf === 'sync') window.Zakker.openSync();
   else if (pf.dataset.pf === 'github') window.api.openUrl('https://github.com/a62724195-lab/khazana');
 });
+/* 💾 حفظ الشكل: نسخ محفوظة من إعدادات التصميم (ui.looks) — تطبيق / إعادة تسمية / حذف */
+let lookEdit = '';
+const lookOf = () => { const d = {}; DKEYS.forEach(k => { if (ui[k] !== undefined && ui[k] !== '') d[k] = ui[k]; }); return d; };
+const sameLook = (a, b) => { const ka = Object.keys(a).sort(), kb = Object.keys(b).sort(); return ka.join() === kb.join() && ka.every(k => String(a[k]) === String(b[k])); };
+function looksHTML() {
+  const L = Array.isArray(ui.looks) ? ui.looks : [], cur = lookOf();
+  const pv = d => { const bg = d.wimg ? `url(${JSON.stringify(String(d.wimg)).slice(1, -1)}) center/cover` : (d.wp && WALLS[d.wp]) || 'var(--bg)'; return `<span class="lk-pv" style="background:${esc(bg)}"><i></i><i></i><b style="background:${esc(d.accent || 'var(--acc)')}"></b></span>`; };
+  return `<div class="lk"><div class="lk-save"><input id="lkName" class="f" maxlength="40" placeholder="اسم الشكل (مثلاً: الأزرق الليلي)"><button type="button" class="pri" data-lk="save">💾 حفظ الشكل</button></div>` +
+    (L.length ? `<div class="lk-grid">${L.map(l => { const on = sameLook(l.d || {}, cur); return `<div class="lk-card ${on ? 'on' : ''}" data-lkid="${esc(l.id)}">${pv(l.d || {})}<div class="lk-meta">${lookEdit === l.id ? `<input class="f lk-ren" data-lkren="${esc(l.id)}" maxlength="40" value="${esc(l.name)}">` : `<b>${esc(l.name)}</b>`}<small>${on ? '✓ الشكل الحالي' : new Date(l.at || Date.now()).toLocaleDateString((ui.lang || window.I18N.get()) === 'en' ? 'en-US' : 'ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'short' })}</small></div><div class="lk-acts"><button type="button" class="sm pri" data-lk="apply" ${on ? 'disabled' : ''}>تطبيق</button><button type="button" class="sm" data-lk="ren" title="إعادة تسمية">✏️</button><button type="button" class="sm" data-lk="del" title="حذف">🗑</button></div></div>`; }).join('')}</div>` : `<div class="lk-empty">ما عندك أشكال محفوظة. سوّ تصميمك واضغط «حفظ الشكل» 👆</div>`) + '</div>';
+}
+async function lookAct(act, id, val) {
+  ui.looks = Array.isArray(ui.looks) ? ui.looks : []; const L = ui.looks, l = L.find(x => x.id === id);
+  if (act === 'save') {
+    const name = String(val || '').trim().slice(0, 40) || ('شكل ' + (L.length + 1));
+    if (L.length >= 30) return toast('وصلت ٣٠ شكل محفوظ، احذف واحد أول');
+    const ex = L.find(x => x.name === name); if (ex) { ex.d = lookOf(); ex.at = Date.now(); } else L.unshift({ id: uid(), name, at: Date.now(), d: lookOf() });
+    await persist(); drawPrefs(); toast(ex ? `💾 تحدّث «${name}»` : `💾 انحفظ «${name}»`); return;
+  }
+  if (!l) return;
+  if (act === 'apply') { const back = lookOf(); DKEYS.forEach(k => delete ui[k]); Object.assign(ui, l.d || {}); applyAppearance(); await persist(); drawPrefs(); toast(`🎨 طبّقت «${l.name}»`, async () => { DKEYS.forEach(k => delete ui[k]); Object.assign(ui, back); applyAppearance(); await persist(); drawPrefs(); }); }
+  else if (act === 'ren') { lookEdit = id; drawPrefs(); const i = document.querySelector('[data-lkren]'); if (i) { i.focus(); i.select(); } }
+  else if (act === 'rendone') { lookEdit = ''; const n = String(val || '').trim().slice(0, 40); if (n) l.name = n; await persist(); drawPrefs(); }
+  else if (act === 'del') { const k = L.indexOf(l); L.splice(k, 1); await persist(); drawPrefs(); toast(`🗑 انحذف «${l.name}»`, async () => { ui.looks.splice(Math.min(k, ui.looks.length), 0, l); await persist(); drawPrefs(); }); }
+}
+$('prefsPane').addEventListener('click', e => { const b = e.target.closest('[data-lk]'); if (!b) return; e.stopPropagation(); const c = b.closest('[data-lkid]'); lookAct(b.dataset.lk, c ? c.dataset.lkid : '', b.dataset.lk === 'save' ? ($('lkName') || {}).value : ''); });
+$('prefsPane').addEventListener('keydown', e => { const r = e.target.closest('[data-lkren]'); if (r && (e.key === 'Enter' || e.key === 'Escape')) { e.preventDefault(); e.stopPropagation(); if (e.key === 'Escape') { lookEdit = ''; drawPrefs(); } else lookAct('rendone', r.dataset.lkren, r.value); } if (e.target.id === 'lkName' && e.key === 'Enter') { e.preventDefault(); lookAct('save', '', e.target.value); } });
+$('prefsPane').addEventListener('focusout', e => { const r = e.target.closest && e.target.closest('[data-lkren]'); if (r && lookEdit) lookAct('rendone', r.dataset.lkren, r.value); });
 const DKEYS = ['preset', 'accent', 'rad', 'cs', 'dn', 'tw', 'ff', 'fs', 'wp', 'wimg', 'wb', 'wd', 'hv', 'mo', 'gl', 'wm', 'tone'];
 function randomLook() {
   const pick = a => a[Math.floor(Math.random() * a.length)];
@@ -1474,6 +1549,7 @@ $('prefsPane').addEventListener('change', async e => {
   else if (k === 'preset') { ui.preset = v; applyAppearance(); }
   else if (k === 'theme') { ui.theme = v; applyAppearance(); }
   else if (k === 'moveMode') { ui.moveMode = v; }
+  else if (k === 'clock') { ui.clock = v; if (window.KZTime) window.KZTime.set(v !== '24'); render(); }
   else if (k === 'view') { ui.view = v; views = {}; applyView(); render(); }
   await persist(); drawPrefs();
 });

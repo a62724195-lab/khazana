@@ -36,14 +36,14 @@ let FEED = [];
 function todoHTML() {
   const ar = (ui.lang || 'ar') !== 'en', end = new Date(); end.setHours(23, 59, 59, 999);
   const l = FEED.filter(r => r.when <= end.getTime()).slice(0, 12), loc = ar ? 'ar-SA-u-nu-latn' : 'en-US';
-  const row = r => { const late = r.when < Date.now(); return `<button class="tdr${late ? ' late' : ''}" data-td="${String(r.id).replace(/"/g, '')}"><i></i><span>${String(r.title).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</span><small>${new Date(r.when).toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', hour12: false })}</small></button>`; };
+  const row = r => { const late = r.when < Date.now(); return `<button class="tdr${late ? ' late' : ''}" data-td="${String(r.id).replace(/"/g, '')}"><i></i><span>${String(r.title).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</span><small>${window.KZTime ? window.KZTime.fmt(r.when, ar) : new Date(r.when).toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', hour12: false })}</small></button>`; };
   return `<div class="wf wtodo"><div class="wth">${ar ? 'مهام اليوم' : "Today's tasks"} <b>${l.length}</b></div><div class="wtl">${l.length ? l.map(row).join('') : `<p class="wte">${ar ? 'ما عندك مهام اليوم 🎉' : 'Nothing due today 🎉'}</p>`}</div></div>`;
 }
 function widgetHTML(k) {
   if (k === 'todo') return todoHTML();
   if (k === 'pad') return `<div class="wf wpad"><textarea id="padTx" spellcheck="false" placeholder="${(ui.lang || 'ar') !== 'en' ? 'اكتب ملاحظتك هنا…' : 'Write a note…'}"></textarea></div>`;
   const ar = (ui.lang || 'ar') !== 'en', loc = ar ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US', now = new Date();
-  if (k === 'clock') return `<div class="wf wclock"><b>${now.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', hour12: false })}</b><span>${now.toLocaleDateString(loc, { weekday: 'long' })}</span><small>${now.toLocaleDateString(loc, { day: 'numeric', month: 'long' })}</small></div>`;
+  if (k === 'clock') return `<div class="wf wclock"><b>${window.KZTime ? window.KZTime.fmt(now, loc.startsWith('ar')) : now.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', hour12: false })}</b><span>${now.toLocaleDateString(loc, { weekday: 'long' })}</span><small>${now.toLocaleDateString(loc, { day: 'numeric', month: 'long' })}</small></div>`;
   if (k === 'cal') {
     const y = now.getFullYear(), m = now.getMonth(), first = new Date(y, m, 1).getDay(), dim = new Date(y, m + 1, 0).getDate();
     const hd = (ar ? ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'] : ['S', 'M', 'T', 'W', 'T', 'F', 'S']).map(x => `<i class="h">${x}</i>`).join('');
@@ -254,19 +254,27 @@ let saveT = null;
 function saveStyle(all) { applyStyle(); clearTimeout(saveT); saveT = setTimeout(() => window.api.fenceStyleSet && window.api.fenceStyleSet(st, !!all), all ? 0 : 250); }
 function drawStyle() {
   const p = $('spanel');
-  p.innerHTML = `<div><div class="sl">🎨 التصميم</div><div class="dg">${DESIGNS.map(d => `<button class="dsw ${st.d === d[0] ? 'on' : ''}" data-kd="${d[0]}" style="background:${d[2]}">${d[1]}</button>`).join('')}</div></div>
-  <div><div class="sl">اللون</div><div class="acs">${ACCS.map(c => `<i data-acc="${c}" class="${st.acc === c ? 'on' : ''}" style="background:${c}"></i>`).join('')}<input type="color" id="accC" value="${st.acc || '#2f7a5e'}" title="لون مخصص"><button class="sm ${!st.acc && st.auc ? 'on' : ''}" data-auto="1" style="width:auto;height:24px;padding:0 8px;margin:0;font-size:11px" title="لون مختلف لكل حاوية حسب القسم">تلقائي</button><button class="sm ${!st.acc && !st.auc ? 'on' : ''}" data-acc="" style="width:auto;height:24px;padding:0 8px;margin:0;font-size:11px" title="نفس لون التطبيق">لون التطبيق</button></div></div>
-  <div><div class="sl">ثيم الشريط الممتد</div><div class="seg">${ETH.map(([k, n]) => `<button data-ket="${k}" class="${(st.et || 'glass') === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
-  <div><div class="sl">الشفافية <b id="opv">${st.op}%</b></div><input type="range" id="opR" min="30" max="100" value="${st.op}"></div>
-  <div><div class="sl">استدارة الزوايا <b id="rv">${st.ra ? 'تلقائي' : st.r}</b></div><input type="range" id="rR" min="0" max="30" value="${st.ra ? (APP_R[ui.rad] ?? 14) : st.r}"></div>
-  <div><div class="sl">حجم الأيقونات</div><div class="seg">${[['s', 'صغير'], ['m', 'وسط'], ['l', 'كبير']].map(([k, n]) => `<button data-ksz="${k}" class="${st.sz === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
-  <div><div class="sl">طريقة العرض</div><div class="seg">${[['grid', 'شبكة'], ['list', 'قائمة'], ['dock', 'شريط Dock']].map(([k, n]) => `<button data-klay="${k}" class="${st.lay === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
-  <div><div class="seg"><button data-knm="1" class="${st.nm ? 'on' : ''}">الأسماء ظاهرة</button><button data-knm="0" class="${st.nm ? '' : 'on'}">بدون أسماء</button></div></div>
-  ${st.matOK ? `<div><div class="sl">خلفية الحاوية (ويندوز 11)</div><div class="seg">${[['', 'عادي'], ['acrylic', 'زجاج أكريليك'], ['mica', 'ميكا']].map(([k, n]) => `<button data-kmat="${k}" class="${(st.mat || '') === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>` : ''}
-  <div><div class="sl">أيقونات 3D وحركة الميلان</div><div class="seg"><button data-kt3="1" class="${st.t3 === false ? '' : 'on'}">تشغيل</button><button data-kt3="0" class="${st.t3 === false ? 'on' : ''}">إيقاف</button></div></div>
-  <div><div class="sl">شكل الحاوية</div><div class="seg">${[['', 'عادية'], ['bottom', 'شريط أسفل'], ['top', 'شريط أعلى'], ['left', 'يسار'], ['right', 'يمين']].map(([k, n]) => `<button data-kedge="${k}" class="${EDGE === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
-  <div><div class="sl">إخفاء الشريط تلقائياً (يظهر لما تلمس الحافة)</div><div class="seg"><button data-keh="0" class="${st.eh ? '' : 'on'}">لا</button><button data-keh="1" class="${st.eh ? 'on' : ''}">نعم</button></div></div>
-  <div class="foot"><button data-all="1">طبّق على كل الحاويات</button><button data-reset="1">إعادة الضبط</button></div>`;
+  // بطاقات زجاجية مقسّمة: الشكل (مع معاينة حيّة لكل تصميم) · الألوان · الأيقونات والعرض · الشريط · أزرار. نفس الأزرار ونفس السلوك
+  const seg = (L, attr, cur) => `<div class="seg">${L.map(([k, n]) => `<button data-${attr}="${k}" class="${cur === k ? 'on' : ''}">${n}</button>`).join('')}</div>`;
+  const row = (t, html, v) => `<div class="srow"><div class="sl">${t}${v !== undefined ? ` <b>${v}</b>` : ''}</div>${html}</div>`;
+  const mini = d => `<span class="dpv" style="background:${d[2]};border-radius:${Math.min(d[3], 12)}px"><span class="dpv-h"></span><span class="dpv-g"><i></i><i></i><i></i><i></i><i></i><i></i></span></span>`;
+  p.innerHTML = `<div class="shead"><b>🎨 تصميم الحاوية</b><small>التغيير يبان مباشرة</small></div>
+  <section class="scard"><div class="sct">✨ الشكل</div><div class="dg">${DESIGNS.map(d => `<button class="dsw ${st.d === d[0] ? 'on' : ''}" data-kd="${d[0]}" title="${d[1]}">${mini(d)}<span class="dnm">${d[1]}</span></button>`).join('')}</div></section>
+  <section class="scard"><div class="sct">🎨 اللون والشفافية</div>
+  ${row('لون الحاوية', `<div class="acs">${ACCS.map(c => `<i data-acc="${c}" class="${st.acc === c ? 'on' : ''}" style="background:${c}"></i>`).join('')}<input type="color" id="accC" value="${st.acc || '#2f7a5e'}" title="لون مخصص"><button class="sm ${!st.acc && st.auc ? 'on' : ''}" data-auto="1" style="width:auto;height:24px;padding:0 8px;margin:0;font-size:11px" title="لون مختلف لكل حاوية حسب القسم">تلقائي</button><button class="sm ${!st.acc && !st.auc ? 'on' : ''}" data-acc="" style="width:auto;height:24px;padding:0 8px;margin:0;font-size:11px" title="نفس لون التطبيق">لون التطبيق</button></div>`)}
+  <div class="srow"><div class="sl">الشفافية <b id="opv">${st.op}%</b></div><input type="range" id="opR" min="30" max="100" value="${st.op}"></div>
+  <div class="srow"><div class="sl">استدارة الزوايا <b id="rv">${st.ra ? 'تلقائي' : st.r}</b></div><input type="range" id="rR" min="0" max="30" value="${st.ra ? (APP_R[ui.rad] ?? 14) : st.r}"></div>
+  ${st.matOK ? row('خلفية الحاوية (ويندوز 11)', seg([['', 'عادي'], ['acrylic', 'زجاج أكريليك'], ['mica', 'ميكا']], 'kmat', st.mat || '')) : ''}</section>
+  <section class="scard"><div class="sct">🧩 الأيقونات والعرض</div>
+  ${row('حجم الأيقونات', seg([['s', 'صغير'], ['m', 'وسط'], ['l', 'كبير']], 'ksz', st.sz))}
+  ${row('طريقة العرض', seg([['grid', 'شبكة'], ['list', 'قائمة'], ['dock', 'شريط Dock']], 'klay', st.lay))}
+  ${row('الأسماء', `<div class="seg"><button data-knm="1" class="${st.nm ? 'on' : ''}">ظاهرة</button><button data-knm="0" class="${st.nm ? '' : 'on'}">بدون أسماء</button></div>`)}
+  ${row('أيقونات 3D وحركة الميلان', `<div class="seg"><button data-kt3="1" class="${st.t3 === false ? '' : 'on'}">تشغيل</button><button data-kt3="0" class="${st.t3 === false ? 'on' : ''}">إيقاف</button></div>`)}</section>
+  <section class="scard"><div class="sct">📐 مكان الحاوية</div>
+  ${row('شكل الحاوية', seg([['', 'عادية'], ['bottom', 'شريط أسفل'], ['top', 'شريط أعلى'], ['left', 'يسار'], ['right', 'يمين']], 'kedge', EDGE))}
+  ${row('ثيم الشريط الممتد', seg(ETH, 'ket', st.et || 'glass'))}
+  ${row('إخفاء الشريط تلقائياً (يظهر لما تلمس الحافة)', `<div class="seg"><button data-keh="0" class="${st.eh ? '' : 'on'}">لا</button><button data-keh="1" class="${st.eh ? 'on' : ''}">نعم</button></div>`)}</section>
+  <div class="foot"><button data-all="1">✓ طبّق على كل الحاويات</button><button data-reset="1">↺ إعادة الضبط</button></div>`;
 }
 const closeS = () => { $('spanel').hidden = true; $('sty').classList.remove('on'); };
 $('sty').onclick = () => { if (!$('spanel').hidden) { closeS(); return; } closeG(); $('sty').classList.add('on'); drawStyle(); $('spanel').hidden = false; };
