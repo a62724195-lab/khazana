@@ -43,7 +43,7 @@
   function sorted() {
     const q = N.q.trim().toLowerCase();
     const hit = n => !q || (n.lock ? (n.title || '').toLowerCase().includes(q) : plain(n).includes(q)) || tags(n).some(t => t.toLowerCase().includes(q));
-    return list().filter(n => hit(n) && (!N.tag || tags(n).includes(N.tag)))
+    return list().filter(n => hit(n) && (!N.tag || (N.tag === ':voice' ? !!n.audio : tags(n).includes(N.tag))))
       .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.updated || 0) - (a.updated || 0));
   }
   function allTags() { const c = {}; list().forEach(n => tags(n).forEach(t => c[t] = (c[t] || 0) + 1)); return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, 14); }
@@ -54,10 +54,11 @@
   function drawList() {
     const L = N.host.querySelector('#ntList'); const l = sorted();
     const tg = allTags();
-    N.host.querySelector('#ntTags').innerHTML = tg.length ? `<button class="ntag ${N.tag ? '' : 'on'}" data-tag="">الكل</button>` + tg.map(([t, c]) => `<button class="ntag ${N.tag === t ? 'on' : ''}" data-tag="${esc(t)}">#${esc(t)} <i>${c}</i></button>`).join('') : '';
+    const vc = list().filter(n => n.audio).length;
+    N.host.querySelector('#ntTags').innerHTML = (tg.length || vc) ? `<button class="ntag ${N.tag ? '' : 'on'}" data-tag="">الكل</button>` + (vc ? `<button class="ntag nvtag ${N.tag === ':voice' ? 'on' : ''}" data-tag=":voice">🎙️ صوتية <i>${vc}</i></button>` : '') + tg.map(([t, c]) => `<button class="ntag ${N.tag === t ? 'on' : ''}" data-tag="${esc(t)}">#${esc(t)} <i>${c}</i></button>`).join('') : '';
     let h = l.map(n => {
-      const pre = n.lock ? '🔒 محمية بكلمة سر' : (n.body || '').replace(/!\[\]\(img:[a-z0-9]+\)/g, ' 🖼 ').replace(/\[\[|\]\]/g, '').replace(/\[[ xX]\]/g, ' ').replace(/[#*>`\-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 90);
-      return `<div class="nit ${N.cur === n.id ? 'on' : ''}" data-id="${n.id}" ${n.color ? `style="--nc:${n.color}"` : ''}><div class="nt1">${n.pinned ? '📌 ' : ''}${n.lock ? '🔒 ' : ''}<b>${esc(n.title || 'بدون عنوان')}</b><span class="nd">${ago(n.updated || n.created || Date.now())}</span></div><div class="nt2">${esc(pre) || '<i>فاضية</i>'}</div></div>`;
+      const pre = n.lock ? '🔒 محمية بكلمة سر' : (n.audio ? '🎙️ ' + mmss(n.audio.dur) + '  ' : '') + (n.body || '').replace(/!\[\]\(img:[a-z0-9]+\)/g, ' 🖼 ').replace(/\[\[|\]\]/g, '').replace(/\[[ xX]\]/g, ' ').replace(/[#*>`\-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 90);
+      return `<div class="nit ${N.cur === n.id ? 'on' : ''}" data-id="${n.id}" ${n.color ? `style="--nc:${n.color}"` : ''}><div class="nt1">${n.pinned ? '📌 ' : ''}${n.lock ? '🔒 ' : ''}${n.audio && !n.lock && !/^🎙/.test(n.title || '') ? '<span class="nvi">🎙️</span>' : ''}<b>${esc(n.title || 'بدون عنوان')}</b><span class="nd">${ago(n.updated || n.created || Date.now())}</span></div><div class="nt2">${esc(pre) || '<i>فاضية</i>'}</div></div>`;
     }).join('');
     if (!l.length) h = `<div class="nempty">${list().length ? 'ما لقيت ملاحظة بهالبحث.' : 'ما عندك ملاحظات للحين.<br>اكتب أفكارك، مهامك، أي شي… وتنحفظ لحالها.'}</div>`;
     const vn = vaultNotes();
@@ -105,10 +106,11 @@
     const bl = backlinks(n);
     E.innerHTML = `<div class="nhead"><button class="sm nback" id="ntBack">‹ القائمة</button><input id="ntTitle" class="f" placeholder="العنوان" value="${esc(n.title || '')}">
       <div class="ntools"><button class="sm" data-fmt="h" title="عنوان">H</button><button class="sm" data-fmt="b" title="غامق"><b>B</b></button><button class="sm" data-fmt="ul" title="قائمة">•</button><button class="sm" data-fmt="ck" title="قائمة مهام">☑</button><button class="sm" data-fmt="q" title="اقتباس">❝</button><button class="sm" data-fmt="wl" title="رابط لملاحظة [[ ]]">[[ ]]</button>
-      <span class="sepv"></span><button class="sm" id="ntRem" title="ذكّرني بالسطر الحالي">⏰</button><button class="sm" id="ntLink" title="اربط عنصر من الخزنة">🔗</button><button class="sm" id="ntAi" title="ذكاء اصطناعي">✨</button><button class="sm ${n.lock ? 'act' : ''}" id="ntLock" title="حماية بكلمة سر">${n.lock ? '🔒' : '🔓'}</button><button class="sm" id="ntExp" title="تصدير">⬇</button>
+      <span class="sepv"></span>${V() && !n.audio ? '<button class="sm" id="ntMicHere" title="سجّل صوت لهذي الملاحظة">🎙️</button>' : ''}<button class="sm" id="ntRem" title="ذكّرني بالسطر الحالي">⏰</button><button class="sm" id="ntLink" title="اربط عنصر من الخزنة">🔗</button><button class="sm" id="ntAi" title="ذكاء اصطناعي">✨</button><button class="sm ${n.lock ? 'act' : ''}" id="ntLock" title="حماية بكلمة سر">${n.lock ? '🔒' : '🔓'}</button><button class="sm" id="ntExp" title="تصدير">⬇</button>
       <button class="sm ${n.pinned ? 'act' : ''}" id="ntPin" title="تثبيت">📌</button><button class="sm ${N.prev ? 'act' : ''}" id="ntPrev" title="معاينة / تحرير">👁</button><button class="sm" id="ntDel" title="حذف">🗑</button></div></div>
       <div class="nclr">${COLORS.map(c => `<button class="nsw ${n.color === c || (!n.color && !c) ? 'on' : ''}" data-c="${c}" style="${c ? 'background:' + c : ''}">${c ? '' : '∅'}</button>`).join('')}<input id="ntTagIn" class="f" placeholder="وسوم: عمل، فكرة، دراسة…" value="${esc(n.tags || '')}"></div>
       ${links.length ? `<div class="nlinks">${links.map(i => `<span class="nlk" data-open="${i.id}">🔗 ${esc(i.name)}<b data-unlink="${i.id}" title="فك الربط">×</b></span>`).join('')}</div>` : ''}
+      ${n.audio ? voiceCard(n) : ''}
       ${N.undo && N.undo.id === n.id ? `<div class="nundo">تم التحسين <button class="sm" id="ntUndo">↶ تراجع</button></div>` : ''}
       ${N.prev ? `<div id="ntView" class="nview">${md(n.body, n) || '<i class="hint">فاضية</i>'}</div>` : `<div class="nbw"><textarea id="ntBody" class="f nbody" placeholder="اكتب هنا… (- [ ] قائمة مهام، # عنوان، [[ ]] رابط لملاحظة، الصق صورة بـ Ctrl+V)" spellcheck="false">${esc(n.body || '')}</textarea><div id="ntAc" class="nac" hidden></div></div>`}
       ${bl.length ? `<div class="nbl">🔙 مشار لها من: ${bl.map(x => `<span class="nlk" data-go="${x.id}">${esc(x.title || 'بدون عنوان')}</span>`).join('')}</div>` : ''}
@@ -117,6 +119,80 @@
     if (!N.prev) { const t = E.querySelector('#ntBody'); if (t && N.focusBody) { t.focus(); const l = t.value.length; t.setSelectionRange(l, l); N.focusBody = false; } }
   }
   function draw() { if (!N.host) return; N.host.querySelector('#ntSearch').value = N.q; drawList(); drawEditor(); }
+
+  /* ---------- 🎙️ ملاحظات صوتية: تسجيل بالمايك (webm/opus)، والملف يتحفظ داخل بيانات التطبيق ---------- */
+  const V = () => (N.ctx && N.ctx.voice) || null;
+  const mmss = s => { s = Math.max(0, Math.round(Number(s) || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+  const R = { mr: null, chunks: [], t0: 0, tick: null, into: null, stream: null, an: null, raf: 0, ac: null };
+  const P = { el: null, id: null, url: null };
+  const MAXREC = 10 * 60;
+  function voiceCard(n) {
+    const playing = P.id === n.id && P.el && !P.el.paused; const cur = P.id === n.id && P.el ? P.el.currentTime : 0; const d = n.audio.dur || 0;
+    return `<div class="nvoice"><button class="nvplay ${playing ? 'on' : ''}" id="ntVPlay" title="${playing ? 'إيقاف مؤقت' : 'تشغيل'}">${playing ? '❚❚' : '▶'}</button>
+      <div class="nvmid"><div class="nvbar" id="ntVBar"><i style="width:${d ? Math.min(100, cur / d * 100) : 0}%"></i></div><div class="nvmeta"><span id="ntVTime">${mmss(cur)} / ${mmss(d)}</span><span>🎙️ تسجيل صوتي · ${new Date(n.audio.at || n.created || Date.now()).toLocaleDateString(window.I18N && window.I18N.get() === 'en' ? 'en-US' : 'ar-SA-u-ca-gregory', { day: 'numeric', month: 'short' })}</span></div></div>
+      ${V() && V().show ? '<button class="sm" id="ntVShow" title="افتح مكان الملف">📂</button>' : ''}<button class="sm" id="ntVDel" title="حذف التسجيل">🗑</button></div>`;
+  }
+  function stopPlay() { if (P.el) { P.el.pause(); P.el.src = ''; } if (P.url) URL.revokeObjectURL(P.url); P.el = null; P.id = null; P.url = null; }
+  function playUI(n) {
+    const c = N.host && N.host.querySelector('.nvoice'); if (!c || N.cur !== n.id) return;
+    const on = P.el && !P.el.paused, cur = P.el ? P.el.currentTime : 0, d = n.audio.dur || (P.el && isFinite(P.el.duration) ? P.el.duration : 0);
+    const b = c.querySelector('#ntVPlay'); b.textContent = on ? '❚❚' : '▶'; b.classList.toggle('on', !!on); b.title = on ? 'إيقاف مؤقت' : 'تشغيل';
+    c.querySelector('.nvbar i').style.width = (d ? Math.min(100, cur / d * 100) : 0) + '%'; c.querySelector('#ntVTime').textContent = mmss(cur) + ' / ' + mmss(d);
+  }
+  async function loadPlay(n) {
+    stopPlay(); const buf = await V().read(n.audio.file);
+    if (!buf) { N.ctx.toast('ما لقيت ملف التسجيل على هالجهاز'); return false; }
+    P.url = URL.createObjectURL(new Blob([buf], { type: n.audio.mime || 'audio/webm' })); P.el = new Audio(P.url); P.id = n.id;
+    P.el.ontimeupdate = () => playUI(n); P.el.onpause = () => playUI(n); P.el.onplay = () => playUI(n); P.el.onended = () => { P.el.currentTime = 0; playUI(n); };
+    return true;
+  }
+  async function togglePlay(n) {
+    if (!V() || !n.audio) return;
+    if (P.id !== n.id || !P.el) { if (!(await loadPlay(n))) return; }
+    if (P.el.paused) { try { await P.el.play(); } catch (e) { N.ctx.toast('تعذّر التشغيل'); } } else P.el.pause();
+  }
+  async function seek(n, e, bar) {
+    if (P.id !== n.id || !P.el) { if (!(await loadPlay(n))) return; }
+    const r = bar.getBoundingClientRect(); let f = (e.clientX - r.left) / r.width; if (getComputedStyle(bar).direction === 'rtl') f = 1 - f;
+    P.el.currentTime = Math.max(0, Math.min(1, f)) * (n.audio.dur || P.el.duration || 0); playUI(n);
+  }
+  function recHTML() {
+    return `<div class="nrec" id="ntRec"><div class="nrbox"><div class="nrdot"></div><div class="nrt" id="nrT">0:00</div><div class="nrlv" id="nrLv">${'<i></i>'.repeat(24)}</div>
+      <div class="hint">${R.into ? 'يتسجّل داخل الملاحظة المفتوحة' : 'ملاحظة صوتية جديدة'} · الحد ${MAXREC / 60} دقائق</div>
+      <div class="nrbtns"><button class="pri" id="nrStop">⏹ إيقاف وحفظ</button><button class="sm" id="nrCancel">إلغاء</button></div></div></div>`;
+  }
+  async function recStart(into) {
+    if (R.mr || !V()) return;
+    if (!navigator.mediaDevices || !window.MediaRecorder) { N.ctx.toast('التسجيل الصوتي مو مدعوم هنا'); return; }
+    let stream; try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+    catch (e) { N.ctx.toast(e && (e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError') ? 'ما لقيت مايك متصل بالجهاز' : 'ما قدرت أوصل للمايك — تأكد إنه مسموح من إعدادات الويندوز (الخصوصية ← الميكروفون)'); return; }
+    const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'].find(m => MediaRecorder.isTypeSupported(m)) || '';
+    R.stream = stream; R.chunks = []; R.into = into; R.mr = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 64000 } : undefined);
+    R.mr.ondataavailable = e => { if (e.data && e.data.size) R.chunks.push(e.data); };
+    R.mr.start(1000); R.t0 = Date.now(); stopPlay();
+    const w = document.createElement('div'); w.innerHTML = recHTML(); N.host.appendChild(w.firstElementChild);
+    try { R.ac = new AudioContext(); const src = R.ac.createMediaStreamSource(stream); R.an = R.ac.createAnalyser(); R.an.fftSize = 64; src.connect(R.an); } catch (e) { R.an = null; }
+    const bars = [...N.host.querySelectorAll('#nrLv i')]; const arr = new Uint8Array(32);
+    const loop = () => { if (!R.mr) return; if (R.an) { R.an.getByteFrequencyData(arr); bars.forEach((b, k) => { b.style.height = (12 + (arr[k + 2] || 0) / 255 * 88) + '%'; }); } R.raf = requestAnimationFrame(loop); }; loop();
+    R.tick = setInterval(() => { const s = (Date.now() - R.t0) / 1000; const el = N.host.querySelector('#nrT'); if (el) el.textContent = mmss(s); if (s >= MAXREC) recStop(true); }, 250);
+  }
+  function recStop(keep) {
+    if (!R.mr) return; const mr = R.mr, dur = (Date.now() - R.t0) / 1000, into = R.into;
+    clearInterval(R.tick); cancelAnimationFrame(R.raf); R.mr = null;
+    const end = () => { try { R.stream.getTracks().forEach(x => x.stop()); } catch (e) {} try { R.ac && R.ac.close(); } catch (e) {} R.ac = null; R.an = null; const o = N.host.querySelector('#ntRec'); if (o) o.remove(); };
+    if (!keep || dur < 0.6) { mr.onstop = end; try { mr.stop(); } catch (e) { end(); } if (keep) N.ctx.toast('التسجيل قصير مرة'); return; }
+    mr.onstop = async () => {
+      end(); const type = mr.mimeType || 'audio/webm'; const blob = new Blob(R.chunks, { type }); R.chunks = [];
+      let n = into ? find(into) : null; const id = n ? n.id : uid();
+      const r = await V().save(id, await blob.arrayBuffer(), type);
+      if (!r || !r.ok) { N.ctx.toast('تعذّر حفظ التسجيل' + (r && r.error ? ': ' + r.error : '')); return; }
+      const audio = { file: r.file, path: r.path, dur: Math.round(dur * 10) / 10, mime: type, size: r.size, at: Date.now() };
+      if (n) { if (n.audio) V().del(n.audio.file); n.audio = audio; touch(n); draw(); }
+      else { const hm = window.fmtTime ? window.fmtTime(Date.now()) : new Date().toLocaleTimeString('ar-SA', { hour: 'numeric', minute: '2-digit' }); n = create('blank', { id, title: '🎙️ تسجيل ' + hm, audio }); N.focusBody = false; }
+      N.ctx.toast('🎙️ انحفظ التسجيل (' + mmss(dur) + ')');
+    };
+    try { mr.stop(); } catch (e) { end(); }
+  }
 
   /* ---------- الحفظ والمزامنة ---------- */
   function docOf(n) { const { _undo, ...d } = n; return d; }
@@ -188,7 +264,7 @@
   }
 
   /* ---------- تصدير ---------- */
-  function mdExport(n) { let b = n.body || ''; b = b.replace(/!\[\]\(img:([a-z0-9]+)\)/g, (a, id) => n.imgs && n.imgs[id] ? `![](${n.imgs[id]})` : ''); return `# ${n.title || 'بدون عنوان'}\n\n${n.tags ? 'الوسوم: ' + tags(n).map(t => '#' + t).join(' ') + '\n\n' : ''}${b}\n`; }
+  function mdExport(n) { let b = n.body || ''; b = b.replace(/!\[\]\(img:([a-z0-9]+)\)/g, (a, id) => n.imgs && n.imgs[id] ? `![](${n.imgs[id]})` : ''); return `# ${n.title || 'بدون عنوان'}\n\n${n.audio ? '🎙️ تسجيل صوتي (' + mmss(n.audio.dur) + ')\n\n' : ''}${n.tags ? 'الوسوم: ' + tags(n).map(t => '#' + t).join(' ') + '\n\n' : ''}${b}\n`; }
   function download(name, text) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/markdown;charset=utf-8' })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
   const fname = s => { const a = String(s || '').replace(/[\\/:*?"<>|]+/g, ' ').trim().slice(0, 60); const d = new Date(); const p = x => String(x).padStart(2, '0'); return (/^[\x20-\x7e]+$/.test(a) && a ? a : 'khazana-note-' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes())) + '.md'; };
 
@@ -205,7 +281,7 @@
 
   function mount(host, ctx) {
     N.host = host; N.ctx = ctx;
-    host.innerHTML = `<div class="ntwrap"><div class="ntside"><div class="ntop"><input id="ntSearch" class="f" placeholder="🔎 ابحث في ملاحظاتك…"><div class="ntaddw"><button class="pri" id="ntNew">+ جديدة</button><div id="ntTplM" class="menu" hidden>${Object.entries(TPL).map(([k, v]) => `<button data-tpl="${k}">${k === 'blank' ? '📝 فاضية' : esc(v[0])}</button>`).join('')}</div></div></div><div id="ntTags" class="ntags"></div><div id="ntList" class="nlist"></div></div><div id="ntEd" class="nted"></div></div>`;
+    host.innerHTML = `<div class="ntwrap"><div class="ntside"><div class="ntop"><input id="ntSearch" class="f" placeholder="🔎 ابحث في ملاحظاتك…"><div class="ntaddw">${V() ? '<button class="ntmic" id="ntMic" title="سجّل ملاحظة صوتية">🎙️</button>' : ''}<button class="pri" id="ntNew">+ جديدة</button><div id="ntTplM" class="menu" hidden>${Object.entries(TPL).map(([k, v]) => `<button data-tpl="${k}">${k === 'blank' ? '📝 فاضية' : esc(v[0])}</button>`).join('')}</div></div></div><div id="ntTags" class="ntags"></div><div id="ntList" class="nlist"></div></div><div id="ntEd" class="nted"></div></div>`;
     host.addEventListener('input', e => {
       const n = find(N.cur);
       if (e.target.id === 'ntSearch') { N.q = e.target.value; drawList(); }
@@ -257,13 +333,21 @@
       if (t.closest('#ntImp')) { const c = N.ctx.importVault(vaultNotes()); N.ctx.toast('📥 انستوردت ' + c + ' ملاحظة'); draw(); return; }
       if (t.closest('#ntExpAll')) { download('khazana-notes.md', list().filter(n => !n.lock).map(mdExport).join('\n---\n\n')); N.ctx.toast('⬇ انحفظ الملف (مجلد التنزيلات). الملاحظات المحمية ما تنصدّر.'); return; }
       if (t.closest('#ntUnGo')) { unlockGo(); return; }
+      if (t.closest('#ntMic')) { recStart(null); return; }
+      if (t.closest('#nrStop')) { recStop(true); return; }
+      if (t.closest('#nrCancel')) { recStop(false); return; }
       const n = find(N.cur); if (!n) return;
       const go = t.closest('[data-go]'); if (go) { N.cur = go.dataset.go; N.prev = false; draw(); return; }
       const f = t.closest('[data-fmt]'); if (f) { if (N.prev) { N.prev = false; drawEditor(); } fmt(f.dataset.fmt); return; }
       const sw = t.closest('.nsw'); if (sw) { n.color = sw.dataset.c; touch(n); draw(); return; }
+      if (t.closest('#ntMicHere')) { recStart(n.id); return; }
+      if (t.closest('#ntVPlay')) { togglePlay(n); return; }
+      const sk = t.closest('#ntVBar'); if (sk) { seek(n, e, sk); return; }
+      if (t.closest('#ntVDel')) { if (await N.ctx.confirm('تحذف التسجيل الصوتي؟ (الكتابة تبقى)')) { stopPlay(); V() && V().del(n.audio.file); delete n.audio; touch(n); draw(); N.ctx.toast('🗑 انحذف التسجيل'); } return; }
+      if (t.closest('#ntVShow')) { V() && V().show && V().show(n.audio.file); return; }
       if (t.closest('#ntPin')) { n.pinned = !n.pinned; touch(n); draw(); return; }
       if (t.closest('#ntPrev')) { N.prev = !N.prev; drawEditor(); return; }
-      if (t.closest('#ntDel')) { if (await N.ctx.confirm('تحذف هذي الملاحظة؟')) { const i = list().findIndex(x => x.id === n.id); list().splice(i, 1); N.gone.push(n.id); N.dirty.delete(n.id); N.cur = null; persist(); draw(); } return; }
+      if (t.closest('#ntDel')) { if (await N.ctx.confirm('تحذف هذي الملاحظة؟')) { const i = list().findIndex(x => x.id === n.id); if (n.audio && V()) { stopPlay(); V().del(n.audio.file); } list().splice(i, 1); N.gone.push(n.id); N.dirty.delete(n.id); N.cur = null; persist(); draw(); } return; }
       if (t.closest('#ntLink')) { N.ov = { t: 'pick' }; drawEditor(); const q = host.querySelector('#ntPickQ'); if (q) q.focus(); return; }
       if (t.closest('#ntRem')) { const L = N.prev ? { text: n.title, k: -1 } : lineAtCaret(); N.ov = { t: 'rem', text: cleanLine(L.text) || n.title || '', k: L.k }; drawEditor(); return; }
       const rm = t.closest('[data-rm]'); if (rm) { const k = +rm.dataset.rm; N.ov = { t: 'rem', text: cleanLine((n.body || '').split('\n')[k] || ''), k }; drawEditor(); return; }

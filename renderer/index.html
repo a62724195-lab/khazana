@@ -196,6 +196,15 @@
   <div class="drow"><button type="button" id="trashEmpty" class="sm danger">إفراغ السلة</button><button type="button" id="trashClose" class="sm">إغلاق</button></div>
 </dialog>
 
+<dialog id="updDlg" class="upddlg">
+  <div class="upd-hero"><div class="upd-ico">🔄</div><div><b class="upd-t">تحديث جديد لخزنة</b><div class="upd-v" id="updVer"></div></div></div>
+  <div class="upd-new"><div class="upd-h">الجديد في هالتحديث</div><ul id="updNotes"></ul></div>
+  <div class="upd-safe">🛡️ بياناتك ما تتأثر، ولو صار شي يرجع التطبيق للنسخة القديمة تلقائياً</div>
+  <div class="upd-prog" id="updProg" hidden><div class="upd-bar"><i id="updFill"></i></div><span id="updMsg">⏳ أنزّل التحديث…</span></div>
+  <div class="upd-err" id="updErr" hidden></div>
+  <div class="upd-acts"><button type="button" id="updLaterBtn">لاحقاً</button><button type="button" id="updNowBtn" class="pri">حدّث الحين</button></div>
+</dialog>
+
 <dialog id="bkDlg">
   <b>♻️ استرجاع من نسخة احتياطية</b>
   <p class="hint">اختر نسخة لاسترجاعها. قبل الاسترجاع يحفظ التطبيق نسخة من خزنتك الحالية تلقائياً، فما يضيع منك شي.</p>

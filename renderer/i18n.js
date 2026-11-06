@@ -140,9 +140,98 @@
     'ما عندك مجموعات.': 'No groups yet.', 'سوّها من خزنة ← ⚡ مجموعات.': 'Create them in Khazana → ⚡ Groups.', 'تفتح': 'opens', 'مجموعة: تفتح': 'Group: opens', 'ما لقيت بالكلمات. اضغط Shift+Enter للبحث الذكي بوصفك.': 'No keyword match. Press Shift+Enter for smart search by description.',
     'يفكر…': 'Thinking…', 'تعذّر البحث الذكي.': 'Smart search failed.', 'ما لقيت شي مناسب في خزنتك': 'Nothing suitable found in your vault', 'فتح · Enter': 'Open · Enter', 'بحث': 'Search', 'اكتب اسم أو وصف اللي تبيه…': 'Type a name or description…',
     'تنقّل': 'navigate', 'فتح': 'Open', 'بحث ذكي': 'smart search', 'إغلاق': 'Close', 'هذا الرابط مضاف من قبل.': 'This link is already added.', 'الحافظة ما فيها رابط أو ملف': 'The clipboard has no link or file',
-    'مفضلة المتصفح': 'Browser bookmarks', 'حدّث resources أيضاً': 'Please update the resources folder too', 'اختر الوقت': 'Pick a time', 'ذكّرني': 'Remind me', 'حذف المجموعة': 'Delete group', 'احذف المحدد': 'Delete selected', 'إفراغ السلة نهائياً؟ ما يمديك ترجّعها بعدها.': 'Empty the trash permanently? You won’t be able to restore them.'
+    'مفضلة المتصفح': 'Browser bookmarks', 'حدّث resources أيضاً': 'Please update the resources folder too', 'اختر الوقت': 'Pick a time', 'ذكّرني': 'Remind me', 'حذف المجموعة': 'Delete group', 'احذف المحدد': 'Delete selected', 'إفراغ السلة نهائياً؟ ما يمديك ترجّعها بعدها.': 'Empty the trash permanently? You won’t be able to restore them.',
+    /* v3: التحديث، ١٢ ساعة، حفظ الشكل، الملاحظات الصوتية، صفحة الحاويات */
+    "بياناتك ما تتأثر، ولو صار شي يرجع التطبيق للنسخة القديمة تلقائيا": "Your data isn't affected, and if anything goes wrong the app rolls back to the old version automatically",
+    "الكل": "All",
+    "صوتية": "Voice",
+    "إيقاف": "Off",
+    "ظاهرة": "Shown",
+    "لا": "No",
+    "نعم": "Yes",
+    "دراسة": "Study",
+    "فتح خزنة": "Open Khazana",
+    "بحث سريع": "Quick search",
+    "إظهار الحاويات": "Show fences",
+    "إضافة من الحافظة": "Add from clipboard",
+    "12ص": "12AM",
+    "6ص": "6AM",
+    "12م": "12PM",
+    "6م": "6PM",
+    "ص": "AM",
+    "م": "PM",
+    "أيقونات 3D وحركة الميلان": "3D icons and tilt motion",
+    "إخفاء الشريط تلقائياً (يظهر لما تلمس الحافة)": "Auto-hide the bar (shows when you touch the edge)",
+    "إظهار / إخفاء الحاويات": "Show / hide fences",
+    "إيقاف مؤقت": "Pause",
+    "تشغيل": "Play",
+    "احفظ تصميمك الحالي باسم، وارجع له متى ما بغيت لو جربت تصميم ثاني وما عجبك.": "Save your current design under a name and come back to it any time if you try another one and don't like it.",
+    "اختصار على سطح المكتب العام يحتاج موافقة ويندوز (مسؤول) عشان ينتقل، فظل مكانه": "A shortcut on the Public Desktop needs Windows (admin) approval to move, so it stayed where it was",
+    "الأسماء": "Names",
+    "الإصدار": "Version",
+    "التسجيل الصوتي مو مدعوم هنا": "Voice recording isn't supported here",
+    "التسجيل قصير مرة": "The recording is too short",
+    "التغيير يبان مباشرة": "Changes show instantly",
+    "الجديد في هالتحديث": "What's new in this update",
+    "الحاويات": "Fences",
+    "الحاويات على سطح المكتب": "Fences on the desktop",
+    "تتعبّى لحالها. اضغط على أي وحدة لتشغيلها أو إيقافها.": "They fill themselves. Click any one to turn it on or off.",
+    "تحديث جديد لخزنة": "New Khazana update",
+    "تحذف التسجيل الصوتي؟ (الكتابة تبقى)": "Delete the voice recording? (the text stays)",
+    "تحسينات وإصلاحات": "Improvements and fixes",
+    "تطبيق": "Apply",
+    "تعذّر التشغيل": "Couldn't play",
+    "تعذّر حفظ التسجيل": "Couldn't save the recording",
+    "حاويات ذكية": "Smart fences",
+    "حاويات زجاجية ترتّب برامجك وملفاتك على سطح المكتب. لتغيير تصميم أي حاوية اضغط 🎨 فوقها.": "Glass fences that organize your programs and files on the desktop. To change a fence's design, click 🎨 on it.",
+    "حذف التسجيل": "Delete recording",
+    "كل حاوية لها تصميمها الخاص. اضغط 🎨 فوق أي حاوية على سطح المكتب وغيّر الشكل والألوان والشفافية — التغيير يبان مباشرة.": "Every fence has its own design. Click 🎨 on any fence on the desktop to change its look, colors and transparency — changes show instantly.",
+    "لون الحاوية": "Fence color",
+    "لون مختلف لكل حاوية حسب القسم": "A different color per fence by section",
+    "لون مخصص": "Custom color",
+    "ما عندك أشكال محفوظة. سوّ تصميمك واضغط «حفظ الشكل» 👆": "No saved designs yet. Make your design and press “Save design” 👆",
+    "ما قدرت أوصل للمايك — تأكد إنه مسموح من إعدادات الويندوز (الخصوصية ← الميكروفون)": "Couldn't access the mic — make sure it's allowed in Windows settings (Privacy → Microphone)",
+    "ما لقيت مايك متصل بالجهاز": "No microphone found on this computer",
+    "ما لقيت ملف التسجيل على هالجهاز": "The recording file isn't on this computer",
+    "نظام الوقت": "Time format",
+    "وصلت ٣٠ شكل محفوظ، احذف واحد أول": "You've reached 30 saved designs, delete one first",
+    "١٠ تصاميم · ٣ طرق عرض · شريط على الحافة": "10 designs · 3 layouts · edge bar",
+    "١٢ ساعة (3:05 م)": "12-hour (3:05 PM)",
+    "١٢ ساعة (ص/م) أو ٢٤ ساعة، لكل الأوقات بالتطبيق والحاويات والتذكيرات.": "12-hour (AM/PM) or 24-hour, for all times in the app, fences and reminders.",
+    "٢٤ ساعة (15:05)": "24-hour (15:05)",
+    "إيقاف وحفظ": "Stop & save",
+    "الشكل": "Shape",
+    "الشكل الحالي": "Current look",
+    "حفظ الشكل": "Save design",
+    "اللون والشفافية": "Color & transparency",
+    "مكان الحاوية": "Fence position",
+    "الأيقونات والعرض": "Icons & layout",
+    "انحذف التسجيل": "Recording deleted",
+    "بياناتك ما تتأثر، ولو صار شي يرجع التطبيق للنسخة القديمة تلقائياً": "Your data isn't affected, and if anything goes wrong the app rolls back to the old version automatically",
+    "سجّل ملاحظة صوتية": "Record a voice note",
+    "سجّل صوت لهذي الملاحظة": "Record audio for this note",
+    "افتح مكان الملف": "Show file location",
+    "يتسجّل داخل الملاحظة المفتوحة": "Recording into the open note",
+    "ملاحظة صوتية جديدة": "New voice note",
+    "تسجيل صوتي": "Voice note",
+    "شكل الحاوية": "Fence shape",
+    "ثيم الشريط الممتد": "Extended bar theme",
+    "حجم الأيقونات": "Icon size",
+    "طريقة العرض": "Layout",
+    "بدون أسماء": "No names",
+    "طبّق على كل الحاويات": "Apply to all fences",
+    "إعادة الضبط": "Reset",
+    "تصميم الحاوية": "Fence design",
+    "زجاج أكريليك": "Acrylic glass",
+    "خلفية الحاوية (ويندوز 11)": "Fence background (Windows 11)"
   };
   const P = [
+    [/^طبّقت «(.*)»$/, m => `Applied “${m[1]}”`], [/^انحفظ «(.*)»$/, m => `Saved “${m[1]}”`], [/^تحدّث «(.*)»$/, m => `Updated “${m[1]}”`], [/^انحذف «(.*)»$/, m => `Deleted “${m[1]}”`],
+    [/^فيه تحديث جديد للتطبيق \((\d+) ملف\)$/, m => `A new app update is available (${m[1]} files)`], [/^فيه تحديث جديد \((\d*) ملف\)\.\n?أحدّث الحين؟$/, m => `A new update is available (${m[1]} files).\nUpdate now?`],
+    [/^الإصدار (.*?)(?: · (\d+) ملف)?$/, m => `Version ${m[1]}${m[2] ? ` · ${m[2]} files` : ''}`], [/^تسجيل صوتي · (.*)$/, m => `Voice note · ${m[1]}`],
+    [/^(يتسجّل داخل الملاحظة المفتوحة|ملاحظة صوتية جديدة) · الحد (\d+) دقائق$/, m => `${m[1] === 'ملاحظة صوتية جديدة' ? 'New voice note' : 'Recording into the open note'} · max ${m[2]} minutes`],
+    [/^انحفظ التسجيل \(([\d:]+)\)$/, m => `Recording saved (${m[1]})`], [/^تسجيل (\d{1,2}:\d{2})(?: ?([صم]))?$/, m => `Recording ${m[1]}${m[2] ? (m[2] === 'ص' ? ' AM' : ' PM') : ''}`],
+    [/^أكثر ساعات استخدامك(?: · ذروتك (.*))?$/, m => `Your busiest hours${m[1] ? ' · peak ' + m[1].replace(' ص', ' AM').replace(' م', ' PM') : ''}`], [/^متزامن (.*)$/, m => `Synced ${m[1].replace(' ص', ' AM').replace(' م', ' PM')}`],
     [/^📦 انتقل (\d+) ملف لمجلد خزنة$/, m => `📦 Moved ${m[1]} file(s) to the Khazana folder`],
     [/^تم تحديث (\d+) من (\d+)(?: · ما لقيت صورة لـ: (.*?))?(?: \(تقدر تحط صورة بنفسك: ✏ ← 🖼 صورة مخصّصة\))?$/, m => `Updated ${m[1]} of ${m[2]}${m[3] ? ` · no image for: ${m[3]} (you can set one yourself: ✏ → 🖼 Custom image)` : ''}`],
     [/^🔄 فيه تحديث جديد للتطبيق \((\d+) ملف\)$/, m => `🔄 A new app update is available (${m[1]} files)`], [/^فشل التحديث: (.*)$/, m => `Update failed: ${m[1]}`],
@@ -235,4 +324,58 @@
   }
   const oc = window.confirm.bind(window); window.confirm = s => oc(tr(String(s)));
   window.I18N = { set, tr, get: () => lang, auto: () => (navigator.language || 'ar').toLowerCase().startsWith('ar') ? 'ar' : 'en' };
+})();
+
+/* ⏰ نظام الوقت: ١٢ ساعة (ص/م · AM/PM) أو ٢٤ ساعة. الافتراضي ١٢ ساعة (مثل السعودية).
+   الإعداد محفوظ بـ localStorage (kz-h12) عشان كل النوافذ (الرئيسية والحاويات والبحث) تقرأه */
+(function () {
+  const isAr = ar => ar !== undefined ? !!ar : (document.documentElement.lang || 'ar') !== 'en';
+  const h12 = () => { try { return localStorage.getItem('kz-h12') !== '0'; } catch (e) { return true; } };
+  const p2 = n => String(n).padStart(2, '0');
+  function fmt(d, ar, o = {}) {
+    d = d instanceof Date ? d : new Date(d); if (isNaN(d)) return '';
+    const h = d.getHours(), m = p2(d.getMinutes()), s = o.sec ? ':' + p2(d.getSeconds()) : '';
+    if (!h12()) return p2(h) + ':' + m + s;
+    const a = isAr(ar); return (h % 12 || 12) + ':' + m + s + ' ' + (h < 12 ? (a ? 'ص' : 'AM') : (a ? 'م' : 'PM'));
+  }
+  const fmtHM = (hm, ar) => { const x = /^(\d{1,2}):(\d{2})/.exec(String(hm || '')); if (!x) return String(hm || ''); const d = new Date(); d.setHours(+x[1], +x[2], 0, 0); return fmt(d, ar); };
+  const fmtHour = (h, ar) => { const d = new Date(); d.setHours(h, 0, 0, 0); return fmt(d, ar); };
+  // حقول الوقت: بنظام ١٢ ساعة نبدّل الحقل الأصلي (يظل مخفي ويحمل القيمة) بساعة + دقيقة + ص/م
+  const proto = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+  const boxes = new Set();
+  function enhance(inp) {
+    if (!inp || inp.__kzt || (inp.type !== 'time' && inp.type !== 'datetime-local')) return;
+    inp.__kzt = true; const dt = inp.type === 'datetime-local';
+    const box = document.createElement('span'); box.className = 'kzt'; box.dir = 'ltr';
+    box.innerHTML = (dt ? '<input type="date" class="kzt-d">' : '') + '<select class="kzt-h"></select><b>:</b><select class="kzt-m"></select><select class="kzt-a"></select>';
+    inp.insertAdjacentElement('afterend', box);
+    const q = c => box.querySelector(c), H = q('.kzt-h'), M = q('.kzt-m'), A = q('.kzt-a'), D = q('.kzt-d');
+    H.innerHTML = [...Array(12)].map((_, k) => `<option value="${k + 1}">${k + 1}</option>`).join('');
+    M.innerHTML = [...Array(60)].map((_, k) => `<option value="${k}">${p2(k)}</option>`).join('');
+    const get = () => proto.get.call(inp);
+    function pull() {
+      const v = get(), t = dt ? (v.split('T')[1] || '') : v, x = /^(\d{1,2}):(\d{2})/.exec(t);
+      const a = isAr(); A.innerHTML = `<option value="am">${a ? 'ص' : 'AM'}</option><option value="pm">${a ? 'م' : 'PM'}</option>`;
+      if (D) D.value = v.split('T')[0] || '';
+      if (x) { const h = +x[1]; H.value = String(h % 12 || 12); M.value = String(+x[2]); A.value = h < 12 ? 'am' : 'pm'; }
+      const on = h12(); box.hidden = !on; inp.style.display = on ? 'none' : '';
+    }
+    function push() {
+      let h = (+H.value) % 12; if (A.value === 'pm') h += 12;
+      const t = p2(h) + ':' + p2(+M.value);
+      let v = t; if (dt) { const dd = (D && D.value) || (get().split('T')[0]) || new Date().toISOString().slice(0, 10); v = dd + 'T' + t; }
+      proto.set.call(inp, v); inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    [H, M, A, D].forEach(s => s && s.addEventListener('change', e => { e.stopPropagation(); push(); }));
+    Object.defineProperty(inp, 'value', { configurable: true, get, set(v) { proto.set.call(inp, v); pull(); } });
+    inp.__kztPull = pull; boxes.add(inp); pull();
+  }
+  function scan(root) { (root && root.querySelectorAll ? root : document).querySelectorAll('input[type=time],input[type=datetime-local]').forEach(enhance); }
+  function refresh() { boxes.forEach(i => { if (i.isConnected) i.__kztPull(); else boxes.delete(i); }); }
+  function set(on) { try { localStorage.setItem('kz-h12', on ? '1' : '0'); } catch (e) {} refresh(); }
+  const start = () => { scan(document); new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) { if (n.matches && n.matches('input[type=time],input[type=datetime-local]')) enhance(n); else scan(n); } }))).observe(document.body, { childList: true, subtree: true }); };
+  if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+  window.addEventListener('storage', e => { if (e.key === 'kz-h12') refresh(); });
+  window.KZTime = { h12, set, fmt, fmtHM, fmtHour, refresh, enhance };
+  window.fmtTime = fmt;
 })();

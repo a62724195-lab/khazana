@@ -316,3 +316,33 @@ html:has(#box[data-edge]),body:has(#box[data-edge]){overflow:hidden}
 .wf .tdr{width:100%;box-sizing:border-box;flex:none;height:auto;min-height:34px}
 .wf .wtl{align-items:stretch}
 .wf .tdr{box-shadow:none!important;background-image:none}.wf .tdr:hover{background:rgba(0,0,0,.06)!important}
+
+/* 🎨 لوحة تصميم الحاوية: بطاقات زجاجية + معاينة حيّة لكل تصميم */
+#spanel{width:min(340px,calc(100% - 16px));background:linear-gradient(160deg,rgba(28,33,52,.94),rgba(14,17,28,.96));backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);border:1px solid rgba(255,255,255,.16);border-radius:18px;padding:12px;gap:10px;box-shadow:0 20px 50px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.1)}
+#spanel .shead{display:flex;justify-content:space-between;align-items:baseline;padding:2px 4px 0}#spanel .shead b{font-size:14px}#spanel .shead small{opacity:.55;font-size:11px}
+#spanel .scard{display:grid;gap:10px;padding:11px;border-radius:14px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.09)}
+#spanel .sct{font-weight:800;font-size:12.5px;color:#fff;opacity:.92}
+#spanel .srow{display:grid;gap:6px}
+#spanel .sl{font-weight:600;color:#a9b6d9;margin:0;font-size:11.5px;display:flex;justify-content:space-between}#spanel .sl b{color:#fff}
+#spanel .dg{grid-template-columns:repeat(3,1fr);gap:8px}
+#spanel .dsw{height:auto;display:grid;gap:5px;padding:5px;border-radius:12px;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);text-shadow:none;transition:transform .15s,border-color .15s,background .15s}
+#spanel .dsw:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.3)}
+#spanel .dsw.on{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 18%,transparent);box-shadow:0 0 0 2px color-mix(in srgb,var(--acc) 40%,transparent)}
+#spanel .dpv{position:relative;display:block;height:46px;overflow:hidden;border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.15)}
+#spanel .dpv-h{position:absolute;top:5px;inset-inline:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.35)}
+#spanel .dpv-g{position:absolute;top:16px;inset-inline:6px;bottom:5px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+#spanel .dpv-g i{border-radius:4px;background:rgba(255,255,255,.28)}
+#spanel .dpv-g i:nth-child(2){background:var(--acc)}
+#spanel .dnm{font-size:11px;color:#e8ecf8;text-align:center}
+#spanel .seg{background:rgba(0,0,0,.22);padding:3px;border-radius:10px;gap:3px;flex-wrap:wrap}
+#spanel .seg button{height:28px;border-radius:8px;background:transparent;color:#d7deef;border:0;font-size:11.5px;min-width:0}
+#spanel .seg button:hover{background:rgba(255,255,255,.08)}
+#spanel .seg button.on{background:var(--acc);color:#fff;box-shadow:0 3px 10px color-mix(in srgb,var(--acc) 45%,transparent)}
+#spanel .acs i{width:24px;height:24px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}#spanel .acs i.on{border-color:#fff;transform:scale(1.1)}
+#spanel input[type=range]{height:18px}
+#spanel .foot{gap:8px}#spanel .foot button{height:34px;border-radius:11px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;font-weight:600}
+#spanel .foot button[data-all]{background:var(--acc);border-color:transparent}
+
+/* معاينة التصاميم: البطاقة تاخذ عرض الزر كامل (كانت تنضغط لشكل كبسولة) */
+#spanel .dsw{display:flex;flex-direction:column;align-items:stretch;width:auto;min-width:0}
+#spanel .dsw .dpv{width:100%;min-width:0;box-sizing:border-box;height:50px}
